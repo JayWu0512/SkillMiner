@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      TINY_N_PER_GROUP: "2"
+      TINY_MAX_ROWS: "2000"
+      TINY_GEN_TOP_SKILLS: "0"
+    command: >
+      bash -lc "
+      python scripts/make_test_data.py &&
+      pytest -vv --cov=src --cov-report=term-missing
+      "

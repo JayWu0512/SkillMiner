@@ -1,0 +1,77 @@
+# ------------------------
+# Python
+# ------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Logs
+*.log
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# ------------------------
+# Project-specific
+# ------------------------
+
+# KaggleHub cache (can be huge and machine-specific)
+data/.kagglehub_cache/
+
+# Raw CSV data (6GB+)
+data/raw/*.csv
+
+# Intermediate / derived files
+data/raw/*.parquet
+data/bronze/*.parquet
+data/silver/*.parquet
+data/gold/*.parquet
+data/processed/
+data/interim/
+data/external/
+
+# If you want to keep small parquet samples in git, comment out the parquet line
+# and instead whitelist: !data/raw/sample_*.parquet

@@ -1,0 +1,12 @@
+pylint
+flake8
+pytest
+click
+black
+pytest-cov
+kagglehub
+polars
+typer
+pandas
+matplotlib
+scikit-learn
