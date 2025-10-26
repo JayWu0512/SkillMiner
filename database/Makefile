@@ -1,4 +1,5 @@
 .PHONY: install build format lint test clean all
+.PHONY: export-sqlite
 FLAKE8_MAXLINE ?= 105
 
 install:
@@ -26,4 +27,10 @@ clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	rm -rf .pytest_cache .coverage htmlcov
 
-all: install format lint test clean
+export-sqlite:
+	python -m src.app.cli export-sqlite \
+		--db database/skillminer.db \
+		--silver-jobs data/silver/jobs_text.parquet \
+		--gold-role-skills data/gold/role_skills_by_title.parquet
+
+all: install format lint test export-sqlite clean

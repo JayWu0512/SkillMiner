@@ -1,12 +1,19 @@
+# --- lint & format ---
 pylint
 flake8
-pytest
-click
 black
+
+# --- testing ---
+pytest
 pytest-cov
-kagglehub
-polars
+
+# --- cli / utils ---
 typer
+click 
+
+# --- data & ML ---
+polars
 pandas
-matplotlib
 scikit-learn
+matplotlib
+kagglehub

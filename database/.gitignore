@@ -73,5 +73,8 @@ data/processed/
 data/interim/
 data/external/
 
+# Database
+database
+
 # If you want to keep small parquet samples in git, comment out the parquet line
 # and instead whitelist: !data/raw/sample_*.parquet
