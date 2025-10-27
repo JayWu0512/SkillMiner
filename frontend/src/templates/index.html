@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillMiner Agent - AI-Powered Skill Gap Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 0;
+        }
+        .skill-badge {
+            display: inline-block;
+            margin: 0.2rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        .skill-required { background-color: #dc3545; color: white; }
+        .skill-preferred { background-color: #fd7e14; color: white; }
+        .skill-nice { background-color: #6c757d; color: white; }
+        .skill-existing { background-color: #198754; color: white; }
+        .skill-missing { background-color: #dc3545; color: white; }
+        .gap-critical { border-left: 4px solid #dc3545; }
+        .gap-moderate { border-left: 4px solid #fd7e14; }
+        .gap-minor { border-left: 4px solid #ffc107; }
+        .match-score {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .results-section {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold mb-3">
+                        <i class="fas fa-brain me-3"></i>SkillMiner Agent
+                    </h1>
+                    <p class="lead mb-4">
+                        AI-powered skill gap analysis that compares your resume against job requirements 
+                        and provides actionable recommendations for career growth.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <i class="fas fa-chart-line fa-5x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Input Form -->
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-upload me-2"></i>Analyze Your Skills
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="analysisForm" enctype="multipart/form-data">
+                            <div class="mb-4">
+                                <label for="jobDescription" class="form-label fw-bold">
+                                    <i class="fas fa-briefcase me-2"></i>Job Description *
+                                </label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="jobDescription" 
+                                    name="job_description"
+                                    rows="8" 
+                                    placeholder="Paste the job description here..."
+                                    required
+                                ></textarea>
+                                <div class="form-text">
+                                    Copy and paste the complete job posting including requirements and responsibilities.
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="resumeFile" class="form-label fw-bold">
+                                    <i class="fas fa-file-pdf me-2"></i>Resume (Optional)
+                                </label>
+                                <input 
+                                    class="form-control" 
+                                    type="file" 
+                                    id="resumeFile" 
+                                    name="resume_file"
+                                    accept=".pdf,.docx,.doc"
+                                >
+                                <div class="form-text">
+                                    Upload your resume in PDF or DOCX format for personalized analysis.
+                                </div>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-search me-2"></i>Analyze Skills
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Loading Spinner -->
+                        <div class="loading-spinner text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Analyzing...</span>
+                            </div>
+                            <p class="mt-3">Analyzing your skills and generating recommendations...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section mt-5">
+            <div class="row">
+                <!-- Summary Card -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-pie me-2"></i>Match Score
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="match-score text-success" id="matchScore">--</div>
+                            <p class="text-muted">Overall Compatibility</p>
+                            <div id="matchSummary" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Job Info -->
+                <div class="col-lg-8 mb-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Position Analysis
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="fw-bold">Job Title:</h6>
+                            <p id="jobTitle" class="mb-3">--</p>
+                            
+                            <h6 class="fw-bold">Required Skills:</h6>
+                            <div id="requiredSkills" class="mb-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Existing Skills -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-check-circle me-2"></i>Your Skills
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="existingSkills"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Missing Skills -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-header bg-warning text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Skills to Develop
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="missingSkills"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skill Gaps -->
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card shadow">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-gap me-2"></i>Skill Gaps & Recommendations
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="skillGaps"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overall Recommendations -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-lightbulb me-2"></i>Action Plan
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="recommendations"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2024 SkillMiner Agent. Powered by AI for better career decisions.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>

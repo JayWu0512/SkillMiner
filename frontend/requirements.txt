@@ -1,0 +1,41 @@
+# Web framework
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+
+# Document processing
+python-docx
+PyPDF2
+pdfplumber
+
+# NLP and text processing
+spacy
+nltk
+scikit-learn
+
+# Existing dependencies from database
+polars
+pandas
+typer
+click
+
+# Additional utilities
+jinja2
+aiofiles
+
+# AI/ML models (optional)
+# Uncomment based on which models you want to use:
+
+# spaCy for NER
+# spacy>=3.4.0
+
+# OpenAI API
+# openai>=1.0.0
+
+# Hugging Face Transformers
+# transformers>=4.20.0
+# torch>=1.12.0
+
+# For GPU support (optional)
+# torch>=1.12.0+cu117 -f https://download.pytorch.org/whl/torch_stable.html
