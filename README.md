@@ -32,4 +32,6 @@ data/test/tiny_jobs_text.parquet
 data/test/tiny_role_skills_by_title.parquet
 
 database/skillminer.db           # Final SQLite database 
+```
 
+python version: 3.11.13
