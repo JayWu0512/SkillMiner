@@ -3,19 +3,18 @@ name: Python Template for SkillMiner/database
 on:
   push:
     paths:
-      - 'SkillMiner/database/**'
+      - 'database/**'
       - '.github/workflows/database-ci.yml'
   pull_request:
     paths:
-      - 'SkillMiner/database/**'
+      - 'database/**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     defaults:
       run:
-        working-directory: SkillMiner/database
+        working-directory: database
 
     steps:
       - uses: actions/checkout@v4
@@ -27,16 +26,13 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: |
-          make install
+        run: make install
 
       - name: Lint with flake8
-        run: |
-          make lint
+        run: make lint
 
       - name: Run tests
-        run: |
-          make test-ci
+        run: make test-ci
 
       - name: Clean
         if: always()
