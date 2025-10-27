@@ -33,4 +33,4 @@ export-sqlite:
 		--silver-jobs data/silver/jobs_text.parquet \
 		--gold-role-skills data/gold/role_skills_by_title.parquet
 
-all: install format lint test export-sqlite clean
+all: install format lint test clean
