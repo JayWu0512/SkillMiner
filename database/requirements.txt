@@ -10,6 +10,8 @@ pytest-cov
 # --- cli / utils ---
 typer
 click 
+python-dotenv}
+psycopg2-binary 
 
 # --- data & ML ---
 polars
