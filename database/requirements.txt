@@ -10,7 +10,7 @@ pytest-cov
 # --- cli / utils ---
 typer
 click 
-python-dotenv}
+python-dotenv
 psycopg2-binary 
 
 # --- data & ML ---
