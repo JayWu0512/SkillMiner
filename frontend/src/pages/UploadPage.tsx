@@ -79,7 +79,7 @@ export function UploadPage({
       const res = await fetch(`${API_BASE}/analysis`, {
         method: "POST",
         headers: buildHeaders(accessToken, false),
-        // credentials: "include",
+        credentials: "include",
         body: formData,
       });
 
