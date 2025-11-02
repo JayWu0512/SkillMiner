@@ -35,3 +35,4 @@ database/skillminer.db           # Final SQLite database
 ```
 
 python version: 3.11.13
+(3.11.9 for windows)
