@@ -4,6 +4,7 @@ import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { Card } from "../components/ui/card";
 import { Brain, Upload, FileText, Sparkles, LogOut } from "lucide-react";
+import { createClient } from "../utils/supabase/client";
 
 interface UploadPageProps {
   accessToken: string;
@@ -33,6 +34,7 @@ export function UploadPage({
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState("");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,6 +57,23 @@ export function UploadPage({
     } else {
       setError("Please upload a PDF or DOCX file");
       setResumeFile(null);
+    }
+  };
+
+  // logout Supabase and clean frontend status
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signOut(); 
+      if (error) throw error;
+      onLogout();
+    } catch (e: any) {
+      console.error("Logout error:", e);
+      setError(e?.message || "Failed to log out, please try again.");
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -112,9 +131,24 @@ export function UploadPage({
               <p className="text-slate-600 text-sm">AI-Powered Career Analysis</p>
             </div>
           </div>
-          <Button variant="outline" onClick={onLogout} className="gap-2">
-            <LogOut className="w-4 h-4" />
-            Logout
+
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="gap-2"
+          >
+            {isLoggingOut ? (
+              <>
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Logging out...
+              </>
+            ) : (
+              <>
+                <LogOut className="w-4 h-4" />
+                Logout
+              </>
+            )}
           </Button>
         </div>
 

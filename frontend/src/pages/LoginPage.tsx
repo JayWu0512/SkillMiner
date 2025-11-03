@@ -1,78 +1,82 @@
-import { useState } from 'react';
+// src/pages/LoginPage.tsx
+import { useEffect, useState } from 'react';
 import { Button } from '../components/ui/button';
-import { createClient } from '../utils/supabase/client';
+import { createClient } from '../utils/supabase/client'; // use your factory (singleton inside)
 import { Brain, Github } from 'lucide-react';
 
 interface LoginPageProps {
   onLoginSuccess: (accessToken: string) => void;
 }
 
+const APP_URL = import.meta.env.VITE_APP_BASE_URL as string; // from .env
+
 export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleGoogleLogin = async () => {
+  // --- Auto check session or OAuth callback ---
+  useEffect(() => {
+    const supabase = createClient();
+
+    const init = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('getSession error:', error);
+      }
+      if (data?.session?.access_token) {
+        onLoginSuccess(data.session.access_token);
+      }
+    };
+    init();
+
+    // Subscribe to auth state changes
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) {
+        onLoginSuccess(session.access_token);
+      }
+    });
+
+    return () => {
+      sub.subscription.unsubscribe();
+    };
+  }, [onLoginSuccess]);
+
+  // --- General OAuth handler (Google / GitHub) ---
+  const startOAuth = async (provider: 'google' | 'github') => {
     setIsLoading(true);
     setError('');
-    
     try {
       const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
         options: {
-          redirectTo: window.location.origin,
-        }
+          redirectTo: APP_URL, // must also be whitelisted in Supabase Auth URL settings
+        },
       });
-      
       if (error) throw error;
-      
-      // After OAuth redirect, check for session
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData?.session?.access_token) {
-        onLoginSuccess(sessionData.session.access_token);
-      }
+      // Redirect happens; no need to getSession here
     } catch (err: any) {
-      console.error('Google login error:', err);
-      setError('Please enable Google OAuth in Supabase dashboard. See https://supabase.com/docs/guides/auth/social-login/auth-google');
-    } finally {
+      console.error(`${provider} login error:`, err);
+      const docLink =
+        provider === 'google'
+          ? 'https://supabase.com/docs/guides/auth/social-login/auth-google'
+          : 'https://supabase.com/docs/guides/auth/social-login/auth-github';
+      setError(
+        `Login failed. Please enable ${provider} OAuth in Supabase dashboard. See ${docLink}`
+      );
       setIsLoading(false);
     }
   };
 
-  const handleGithubLogin = async () => {
-    setIsLoading(true);
-    setError('');
-    
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: window.location.origin,
-        }
-      });
-      
-      if (error) throw error;
-      
-      // After OAuth redirect, check for session
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData?.session?.access_token) {
-        onLoginSuccess(sessionData.session.access_token);
-      }
-    } catch (err: any) {
-      console.error('GitHub login error:', err);
-      setError('Please enable GitHub OAuth in Supabase dashboard. See https://supabase.com/docs/guides/auth/social-login/auth-github');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // --- UI ---
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      {/* background grid pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMC41IiBvcGFjaXR5PSIwLjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-20"></div>
-      
+
       <div className="relative w-full max-w-md">
         <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-slate-700/50">
+          {/* header */}
           <div className="flex flex-col items-center mb-8">
             <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-2xl mb-4">
               <Brain className="w-10 h-10 text-white" />
@@ -83,9 +87,10 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             </p>
           </div>
 
+          {/* buttons */}
           <div className="space-y-4">
             <Button
-              onClick={handleGoogleLogin}
+              onClick={() => startOAuth('google')}
               disabled={isLoading}
               className="w-full bg-white hover:bg-gray-100 text-gray-900 h-12 rounded-xl"
             >
@@ -111,7 +116,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             </Button>
 
             <Button
-              onClick={handleGithubLogin}
+              onClick={() => startOAuth('github')}
               disabled={isLoading}
               className="w-full bg-slate-700 hover:bg-slate-600 text-white h-12 rounded-xl"
             >
@@ -120,12 +125,14 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             </Button>
           </div>
 
+          {/* error display */}
           {error && (
             <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
 
+          {/* footer */}
           <div className="mt-8 pt-6 border-t border-slate-700">
             <p className="text-slate-500 text-sm text-center">
               By continuing, you agree to our Terms of Service and Privacy Policy
