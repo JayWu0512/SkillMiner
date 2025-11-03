@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Brain, FileText, LogOut, Menu, MessageSquare, Send } from "lucide-react";
+import { createClient } from "../utils/supabase/client";
 
 interface Message {
   id: string;
@@ -20,6 +21,7 @@ interface ChatbotPageProps {
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 const DEV_TOKEN = "dev-local-token";
 
+// Helper to build request headers
 function buildHeaders(accessToken: string, json = false) {
   const headers: Record<string, string> = {};
   if (json) headers["Content-Type"] = "application/json";
@@ -35,11 +37,26 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
   const [isSending, setIsSending] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // --- Handle user logout ---
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      onLogout();
+    } catch (e: any) {
+      console.error("Logout error:", e);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  // --- Load analysis summary when analysisId changes ---
   useEffect(() => {
-    // Load initial analysis summary
-    const load = async () => {
+    const loadAnalysis = async () => {
       try {
         const res = await fetch(`${API_BASE}/analysis/${analysisId}`, {
           headers: buildHeaders(accessToken, false),
@@ -60,13 +77,15 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
         console.error("Load analysis error:", e);
       }
     };
-    if (analysisId) load();
+    if (analysisId) loadAnalysis();
   }, [analysisId, accessToken]);
 
+  // --- Auto-scroll to bottom on new message ---
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // --- Handle user send message ---
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
 
@@ -91,13 +110,13 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
       if (!res.ok) throw new Error("Chat request failed");
 
       const data = await res.json();
-      const botMsg: Message = {
+      const botMessage: Message = {
         id: `${Date.now() + 1}`,
         role: "assistant",
         content: data.response,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, botMsg]);
+      setMessages((prev) => [...prev, botMessage]);
     } catch (e) {
       console.error("Chat error:", e);
       setMessages((prev) => [
@@ -114,6 +133,7 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
     }
   };
 
+  // --- Allow Enter key to send ---
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -123,7 +143,7 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
 
   return (
     <div className="flex h-screen bg-slate-50">
-      {/* Sidebar */}
+      {/* --- Sidebar --- */}
       <div
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -136,6 +156,7 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
             </div>
             <h2 className="text-slate-900">SkillMiner</h2>
           </div>
+
           <Button
             onClick={() => setShowReport(!showReport)}
             className="w-full justify-start gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100"
@@ -145,15 +166,30 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
           </Button>
         </div>
 
+        {/* --- Logout Button --- */}
         <div className="absolute bottom-4 left-4 right-4">
-          <Button variant="outline" onClick={onLogout} className="w-full gap-2">
-            <LogOut className="w-4 h-4" />
-            Logout
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="w-full gap-2"
+          >
+            {isLoggingOut ? (
+              <>
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Logging out...
+              </>
+            ) : (
+              <>
+                <LogOut className="w-4 h-4" />
+                Logout
+              </>
+            )}
           </Button>
         </div>
       </div>
 
-      {/* Main */}
+      {/* --- Main Chat Area --- */}
       <div className="flex-1 flex flex-col">
         <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -170,6 +206,7 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
           </div>
         </div>
 
+        {/* --- Chat View --- */}
         {!showReport ? (
           <>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -194,6 +231,8 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
                   </div>
                 </div>
               ))}
+
+              {/* Typing dots animation */}
               {isSending && (
                 <div className="flex justify-start">
                   <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3">
@@ -208,6 +247,7 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
               <div ref={messagesEndRef} />
             </div>
 
+            {/* --- Input Bar --- */}
             <div className="bg-white border-t border-slate-200 p-4">
               <div className="max-w-4xl mx-auto flex gap-2">
                 <Input
@@ -229,9 +269,9 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
             </div>
           </>
         ) : (
+          // --- Placeholder for report view ---
           <div className="flex-1 overflow-y-auto p-6 text-slate-600">
-            {/* Placeholder for report view; you can replace with real component */}
-            <p>Report view placeholder.</p>
+            <p>Still updating!</p>
           </div>
         )}
       </div>

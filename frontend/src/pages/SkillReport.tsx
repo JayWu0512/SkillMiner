@@ -5,7 +5,26 @@ import { Progress } from '../components/ui/progress';
 import { Button } from '../components/ui/button';
 import { Separator } from '../components/ui/separator';
 import { TrendingUp, Target, Award, Clock, ExternalLink, CheckCircle2, XCircle } from 'lucide-react';
-import { projectId } from '../utils/supabase/info';
+
+/* ========= Supabase env helpers ========= */
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const PROD_FUNCTIONS = import.meta.env.VITE_FUNCTIONS_URL as string | undefined;
+const LOCAL_FUNCTIONS = import.meta.env.VITE_SUPABASE_LOCAL_FUNCTIONS_URL as string | undefined;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+function functionsUrl(): string {
+  if (import.meta.env.DEV && LOCAL_FUNCTIONS) return LOCAL_FUNCTIONS;
+  if (PROD_FUNCTIONS) return PROD_FUNCTIONS;
+  return `${SUPABASE_URL}/functions/v1`;
+}
+
+function buildFunctionHeaders(accessToken?: string, json = false): HeadersInit {
+  const headers: Record<string, string> = { apikey: ANON_KEY };
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+  if (json) headers['Content-Type'] = 'application/json';
+  return headers;
+}
+/* ======================================================== */
 
 interface SkillData {
   name: string;
@@ -40,29 +59,33 @@ export function SkillReport({ accessToken, analysisId }: SkillReportProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let aborted = false;
+
     const loadReport = async () => {
       try {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-b8961ff5/report/${analysisId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
-          }
-        );
+        const url = `${functionsUrl()}/make-server-b8961ff5/report/${analysisId}`;
+        const response = await fetch(url, {
+          headers: buildFunctionHeaders(accessToken),
+        });
 
-        if (response.ok) {
-          const data = await response.json();
-          setReportData(data);
+        if (!response.ok) {
+          const text = await response.text().catch(() => '');
+          throw new Error(`Fetch report failed: ${response.status} ${text}`);
         }
+
+        const data: ReportData = await response.json();
+        if (!aborted) setReportData(data);
       } catch (error) {
         console.error('Error loading report:', error);
       } finally {
-        setIsLoading(false);
+        if (!aborted) setIsLoading(false);
       }
     };
 
     loadReport();
+    return () => {
+      aborted = true;
+    };
   }, [analysisId, accessToken]);
 
   if (isLoading) {
