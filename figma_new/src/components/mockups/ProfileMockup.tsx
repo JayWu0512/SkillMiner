@@ -7,12 +7,34 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
+import { Header } from '../Header';
 
-export function ProfileMockup() {
+type MockupPage = "login" | "upload" | "report" | "dashboard" | "plan" | "coding" | "interview" | "profile" | "resume";
+
+interface ProfileMockupProps {
+  onNavigate?: (page: MockupPage) => void;
+}
+
+export function ProfileMockup({ onNavigate }: ProfileMockupProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-6">
+      <Header 
+        activePage="profile" 
+        onNavigate={(page) => {
+          const pageMap: Record<string, MockupPage> = {
+            'today': 'dashboard',
+            'study-plan': 'plan',
+            'coding-practice': 'coding',
+            'interview-practice': 'interview',
+            'profile': 'profile'
+          };
+          onNavigate?.(pageMap[page] || 'profile');
+        }}
+        onLogout={() => onNavigate?.('login')}
+      />
+
+      {/* Page Header */}
+      <div className="bg-white border-b border-slate-200 px-6 py-6">
         <div className="container mx-auto">
           <div className="flex items-center justify-between">
             <div>
@@ -25,7 +47,7 @@ export function ProfileMockup() {
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-12 gap-6">

@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Header } from '../Header';
 
 interface DailyTask {
   date: string;
@@ -130,7 +131,13 @@ const generateMonthData = (monthOffset: number) => {
   };
 };
 
-export function StudyPlanMockup() {
+type MockupPage = "login" | "upload" | "report" | "dashboard" | "plan" | "coding" | "interview" | "profile" | "resume";
+
+interface StudyPlanMockupProps {
+  onNavigate?: (page: MockupPage) => void;
+}
+
+export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
   const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'month'>('calendar');
   const [currentWeek, setCurrentWeek] = useState(0);
   const [currentMonthOffset, setCurrentMonthOffset] = useState(0);
@@ -166,8 +173,23 @@ export function StudyPlanMockup() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200">
+      <Header 
+        activePage="study-plan" 
+        onNavigate={(page) => {
+          const pageMap: Record<string, MockupPage> = {
+            'today': 'dashboard',
+            'study-plan': 'plan',
+            'coding-practice': 'coding',
+            'interview-practice': 'interview',
+            'profile': 'profile'
+          };
+          onNavigate?.(pageMap[page] || 'plan');
+        }}
+        onLogout={() => onNavigate?.('login')}
+      />
+      
+      {/* Page Header */}
+      <div className="bg-white border-b border-slate-200">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -287,7 +309,7 @@ export function StudyPlanMockup() {
             </Card>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8">

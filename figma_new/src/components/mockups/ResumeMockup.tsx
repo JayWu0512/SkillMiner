@@ -17,7 +17,13 @@ const resumeVersions: ResumeVersion[] = [
   { id: '1', name: 'Resume_Marketing.pdf', uploadDate: 'Oct 15, 2024', isActive: false, fileSize: '112 KB' },
 ];
 
-export function ResumeMockup() {
+type MockupPage = "login" | "upload" | "report" | "dashboard" | "plan" | "coding" | "interview" | "profile" | "resume";
+
+interface ResumeMockupProps {
+  onNavigate?: (page: MockupPage) => void;
+}
+
+export function ResumeMockup({ onNavigate }: ResumeMockupProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
