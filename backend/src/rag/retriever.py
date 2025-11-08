@@ -20,7 +20,15 @@ def _seed_roles_from_parquet(
     Read the roles/skills parquet and upsert into Chroma.
     Expects columns like: role_title, skill, description (adjust below if different).
     """
-    df = pd.read_parquet(dataset_path)
+    if not dataset_path.exists():
+        print(f"[RAG] Dataset path does not exist: {dataset_path}")
+        raise FileNotFoundError(f"Dataset file not found: {dataset_path}")
+    
+    try:
+        df = pd.read_parquet(dataset_path)
+    except Exception as e:
+        print(f"[RAG] Error reading parquet file: {e}")
+        raise
 
     # Ensure we have an 'id' and a 'text' column to index
     if "id" not in df.columns:
@@ -29,10 +37,19 @@ def _seed_roles_from_parquet(
 
     if "text" not in df.columns:
         # Build a text field to embed; tailor to your actual schema
-        parts = []
-        for col in ("role_title", "skill", "description"):
-            parts.append(df[col].astype(str) if col in df.columns else "")
-        df["text"] = (" | ".join(["{}"] * len(parts))).format(*parts) if parts else df.astype(str).agg(" ".join, axis=1)
+        text_parts = []
+        for col in ("role_title", "title_lc", "skill", "description"):
+            if col in df.columns:
+                text_parts.append(df[col].astype(str))
+        
+        if text_parts:
+            # Combine columns with " | " separator
+            df["text"] = text_parts[0]
+            for part in text_parts[1:]:
+                df["text"] = df["text"] + " | " + part
+        else:
+            # Fallback: join all columns as strings
+            df["text"] = df.astype(str).agg(" ".join, axis=1)
 
     # Make metadata (everything except id/text)
     meta_cols = [c for c in df.columns if c not in ("id", "text")]
@@ -79,14 +96,21 @@ def retrieve(resume_text: str, user_message: str, top_k: int = TOP_K, collection
     resume_text = resume_text or ""
     user_message = user_message or ""
 
+    try:
+        ensure_seeded_roles(collection_name)
+    except Exception as e:
+        print(f"[RAG] Error seeding roles: {e}")
+        # Continue anyway, might work if collection already exists
 
-    ensure_seeded_roles(collection_name)
-
-
+    # Safely truncate strings
+    resume_truncated = resume_text[:MAX_RESUME_CTX] if resume_text else ""
+    message_truncated = user_message[:MAX_USER_CTX] if user_message else ""
+    
     fused = (
-        f"From this resume (truncated): {resume_text[:MAX_RESUME_CTX]}\n"
-        f"User question: {user_message[:MAX_USER_CTX]}"
+        f"From this resume (truncated): {resume_truncated}\n"
+        f"User question: {message_truncated}"
     )
+    
     try:
         col = _get_collection(collection_name)
         res = col.query(query_texts=[fused], n_results=top_k)
@@ -94,12 +118,21 @@ def retrieve(resume_text: str, user_message: str, top_k: int = TOP_K, collection
         metas = res.get("metadatas", [[]])[0]
         out = []
         for i, (d, m) in enumerate(zip(docs, metas), start=1):
-            title = (m or {}).get("title", "")
-            header = f"[{i}] {title}".strip()
+            # Try multiple possible title fields
+            title = ""
+            if m:
+                title = (m.get("title") or 
+                        m.get("role_title") or 
+                        m.get("title_lc") or 
+                        m.get("skill") or 
+                        "")
+            header = f"[{i}] {title}".strip() if title else f"[{i}]"
             out.append((header, d))
         return out
     except Exception as e:
-        print("[RAG] Retrieval error:", e)
+        print(f"[RAG] Retrieval error: {e}")
+        import traceback
+        print(traceback.format_exc())
         return []
 
 def build_context_block(resume_text: str, user_message: str, retrieved: List[Tuple[str, str]]) -> str:
