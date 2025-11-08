@@ -216,3 +216,9 @@ chroma/
 
 # Ignore GitHub workflow/config folder
 .github/
+
+# Local vector DB & logs
+chroma/
+chroma.sqlite3
+chat_logs.json
+
