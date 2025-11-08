@@ -36,11 +36,38 @@ def _seed_roles_from_parquet(
         df["id"] = df.index.astype(str)
 
     if "text" not in df.columns:
-        # Build a text field to embed; tailor to your actual schema
+        # Build a text field to embed; handle the actual schema
+        # Expected columns: title_lc, skills_for_role (list of skills)
         text_parts = []
-        for col in ("role_title", "title_lc", "skill", "description"):
-            if col in df.columns:
-                text_parts.append(df[col].astype(str))
+        
+        # Handle title_lc
+        if "title_lc" in df.columns:
+            text_parts.append(df["title_lc"].astype(str))
+        
+        # Handle skills_for_role (list/array of skills)
+        if "skills_for_role" in df.columns:
+            # Convert list/array to comma-separated string
+            def skills_to_str(skills):
+                import numpy as np
+                if skills is None:
+                    return ""
+                # Handle numpy arrays
+                if isinstance(skills, np.ndarray):
+                    skills = skills.tolist()
+                # Handle lists
+                if isinstance(skills, list):
+                    return ", ".join(str(s) for s in skills if s)
+                # Handle other types
+                return str(skills) if skills else ""
+            
+            skills_text = df["skills_for_role"].apply(skills_to_str)
+            text_parts.append(skills_text)
+        
+        # Fallback: try other common column names
+        if not text_parts:
+            for col in ("role_title", "skill", "description"):
+                if col in df.columns:
+                    text_parts.append(df[col].astype(str))
         
         if text_parts:
             # Combine columns with " | " separator
@@ -50,10 +77,41 @@ def _seed_roles_from_parquet(
         else:
             # Fallback: join all columns as strings
             df["text"] = df.astype(str).agg(" ".join, axis=1)
+        
+        # Truncate text to fit embedding model limits (max ~8000 tokens ≈ 32000 chars)
+        # Use a conservative limit to avoid token limit errors
+        MAX_TEXT_LENGTH = 30000  # Conservative limit for embedding model
+        if df["text"].str.len().max() > MAX_TEXT_LENGTH:
+            print(f"[RAG] Warning: Some documents exceed {MAX_TEXT_LENGTH} chars. Truncating...")
+            df["text"] = df["text"].str[:MAX_TEXT_LENGTH]
 
     # Make metadata (everything except id/text)
+    # ChromaDB metadata must be simple types (str, int, float, bool, None)
+    # Convert arrays/lists to strings
     meta_cols = [c for c in df.columns if c not in ("id", "text")]
-    metadatas = df[meta_cols].to_dict(orient="records")
+    
+    def clean_metadata_value(val):
+        """Convert metadata values to ChromaDB-compatible types."""
+        import numpy as np
+        if val is None:
+            return None
+        # Handle numpy arrays
+        if isinstance(val, np.ndarray):
+            val = val.tolist()
+        # Handle lists
+        if isinstance(val, list):
+            return ", ".join(str(v) for v in val if v)
+        # Handle other types
+        return str(val) if not isinstance(val, (str, int, float, bool)) else val
+    
+    # Clean metadata values
+    metadatas = []
+    for idx in range(len(df)):
+        meta = {}
+        for col in meta_cols:
+            val = df[col].iloc[idx]
+            meta[col] = clean_metadata_value(val)
+        metadatas.append(meta)
 
     col = _get_collection(collection_name)
 
@@ -118,12 +176,12 @@ def retrieve(resume_text: str, user_message: str, top_k: int = TOP_K, collection
         metas = res.get("metadatas", [[]])[0]
         out = []
         for i, (d, m) in enumerate(zip(docs, metas), start=1):
-            # Try multiple possible title fields
+            # Try multiple possible title fields (prioritize title_lc for this dataset)
             title = ""
             if m:
-                title = (m.get("title") or 
+                title = (m.get("title_lc") or 
+                        m.get("title") or 
                         m.get("role_title") or 
-                        m.get("title_lc") or 
                         m.get("skill") or 
                         "")
             header = f"[{i}] {title}".strip() if title else f"[{i}]"

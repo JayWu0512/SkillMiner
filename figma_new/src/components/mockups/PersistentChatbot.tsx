@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Minus, Send, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { ScrollArea } from '../ui/scroll-area';
-import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { sendChatMessage } from '../../services/api';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  citations?: string[];
 }
 
 export function PersistentChatbot() {
@@ -17,12 +18,63 @@ export function PersistentChatbot() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [resumeText, setResumeText] = useState<string>('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'Hi! I\'m your Study Assistant. I can help you reschedule tasks, explain topics, adjust difficulty, or start a mock interview. What would you like to do?'
+      content: 'Hi! I\'m your Career Assistant. I can help you with skill analysis, career recommendations, and answer questions about your resume. What would you like to know?'
     }
   ]);
+
+  // Load resume text from localStorage on mount and listen for changes
+  useEffect(() => {
+    const loadResumeText = () => {
+      const storedResumeText = localStorage.getItem('resumeText');
+      if (storedResumeText) {
+        setResumeText(storedResumeText);
+      }
+    };
+
+    // Load on mount
+    loadResumeText();
+
+    // Listen for storage events (when resume is uploaded on another page)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'resumeText' && e.newValue) {
+        setResumeText(e.newValue);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for custom events (same-page updates)
+    const handleCustomStorage = () => {
+      loadResumeText();
+    };
+
+    window.addEventListener('resumeTextUpdated', handleCustomStorage);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('resumeTextUpdated', handleCustomStorage);
+    };
+  }, []);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current && scrollAreaRef.current) {
+      // Use setTimeout to ensure DOM is updated
+      setTimeout(() => {
+        // Find the Radix ScrollArea viewport element
+        const scrollContainer = scrollAreaRef.current?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+      }, 100);
+    }
+  }, [messages, isLoading]);
 
   const quickActions = [
     { label: 'Reschedule', icon: '📅' },
@@ -35,40 +87,45 @@ export function PersistentChatbot() {
   const handleSend = async () => {
     if (!message.trim() || isLoading) return;
     
-    const userMessage = message;
-    const updatedMessages = [...messages, { role: 'user' as const, content: userMessage }];
+    const userMessage = message.trim();
+    const userMsgObj: Message = { role: 'user', content: userMessage };
+    const updatedMessages = [...messages, userMsgObj];
     setMessages(updatedMessages);
     setMessage('');
     setIsLoading(true);
     
     try {
-      // Get analysis ID from localStorage if available
-      const analysisId = localStorage.getItem('currentAnalysisId');
+      console.log('Sending chat message:', userMessage);
+      console.log('Resume text length:', resumeText?.length || 0);
       
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
-        },
-        body: JSON.stringify({
-          message: userMessage,
-          messages: updatedMessages.slice(0, -1), // Send conversation history without the last user message
-          analysisId
-        })
+      // Use the API service to send chat message
+      const data = await sendChatMessage(
+        userMessage,
+        resumeText || undefined
+      );
+
+      console.log('✅ Chat response received:', {
+        replyLength: data.reply.length,
+        citationsCount: data.citations?.length || 0,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response from chatbot');
-      }
-
-      const data = await response.json();
-      setMessages([...updatedMessages, { role: 'assistant', content: data.response }]);
-    } catch (error) {
+      const botMessage: Message = {
+        role: 'assistant',
+        content: data.reply,
+        citations: data.citations,
+      };
+      setMessages([...updatedMessages, botMessage]);
+    } catch (error: any) {
       console.error('Chat error:', error);
+      console.error('Error details:', {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
+      });
+      
       setMessages([...updatedMessages, { 
         role: 'assistant', 
-        content: 'Sorry, I encountered an error. Please try again or rephrase your question.' 
+        content: error?.message || 'Sorry, I encountered an error. Please try again or rephrase your question.' 
       }]);
     } finally {
       setIsLoading(false);
@@ -133,9 +190,20 @@ export function PersistentChatbot() {
   }
 
   return (
-    <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl border-slate-200 z-50 flex flex-col">
+    <Card 
+      className="fixed bottom-6 right-6 shadow-2xl border-slate-200 z-50 flex flex-col overflow-hidden"
+      style={{ 
+        width: '450px', 
+        height: '600px', 
+        maxWidth: '450px', 
+        maxHeight: '600px', 
+        minWidth: '450px', 
+        minHeight: '600px',
+        boxSizing: 'border-box'
+      }}
+    >
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-t-lg flex items-center justify-between">
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-t-lg flex items-center justify-between flex-shrink-0" style={{ width: '100%', boxSizing: 'border-box' }}>
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5" />
           <div>
@@ -164,13 +232,13 @@ export function PersistentChatbot() {
       </div>
 
       {/* Quick Actions */}
-      <div className="p-3 border-b border-slate-200 bg-slate-50">
-        <div className="flex flex-wrap gap-2">
+      <div className="p-3 border-b border-slate-200 bg-slate-50 flex-shrink-0 min-w-0" style={{ width: '100%', boxSizing: 'border-box', maxWidth: '100%' }}>
+        <div className="flex flex-wrap gap-2 min-w-0" style={{ maxWidth: '100%' }}>
           {quickActions.map((action) => (
             <Badge
               key={action.label}
               variant="outline"
-              className="cursor-pointer hover:bg-purple-50 hover:border-purple-300"
+              className="cursor-pointer hover:bg-purple-50 hover:border-purple-300 break-words"
               onClick={() => handleQuickAction(action.label)}
             >
               <span className="mr-1">{action.icon}</span>
@@ -180,49 +248,81 @@ export function PersistentChatbot() {
         </div>
       </div>
 
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+      {/* Messages - Scrollable Area */}
+      <div ref={scrollAreaRef} className="flex-1 min-h-0 max-h-full overflow-hidden" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+        <ScrollArea className="h-full w-full">
+          <div className="p-4 space-y-4" style={{ minWidth: '100%', boxSizing: 'border-box', overflowX: 'auto' }}>
+            {messages.map((msg, index) => (
               <div
-                className={`max-w-[80%] rounded-lg p-3 ${
-                  msg.role === 'user'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-slate-100 text-slate-900'
-                }`}
+                key={index}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                style={{ width: '100%', minWidth: 'fit-content' }}
               >
-                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                <div
+                  className={`rounded-lg p-3 ${
+                    msg.role === 'user'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-slate-100 text-slate-900'
+                  }`}
+                  style={{ 
+                    maxWidth: '85%', 
+                    minWidth: 'fit-content',
+                    whiteSpace: 'pre-wrap',
+                    overflowWrap: 'normal',
+                    wordBreak: 'normal'
+                  }}
+                >
+                  <p className="text-sm" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'normal', wordBreak: 'normal' }}>{msg.content}</p>
+                  {/* Show citations if available */}
+                  {msg.citations && msg.citations.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-slate-300">
+                      <div className="text-xs text-slate-500 mb-1">References:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {msg.citations.map((cite, idx) => (
+                          <Badge
+                            key={idx}
+                            variant="outline"
+                            className="text-xs bg-white text-purple-700 border-purple-300 break-words max-w-full"
+                            style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                          >
+                            <span className="break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{cite}</span>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-slate-100 text-slate-900 rounded-lg p-3">
-                <Loader2 className="w-4 h-4 animate-spin" />
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-slate-100 text-slate-900 rounded-lg p-3">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+          <ScrollBar orientation="horizontal" />
+          <ScrollBar orientation="vertical" />
+        </ScrollArea>
+      </div>
 
-      {/* Input */}
-      <div className="p-4 border-t border-slate-200">
-        <div className="flex gap-2">
+      {/* Input - Always visible at bottom */}
+      <div className="p-4 border-t border-slate-200 bg-white flex-shrink-0 min-w-0" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+        <div className="flex gap-2 min-w-0" style={{ width: '100%', maxWidth: '100%' }}>
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()}
             placeholder="Ask me anything..."
-            className="flex-1"
+            className="flex-1 min-w-0"
+            style={{ maxWidth: '100%', boxSizing: 'border-box' }}
             disabled={isLoading}
           />
           <Button
             onClick={handleSend}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-purple-600 hover:bg-purple-700 flex-shrink-0"
             disabled={isLoading || !message.trim()}
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

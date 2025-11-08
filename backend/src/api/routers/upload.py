@@ -8,6 +8,7 @@ router = APIRouter()
 @router.post("/upload", response_model=UploadResponse)
 async def upload_resume(file: UploadFile = File(...)):
     try:
+        print(f"[Upload] Received upload request - filename: {file.filename}, content_type: {file.content_type}")
         # Validate file type
         if not file.content_type:
             raise HTTPException(status_code=400, detail="File content type is required")

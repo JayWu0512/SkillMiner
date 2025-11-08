@@ -10,12 +10,22 @@ from src.api.routers import health, chat, upload
 app = FastAPI(title="Resume RAG API")
 
 # CORS for your frontend origin(s)
+# Note: "*" with allow_credentials=True doesn't work in browsers
+# We need to explicitly list origins or use a different approach
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],  # tighten in prod
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Global exception handler for validation errors (422)
