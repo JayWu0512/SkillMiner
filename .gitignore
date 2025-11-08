@@ -207,3 +207,12 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 .env
+
+# Ignore virtual environment
+.venv/
+
+# Ignore Chroma vector database
+chroma/
+
+# Ignore GitHub workflow/config folder
+.github/
