@@ -23,7 +23,7 @@ interface ResumeMockupProps {
   onNavigate?: (page: MockupPage) => void;
 }
 
-export function ResumeMockup({ onNavigate }: ResumeMockupProps) {
+export function Resume({ onNavigate }: ResumeMockupProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}

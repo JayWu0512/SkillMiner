@@ -21,7 +21,7 @@ interface InterviewPracticeMockupProps {
   onNavigate?: (page: MockupPage) => void;
 }
 
-export function InterviewPracticeMockup({ onNavigate }: InterviewPracticeMockupProps) {
+export function InterviewPractice({ onNavigate }: InterviewPracticeMockupProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [recordedTime, setRecordedTime] = useState(0);

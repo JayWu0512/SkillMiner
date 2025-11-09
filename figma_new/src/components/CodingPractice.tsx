@@ -57,7 +57,7 @@ interface CodingPracticeMockupProps {
   onNavigate?: (page: MockupPage) => void;
 }
 
-export function CodingPracticeMockup({ onNavigate }: CodingPracticeMockupProps) {
+export function CodingPractice({ onNavigate }: CodingPracticeMockupProps) {
   const [code, setCode] = useState(problem.starterCode);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isRunning, setIsRunning] = useState(false);

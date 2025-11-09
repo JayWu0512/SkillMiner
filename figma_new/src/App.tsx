@@ -1,57 +1,62 @@
 // src/App.tsx
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter } from "react-router-dom";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
-import { Switch } from "./components/ui/switch";
-import { Label } from "./components/ui/label";
-import { Toaster } from "./components/ui/sonner";
-
-// === Mockups ===
-import { LoginPageMockup } from "./components/mockups/LoginPageMockup";
-import { UploadPageMockup } from "./components/mockups/UploadPageMockup";
-import { MainDashboardMockup } from "./components/mockups/MainDashboardMockup";
-import { StudyPlanMockup } from "./components/mockups/StudyPlanMockup";
-import { CodingPracticeMockup } from "./components/mockups/CodingPracticeMockup";
-import { InterviewPracticeMockup } from "./components/mockups/InterviewPracticeMockup";
-import { ChatbotPageMockup } from "./components/mockups/ChatbotPageMockup";
-import { SkillReportMockup } from "./components/mockups/SkillReportMockup";
-import { ProfileMockup } from "./components/mockups/ProfileMockup";
-import { ResumeMockup } from "./components/mockups/ResumeMockup";
-import { PersistentChatbot } from "./components/mockups/PersistentChatbot";
-
-// === Real components ===
+// ---- Real pages (你已經把 mockup 拉出來的實作版) ----
 import { LoginPage } from "./components/LoginPage";
 import { UploadPage } from "./components/UploadPage";
 import { ChatbotPage } from "./components/ChatbotPage";
 
+// 這些如果你還沒做實作版，可以先暫時用 mockup 同名檔替代
+import { MainDashboard } from "./components/MainDashboard";
+// import { StudyPlan } from "./components/StudyPlan";
+import { CodingPractice } from "./components/CodingPractice";
+import { InterviewPractice } from "./components/InterviewPractice";
+import { Profile } from "./components/Profile";
+import { Resume } from "./components/Resume";
+// 報告頁：若你只有 mockup，先 import 你的 Mockup
+import { SkillReportMockup as SkillReport } from "./components/mockups/SkillReportMockup";
+
+// ---- Global UI ----
+import { Header } from "./components/Header";
+import { Toaster } from "./components/ui/sonner";
+import { PersistentChatbot } from "./components/mockups/PersistentChatbot";
+
+// ---- Supabase ----
 import { createClient } from "./utils/supabase/client";
 
 // === CONFIG ===
-const USE_REAL_AUTH = true;
+const USE_REAL_AUTH = true as const;
 
-// app state types
-type AppState = "login" | "upload" | "report" | "dashboard" | "chat";
-type MockupPage =
+// App state
+type AppState =
   | "login"
   | "upload"
-  | "report"
   | "dashboard"
   | "plan"
   | "coding"
   | "interview"
   | "profile"
-  | "resume";
+  | "resume"
+  | "report"
+  | "chat";
+
+// Header 回傳的 key（含相容舊鍵名）
+type HeaderNavKey =
+  | "today"
+  | "study-plan"
+  | "practice"            // Header 上方主鈕高亮判斷用
+  | "coding-practice"     // 下拉子項
+  | "interview-practice"  // 下拉子項
+  | "profile"
+  | "settings";
 
 export default function App() {
-  const [mockupMode, setMockupMode] = useState(false);
-  const [currentPage, setCurrentPage] = useState<MockupPage>("login");
-
   const [appState, setAppState] = useState<AppState>("login");
   const [accessToken, setAccessToken] = useState<string>("");
   const [analysisId, setAnalysisId] = useState<string>("");
 
-  // 導頁：依是否已有上傳紀錄
+  // 依是否已有上傳紀錄導頁（skill_analyses.user_id & resume_text）
   const routeByHistory = async (uid: string) => {
     const supabase = createClient();
     const { count, error } = await supabase
@@ -70,43 +75,43 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (USE_REAL_AUTH && !mockupMode) {
-      const checkSession = async () => {
-        const supabase = createClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+    if (!USE_REAL_AUTH) return;
 
-        if (session?.access_token && session?.user?.id) {
-          setAccessToken(session.access_token);
-          await routeByHistory(session.user.id);
-        } else {
-          setAppState("login");
-        }
-      };
-
-      checkSession();
-
+    const init = async () => {
       const supabase = createClient();
       const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange(async (_event, session) => {
-        if (session?.access_token && session?.user?.id) {
-          setAccessToken(session.access_token);
-          await routeByHistory(session.user.id);
-        } else {
-          setAppState("login");
-        }
-      });
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      return () => subscription.unsubscribe();
-    }
-  }, [mockupMode]);
+      if (session?.access_token && session?.user?.id) {
+        setAccessToken(session.access_token);
+        await routeByHistory(session.user.id);
+      } else {
+        setAppState("login");
+      }
+    };
 
-  // handlers
+    init();
+
+    const supabase = createClient();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_evt, session) => {
+      if (session?.access_token && session?.user?.id) {
+        setAccessToken(session.access_token);
+        await routeByHistory(session.user.id);
+      } else {
+        setAppState("login");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // === Handlers ===
   const handleLoginSuccess = (token: string) => {
     setAccessToken(token);
-    // 將跳轉交給 onAuthStateChange / routeByHistory
+    // 真正導頁交給 onAuthStateChange + routeByHistory
   };
 
   const handleAnalysisComplete = (id: string) => {
@@ -115,7 +120,7 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    if (USE_REAL_AUTH && !mockupMode) {
+    if (USE_REAL_AUTH) {
       const supabase = createClient();
       await supabase.auth.signOut();
     }
@@ -124,123 +129,56 @@ export default function App() {
     setAppState("login");
   };
 
-  // ===== Mockup mode =====
-  if (mockupMode) {
-    return (
-      <div className="min-h-screen bg-slate-100">
-        <div className="bg-white border-b border-slate-200 p-4">
-          <div className="container mx-auto">
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-slate-900 text-xl">SkillMiner - Figma Mockups</h1>
-              <div className="flex items-center gap-3">
-                <Label htmlFor="mode-toggle" className="text-sm text-slate-600">
-                  Mockup Mode
-                </Label>
-                <Switch
-                  id="mode-toggle"
-                  checked={mockupMode}
-                  onCheckedChange={setMockupMode}
-                />
-              </div>
-            </div>
-            <p className="text-slate-600 text-sm">Browse and customize each page design.</p>
-          </div>
-        </div>
+  // Header 導航鍵 → AppState
+  const mapHeaderKeyToState = (key: HeaderNavKey): AppState => {
+    switch (key) {
+      case "today":
+        return "dashboard";
+      case "study-plan":
+        return "plan";
+      case "coding-practice":
+        return "coding";
+      case "interview-practice":
+        return "interview";
+      case "profile":
+        return "profile";
+      case "settings":
+        return "dashboard"; // 未做設定頁前先回 dashboard
+      // "practice" 本身只是高亮用，實際點擊在子項
+      default:
+        return "dashboard";
+    }
+  };
 
-        <Tabs
-          value={currentPage}
-          onValueChange={(v) => setCurrentPage(v as MockupPage)}
-          className="w-full"
-        >
-          <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-            <div className="container mx-auto px-4">
-              <TabsList className="w-full justify-start h-auto p-0 bg-transparent overflow-x-auto">
-                {[
-                  "login",
-                  "upload",
-                  "report",
-                  "dashboard",
-                  "plan",
-                  "coding",
-                  "interview",
-                  "profile",
-                  "resume",
-                ].map((k) => (
-                  <TabsTrigger
-                    key={k}
-                    value={k}
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent"
-                  >
-                    {
-                      (
-                        {
-                          login: "Login",
-                          upload: "Upload",
-                          report: "Skill Report",
-                          dashboard: "Dashboard",
-                          plan: "Study Plan",
-                          coding: "Coding Practice",
-                          interview: "Interview Practice",
-                          profile: "Profile",
-                          resume: "Resume",
-                        } as const
-                      )[k as keyof typeof LABELS]
-                    }
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </div>
-          </div>
+  // 讓 Header 的 activePage 正確高亮
+  const headerActive: "today" | "study-plan" | "practice" | "profile" | "resume" =
+    appState === "dashboard"
+      ? "today"
+      : appState === "plan"
+      ? "study-plan"
+      : appState === "coding" || appState === "interview"
+      ? "practice"
+      : appState === "profile"
+      ? "profile"
+      : appState === "resume"
+      ? "resume"
+      : "today";
 
-          <TabsContent value="login" className="m-0">
-            <LoginPageMockup onLoginSuccess={() => setCurrentPage("upload")} />
-          </TabsContent>
-
-          <TabsContent value="upload" className="m-0">
-            <UploadPageMockup onAnalysisComplete={() => setCurrentPage("report")} />
-          </TabsContent>
-
-          <TabsContent value="report" className="m-0 bg-slate-50 min-h-screen">
-            <SkillReportMockup onGenerateStudyPlan={() => setCurrentPage("dashboard")} />
-          </TabsContent>
-
-          <TabsContent value="dashboard" className="m-0">
-            <MainDashboardMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
-            <PersistentChatbot />
-          </TabsContent>
-
-          <TabsContent value="plan" className="m-0">
-            <StudyPlanMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
-            <PersistentChatbot />
-          </TabsContent>
-
-          <TabsContent value="coding" className="m-0">
-            <CodingPracticeMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
-          </TabsContent>
-
-          <TabsContent value="interview" className="m-0">
-            <InterviewPracticeMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
-            <PersistentChatbot />
-          </TabsContent>
-
-          <TabsContent value="profile" className="m-0">
-            <ProfileMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
-            <PersistentChatbot />
-          </TabsContent>
-
-          <TabsContent value="resume" className="m-0">
-            <ResumeMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
-            <PersistentChatbot />
-          </TabsContent>
-        </Tabs>
-      </div>
-    );
-  }
-
-  // ===== Real app mode =====
   return (
     <BrowserRouter>
-      {appState === "login" && <LoginPage onLoginSuccess={handleLoginSuccess} />}
+      {/* === 共用 Header（login / upload 不顯示） === */}
+      {appState !== "login" && appState !== "upload" && (
+        <Header
+          activePage={headerActive}
+          onNavigate={(key) => setAppState(mapHeaderKeyToState(key as HeaderNavKey))}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {/* === 各頁 === */}
+      {appState === "login" && (
+        <LoginPage onLoginSuccess={handleLoginSuccess} />
+      )}
 
       {appState === "upload" && (
         <UploadPage
@@ -250,17 +188,42 @@ export default function App() {
         />
       )}
 
-      {appState === "report" && (
-        <SkillReportMockup onGenerateStudyPlan={() => setAppState("dashboard")} />
-      )}
-
       {appState === "dashboard" && (
-        <MainDashboardMockup
-          onNavigate={(page) => {
-            if (page === "report") setAppState("report");
-            if (page === "coding") setAppState("dashboard");
+        <MainDashboard
+          // 內頁如果還有自己的快速導航，做相容處理：
+          onNavigate={(p: string) => {
+            if (p === "report") setAppState("report");
+            if (p === "coding") setAppState("coding");
+            if (p === "interview") setAppState("interview");
+            if (p === "plan") setAppState("plan");
+            if (p === "profile") setAppState("profile");
+            if (p === "resume") setAppState("resume");
           }}
         />
+      )}
+
+      {appState === "plan" && (
+        <StudyPlan onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")} />
+      )}
+
+      {appState === "coding" && (
+        <CodingPractice onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")} />
+      )}
+
+      {appState === "interview" && (
+        <InterviewPractice onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")} />
+      )}
+
+      {appState === "profile" && (
+        <Profile onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")} />
+      )}
+
+      {appState === "resume" && (
+        <Resume onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")} />
+      )}
+
+      {appState === "report" && (
+        <SkillReport onGenerateStudyPlan={() => setAppState("dashboard")} />
       )}
 
       {appState === "chat" && (
@@ -271,12 +234,10 @@ export default function App() {
         />
       )}
 
-      {/* ✅ 除了 login 與 upload，其餘頁面都顯示浮窗 */}
+      {/* === 除 login / upload 外，所有頁面顯示右下角聊天浮窗 === */}
       {appState !== "login" && appState !== "upload" && (
-        <div className="fixed bottom-6 right-6 z-[9999]">
-          <div className="pointer-events-auto">
-            <PersistentChatbot />
-          </div>
+        <div className="fixed bottom-6 right-6 z-[9999] pointer-events-auto">
+          <PersistentChatbot />
         </div>
       )}
 
@@ -284,16 +245,3 @@ export default function App() {
     </BrowserRouter>
   );
 }
-
-// Helper label map for Tabs (kept outside component to avoid re-creation)
-const LABELS = {
-  login: "Login",
-  upload: "Upload",
-  report: "Skill Report",
-  dashboard: "Dashboard",
-  plan: "Study Plan",
-  coding: "Coding Practice",
-  interview: "Interview Practice",
-  profile: "Profile",
-  resume: "Resume",
-} as const;

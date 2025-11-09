@@ -148,5 +148,10 @@
     "timestamp": "2025-11-08T18:58:57.407030",
     "user_message": "what roles fit me the best ?",
     "assistant_message": "Based on your resume, the following roles may fit you well:\n\n- **Machine Learning Engineer**: \n  - Experience with ML/DL frameworks (PyTorch, TensorFlow) and model optimization [1].\n  - Internship experience improving model performance and accuracy [1].\n\n- **Data Scientist**: \n  - Strong background in data analysis, modeling, and statistical methods [1].\n  - Experience with NLP and econometrics [1].\n\n- **Risk Analyst**: \n  - Internship experience in loan risk prediction and fraud detection using GNN and RNN [1].\n\n- **Analytics Engineer**: \n  - Skills in data tools (Spark, Hadoop, SAS) and programming languages (Python, SQL) [1].\n\n- **Research Scientist**: \n  - Experience leading research projects and publishing findings in ML and NLP [1].\n\nThese roles align with your educational background, skills, and professional experiences."
+  },
+  {
+    "timestamp": "2025-11-08T23:30:45.342265",
+    "user_message": "hu",
+    "assistant_message": "You can ask some questions about your resume or the roles."
   }
 ]

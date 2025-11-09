@@ -202,10 +202,10 @@ export function SkillReport({ accessToken, analysisId }: SkillReportProps) {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12">
       <div className="container mx-auto px-6 max-w-6xl">
         {/* Header */}
-        <div className="text-center mb-8">
+        {/* <div className="text-center mb-8">
           <h1 className="text-4xl text-slate-900 mb-3">Your Career Readiness Report</h1>
           <p className="text-lg text-slate-600">Personalized skill gap analysis for your target role</p>
-        </div>
+        </div> */}
 
         {/* Overall Readiness Card */}
         <Card className="p-8 mb-8 bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">

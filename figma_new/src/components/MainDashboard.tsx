@@ -38,7 +38,7 @@ interface MainDashboardMockupProps {
   onNavigate?: (page: MockupPage) => void;
 }
 
-export function MainDashboardMockup({ onNavigate }: MainDashboardMockupProps) {
+export function MainDashboard({ onNavigate }: MainDashboardMockupProps) {
   const totalXPToday = todayTasks.reduce((sum, task) => sum + task.xp, 0);
   const earnedXP = todayTasks.filter(t => t.completed).reduce((sum, task) => sum + task.xp, 0);
 
