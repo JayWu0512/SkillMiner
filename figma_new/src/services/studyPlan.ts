@@ -1,4 +1,8 @@
-import { projectId, edgeFunctionName } from '../utils/supabase/info';
+import {
+  projectId,
+  edgeFunctionName,
+  publicAnonKey,
+} from '../utils/supabase/info';
 
 export interface DailyTask {
   date: string;
@@ -73,11 +77,14 @@ export async function generateStudyPlan(
 ): Promise<StudyPlan> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    apikey: publicAnonKey,
   };
 
   // Add authorization header if token is provided
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
+  } else {
+    headers['Authorization'] = `Bearer ${publicAnonKey}`;
   }
 
   const response = await fetch(
@@ -114,11 +121,15 @@ export async function getStudyPlan(
   accessToken: string | null,
   planId: string
 ): Promise<StudyPlan> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = {
+    apikey: publicAnonKey,
+  };
 
   // Add authorization header if token is provided
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
+  } else {
+    headers['Authorization'] = `Bearer ${publicAnonKey}`;
   }
 
   const response = await fetch(
@@ -148,11 +159,14 @@ export async function updateTaskCompletion(
 ): Promise<StudyPlan> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    apikey: publicAnonKey,
   };
 
   // Add authorization header if token is provided
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
+  } else {
+    headers['Authorization'] = `Bearer ${publicAnonKey}`;
   }
 
   const response = await fetch(

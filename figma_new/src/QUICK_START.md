@@ -40,8 +40,6 @@ SUPABASE_DB_URL=your_database_connection_string
 **Optional (for AI chatbot):**
 ```
 OPENAI_API_KEY=sk-...          # For OpenAI GPT
-# OR
-ANTHROPIC_API_KEY=sk-ant-...   # For Claude
 ```
 
 ### 3. Enable OAuth Providers

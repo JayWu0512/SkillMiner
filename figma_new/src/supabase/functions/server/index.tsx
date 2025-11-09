@@ -242,17 +242,12 @@ app.post('/server/chat', async (c) => {
       }
     }
 
-    // Check if LLM API key is configured
-    const llmApiKey = Deno.env.get('OPENAI_API_KEY') || Deno.env.get('ANTHROPIC_API_KEY');
-    
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+
     let response = '';
-    
-    if (llmApiKey && Deno.env.get('OPENAI_API_KEY')) {
-      // Use OpenAI API
+
+    if (openAIApiKey) {
       response = await callOpenAI(message, messages || [], analysis);
-    } else if (llmApiKey && Deno.env.get('ANTHROPIC_API_KEY')) {
-      // Use Anthropic Claude API
-      response = await callAnthropic(message, messages || [], analysis);
     } else {
       // Fallback to rule-based responses if no API key configured
       response = generateRuleBasedResponse(message, analysis);
@@ -336,70 +331,6 @@ Be encouraging, practical, and specific in your responses.`;
     return data.choices[0].message.content;
   } catch (error: any) {
     console.error('Error calling OpenAI:', error);
-    // Fallback to rule-based if API fails
-    return generateRuleBasedResponse(userMessage, analysis);
-  }
-}
-
-// Helper function to call Anthropic Claude API
-async function callAnthropic(userMessage: string, conversationHistory: any[], analysis: any): Promise<string> {
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-  
-  // Build system prompt with user's analysis context
-  let systemPrompt = `You are a helpful career development and study planning assistant for SkillMiner, an application that helps users identify skill gaps and create personalized learning plans.
-
-Your role is to:
-- Help users understand their skill assessment results
-- Provide guidance on creating effective study plans
-- Suggest learning resources and strategies
-- Motivate and support users in their learning journey
-- Answer questions about rescheduling tasks, adjusting difficulty, or modifying their study plan
-
-Be encouraging, practical, and specific in your responses.`;
-
-  if (analysis) {
-    systemPrompt += `\n\nUser's Current Analysis:
-- Match Score: ${analysis.matchScore}%
-- Matching Skills: ${analysis.matchingHardSkills?.join(', ') || 'None'}
-- Missing Hard Skills: ${analysis.missingHardSkills?.join(', ') || 'None'}
-- Missing Soft Skills: ${analysis.missingSoftSkills?.join(', ') || 'None'}
-- Total Learning Hours Needed: ${analysis.totalLearningHours || 0}`;
-  }
-
-  // Build messages array (Claude format)
-  const messages = conversationHistory.map((msg: any) => ({
-    role: msg.role === 'assistant' ? 'assistant' : 'user',
-    content: msg.content
-  }));
-  
-  messages.push({ role: 'user', content: userMessage });
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307', // Cost-effective model
-        max_tokens: 500,
-        system: systemPrompt,
-        messages: messages
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('Anthropic API error:', error);
-      throw new Error(`Anthropic API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.content[0].text;
-  } catch (error: any) {
-    console.error('Error calling Anthropic:', error);
     // Fallback to rule-based if API fails
     return generateRuleBasedResponse(userMessage, analysis);
   }

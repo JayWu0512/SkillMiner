@@ -44,13 +44,9 @@ You'll also need to configure these secrets in your Supabase project:
 
 ## Step 5: (Optional) Configure LLM API for Chatbot
 
-To enable AI-powered chatbot responses, add one of these API keys:
+To enable AI-powered chatbot responses, add:
 
-### Option A: OpenAI
 - `OPENAI_API_KEY`: Your OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
-
-### Option B: Anthropic Claude
-- `ANTHROPIC_API_KEY`: Your Anthropic API key from [Anthropic Console](https://console.anthropic.com/)
 
 If you don't set an LLM API key, the chatbot will use rule-based responses (still functional, but less conversational).
 
@@ -83,7 +79,7 @@ If you want to use Google or GitHub OAuth:
 - **Solution**: Make sure you've set all environment variables in Supabase Edge Functions settings
 
 **Issue**: Chatbot not responding intelligently
-- **Solution**: Add an `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` environment variable
+- **Solution**: Add an `OPENAI_API_KEY` environment variable
 
 **Issue**: Database errors
 - **Solution**: Check that your `SUPABASE_DB_URL` is correct and the database is accessible
