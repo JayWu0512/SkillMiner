@@ -1,15 +1,10 @@
-import { Calendar, Target, Flame, Trophy, BookOpen, Code, MessageSquare, User, FileText, Settings, LogOut, ChevronRight, ChevronDown } from 'lucide-react';
+import { Calendar, Target, Flame, Trophy, BookOpen, Code, MessageSquare, User, FileText, ChevronRight } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Checkbox } from '../ui/checkbox';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+import { Header } from '../Header';
 
 interface TodayTask {
   id: string;
@@ -49,68 +44,20 @@ export function MainDashboardMockup({ onNavigate }: MainDashboardMockupProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Top Navigation */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <h1 className="text-2xl text-purple-600">SkillMiner</h1>
-              <nav className="flex gap-6">
-                <Button variant="ghost" className="text-purple-600">
-                  <Target className="w-4 h-4 mr-2" />
-                  Today
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="text-slate-600 hover:text-slate-900"
-                  onClick={() => onNavigate?.("plan")}
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Study Plan
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-slate-600 hover:text-slate-900">
-                      <Code className="w-4 h-4 mr-2" />
-                      Practice
-                      <ChevronDown className="w-4 h-4 ml-1" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem onClick={() => onNavigate?.("coding")}>
-                      <Code className="w-4 h-4 mr-2" />
-                      Coding Practice
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onNavigate?.("interview")}>
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Interview Practice
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </nav>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => onNavigate?.("profile")}
-              >
-                <User className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Settings className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => onNavigate?.("login")}
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header 
+        activePage="today" 
+        onNavigate={(page) => {
+          const pageMap: Record<string, MockupPage> = {
+            'today': 'dashboard',
+            'study-plan': 'plan',
+            'coding-practice': 'coding',
+            'interview-practice': 'interview',
+            'profile': 'profile'
+          };
+          onNavigate?.(pageMap[page] || 'dashboard');
+        }}
+        onLogout={() => onNavigate?.('login')}
+      />
 
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-12 gap-6">

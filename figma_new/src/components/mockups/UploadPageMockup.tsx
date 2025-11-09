@@ -2,8 +2,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Card } from '../ui/card';
+<<<<<<< HEAD
 import { Brain, Upload, FileText, Sparkles, LogOut, Loader2 } from 'lucide-react';
 import { uploadResume, checkHealth, getApiBase } from '../../services/api';
+=======
+import { Upload, FileText, Sparkles, LogOut } from 'lucide-react';
+import { SkillMinerLogo } from '../SkillMinerLogo';
+>>>>>>> 92e5180b7a1d1b2203923ae7c52aa505b7b532e9
 
 interface UploadPageMockupProps {
   onAnalysisComplete?: () => void;
@@ -141,22 +146,18 @@ export function UploadPageMockup({ onAnalysisComplete }: UploadPageMockupProps) 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-xl">
-              <Brain className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-slate-900 text-2xl">SkillMiner</h1>
-              <p className="text-slate-600 text-sm">AI-Powered Career Analysis</p>
-            </div>
-          </div>
+      {/* Simple Header with Logo and Logout */}
+      <header className="bg-white border-b border-slate-200 px-6 py-4">
+        <div className="container mx-auto flex items-center justify-between">
+          <SkillMinerLogo />
           <Button variant="outline" className="gap-2">
             <LogOut className="w-4 h-4" />
             Logout
           </Button>
         </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
 
         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 mb-6">
           <div className="flex items-center gap-3 mb-6">

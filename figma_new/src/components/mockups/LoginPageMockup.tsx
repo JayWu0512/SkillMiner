@@ -1,5 +1,6 @@
 import { Button } from '../ui/button';
 import { Brain, Github } from 'lucide-react';
+import { SkillMinerLogo } from '../SkillMinerLogo';
 
 interface LoginPageMockupProps {
   onLoginSuccess?: () => void;

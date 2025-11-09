@@ -4,6 +4,8 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
+import { Header } from '../Header';
+import { Brain } from 'lucide-react';
 
 const behavioralQuestions = [
   { id: 1, question: 'Tell me about yourself.', completed: false },
@@ -13,7 +15,13 @@ const behavioralQuestions = [
   { id: 5, question: 'Tell me about a time you overcame a challenge.', completed: false },
 ];
 
-export function InterviewPracticeMockup() {
+type MockupPage = "login" | "upload" | "report" | "dashboard" | "plan" | "coding" | "interview" | "profile" | "resume";
+
+interface InterviewPracticeMockupProps {
+  onNavigate?: (page: MockupPage) => void;
+}
+
+export function InterviewPracticeMockup({ onNavigate }: InterviewPracticeMockupProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [recordedTime, setRecordedTime] = useState(0);
@@ -36,25 +44,40 @@ export function InterviewPracticeMockup() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50">
-      {/* Left Sidebar - Question List */}
-      <div className="w-64 bg-gradient-to-b from-blue-700 to-blue-900 text-white flex flex-col">
-        <div className="p-6 border-b border-blue-600">
-          <Button 
-            variant="ghost" 
-            className="text-white hover:bg-blue-600 -ml-2 mb-4"
-            onClick={() => window.history.back()}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to interviews
-          </Button>
+    <div className="flex flex-col h-screen bg-slate-50">
+      <Header 
+        activePage="practice" 
+        onNavigate={(page) => {
+          const pageMap: Record<string, MockupPage> = {
+            'today': 'dashboard',
+            'study-plan': 'plan',
+            'coding-practice': 'coding',
+            'interview-practice': 'interview',
+            'profile': 'profile'
+          };
+          onNavigate?.(pageMap[page] || 'interview');
+        }}
+        onLogout={() => onNavigate?.('login')}
+      />
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar - Question List */}
+        <div className="w-64 bg-gradient-to-b from-purple-700 to-purple-900 text-white flex flex-col">
+          <div className="p-6 border-b border-purple-600">
+            <Button 
+              variant="ghost" 
+              className="text-white hover:bg-purple-600 -ml-2 mb-4"
+              onClick={() => onNavigate?.('plan')}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Plan
+            </Button>
           
           <div className="flex items-center justify-center mb-4">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full border-4 border-blue-400 flex items-center justify-center">
+              <div className="w-24 h-24 rounded-full border-4 border-purple-400 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-3xl">{completedCount}</div>
-                  <div className="text-xs text-blue-200">/{questions.length}</div>
+                  <div className="text-xs text-purple-200">/{questions.length}</div>
                 </div>
               </div>
             </div>
@@ -62,7 +85,7 @@ export function InterviewPracticeMockup() {
 
           <div className="text-center">
             <h2 className="text-lg mb-1">Behavioral Interview</h2>
-            <div className="text-xs text-blue-200">Level 1</div>
+            <div className="text-xs text-purple-200">Level 1</div>
           </div>
         </div>
 
@@ -74,8 +97,8 @@ export function InterviewPracticeMockup() {
                 onClick={() => setCurrentQuestion(index)}
                 className={`w-full text-left p-3 rounded-lg transition-colors flex items-start gap-3 ${
                   index === currentQuestion
-                    ? 'bg-blue-600 text-white'
-                    : 'text-blue-100 hover:bg-blue-600/50'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-purple-100 hover:bg-purple-600/50'
                 }`}
               >
                 <div className="flex-shrink-0 mt-0.5">
@@ -94,9 +117,9 @@ export function InterviewPracticeMockup() {
           </div>
         </div>
 
-        <div className="p-4 border-t border-blue-600">
-          <Button className="w-full bg-blue-500 hover:bg-blue-400 text-white">
-            Edit
+        <div className="p-4 border-t border-purple-600">
+          <Button className="w-full bg-purple-500 hover:bg-purple-400 text-white">
+            Edit Questions
           </Button>
         </div>
       </div>
@@ -106,7 +129,7 @@ export function InterviewPracticeMockup() {
         {/* Header */}
         <div className="border-b border-slate-200 px-8 py-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl text-blue-600">{current.question}</h1>
+            <h1 className="text-2xl text-purple-600">{current.question}</h1>
             <Badge variant="outline" className="text-slate-600">
               Step {currentQuestion + 1} of {questions.length}
             </Badge>
@@ -120,7 +143,7 @@ export function InterviewPracticeMockup() {
             <Card className="p-6 flex flex-col">
               <div className="flex-1 bg-slate-100 rounded-lg overflow-hidden relative flex items-center justify-center">
                 {/* Video placeholder with play button */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-900 to-purple-700 flex items-center justify-center">
                   <div className="text-center text-white">
                     <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 cursor-pointer hover:bg-white/30 transition-colors">
                       <Play className="w-10 h-10 ml-1" />
@@ -136,7 +159,7 @@ export function InterviewPracticeMockup() {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowTips(!showTips)}
-                  className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                  className="border-purple-300 text-purple-600 hover:bg-purple-50"
                 >
                   <Lightbulb className="w-4 h-4 mr-2" />
                   Tips
@@ -195,7 +218,7 @@ export function InterviewPracticeMockup() {
                 <div className="mt-4">
                   <div className="flex items-center justify-between text-sm text-slate-600 mb-2">
                     <span>Your recording ({recordedTime}s)</span>
-                    <button className="text-blue-600 hover:underline">Re-record</button>
+                    <button className="text-purple-600 hover:underline">Re-record</button>
                   </div>
                   <Progress value={100} className="h-2 bg-slate-200" />
                 </div>
@@ -235,7 +258,7 @@ export function InterviewPracticeMockup() {
                     q.completed
                       ? 'bg-green-500'
                       : index === currentQuestion
-                      ? 'bg-blue-500'
+                      ? 'bg-purple-500'
                       : 'bg-slate-200'
                   }`}
                 />
@@ -246,6 +269,7 @@ export function InterviewPracticeMockup() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
