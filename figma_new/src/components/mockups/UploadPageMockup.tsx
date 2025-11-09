@@ -2,13 +2,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Card } from '../ui/card';
-<<<<<<< HEAD
-import { Brain, Upload, FileText, Sparkles, LogOut, Loader2 } from 'lucide-react';
 import { uploadResume, checkHealth, getApiBase } from '../../services/api';
-=======
-import { Upload, FileText, Sparkles, LogOut } from 'lucide-react';
+import { Upload, FileText, Sparkles, LogOut, Loader2 } from 'lucide-react';
 import { SkillMinerLogo } from '../SkillMinerLogo';
->>>>>>> 92e5180b7a1d1b2203923ae7c52aa505b7b532e9
 
 interface UploadPageMockupProps {
   onAnalysisComplete?: () => void;
