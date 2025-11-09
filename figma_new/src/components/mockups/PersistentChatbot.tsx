@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Minus, Send, Sparkles, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Minus, Send, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { sendChatMessage } from '../../services/api';
+import { createClient } from '../../utils/supabase/client';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   citations?: string[];
+  id?: string; // Optional ID for database records
 }
 
 export function PersistentChatbot() {
@@ -18,15 +20,194 @@ export function PersistentChatbot() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [resumeText, setResumeText] = useState<string>('');
+  const [userId, setUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const historyLoadedRef = useRef(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
       content: 'Hi! I\'m your Career Assistant. I can help you with skill analysis, career recommendations, and answer questions about your resume. What would you like to know?'
     }
   ]);
+
+  // Load user session and chat history on mount
+  useEffect(() => {
+    // Only load history once on initial mount
+    if (historyLoadedRef.current) return;
+    
+    const loadUserAndHistory = async () => {
+      // Show loading immediately
+      setIsLoadingHistory(true);
+      
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user?.id) {
+          setUserId(session.user.id);
+          await loadChatHistory(session.user.id);
+          historyLoadedRef.current = true;
+        } else {
+          setIsLoadingHistory(false);
+        }
+      } catch (error) {
+        console.error('Error loading user session:', error);
+        setIsLoadingHistory(false);
+      }
+    };
+
+    loadUserAndHistory();
+
+    // Listen for auth state changes (only for login/logout, not window open/close)
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Only reload history on actual auth state changes (SIGNED_IN, SIGNED_OUT)
+      // Ignore TOKEN_REFRESHED and other events that don't change auth state
+      if (event === 'SIGNED_IN' && session?.user?.id) {
+        // Only reload if history hasn't been loaded yet for this user
+        // This prevents reloading when window is minimized/closed/reopened
+        if (!historyLoadedRef.current) {
+          setIsLoadingHistory(true);
+          setUserId(session.user.id);
+          await loadChatHistory(session.user.id);
+          historyLoadedRef.current = true;
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUserId(null);
+        setIsLoadingHistory(false);
+        historyLoadedRef.current = false;
+        // Reset to default message when user logs out
+        setMessages([{
+          role: 'assistant',
+          content: 'Hi! I\'m your Career Assistant. I can help you with skill analysis, career recommendations, and answer questions about your resume. What would you like to know?'
+        }]);
+      }
+      // For all other events (TOKEN_REFRESHED, etc.), do nothing - preserve messages
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Load chat history from Supabase
+  const loadChatHistory = async (userId: string) => {
+    try {
+      const supabase = createClient();
+      
+      // Set a timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
+        setIsLoadingHistory(false);
+        // Show default message if loading takes too long
+        setMessages([{
+          role: 'assistant',
+          content: 'Hi! I\'m your Career Assistant. I can help you with skill analysis, career recommendations, and answer questions about your resume. What would you like to know?'
+        }]);
+      }, 3000); // 3 second timeout
+      
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+        .limit(100); // Limit to 100 messages for faster loading
+
+      clearTimeout(timeoutId);
+
+      if (error) {
+        console.error('Error loading chat history:', error);
+        setIsLoadingHistory(false);
+        // Show default message on error
+        setMessages([{
+          role: 'assistant',
+          content: 'Hi! I\'m your Career Assistant. I can help you with skill analysis, career recommendations, and answer questions about your resume. What would you like to know?'
+        }]);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const loadedMessages: Message[] = data.map((msg: any) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+          citations: msg.citations && Array.isArray(msg.citations) ? msg.citations : [],
+          id: msg.id,
+        }));
+        setMessages(loadedMessages);
+      } else {
+        // No history, keep default welcome message
+        setMessages([{
+          role: 'assistant',
+          content: 'Hi! I\'m your Career Assistant. I can help you with skill analysis, career recommendations, and answer questions about your resume. What would you like to know?'
+        }]);
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+      // Show default message on error
+      setMessages([{
+        role: 'assistant',
+        content: 'Hi! I\'m your Career Assistant. I can help you with skill analysis, career recommendations, and answer questions about your resume. What would you like to know?'
+      }]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // Save message to Supabase
+  const saveMessageToDatabase = async (message: Message) => {
+    if (!userId) return;
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          user_id: userId,
+          role: message.role,
+          content: message.content,
+          citations: message.citations || [],
+        } as any);
+
+      if (error) {
+        console.error('Error saving message to database:', error);
+      }
+    } catch (error) {
+      console.error('Error saving message to database:', error);
+    }
+  };
+
+  // Clear chat history from database and UI
+  const clearChatHistory = async () => {
+    // Clear UI immediately for better UX
+    setMessages([{
+      role: 'assistant',
+      content: 'Hi! I\'m your Career Assistant. I can help you with skill analysis, career recommendations, and answer questions about your resume. What would you like to know?'
+    }]);
+
+    if (!userId) {
+      // If not logged in, UI is already cleared
+      return;
+    }
+
+    // Delete from database in background (non-blocking)
+    try {
+      const supabase = createClient();
+      
+      // Delete all messages for the current user
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error clearing chat history:', error);
+      }
+    } catch (error) {
+      console.error('Error clearing chat history:', error);
+    }
+  };
 
   // Load resume text from localStorage on mount and listen for changes
   useEffect(() => {
@@ -94,6 +275,9 @@ export function PersistentChatbot() {
     setMessage('');
     setIsLoading(true);
     
+    // Save user message to database
+    await saveMessageToDatabase(userMsgObj);
+    
     try {
       console.log('Sending chat message:', userMessage);
       console.log('Resume text length:', resumeText?.length || 0);
@@ -114,7 +298,11 @@ export function PersistentChatbot() {
         content: data.reply,
         citations: data.citations,
       };
-      setMessages([...updatedMessages, botMessage]);
+      const finalMessages = [...updatedMessages, botMessage];
+      setMessages(finalMessages);
+      
+      // Save assistant message to database
+      await saveMessageToDatabase(botMessage);
     } catch (error: any) {
       console.error('Chat error:', error);
       console.error('Error details:', {
@@ -123,10 +311,15 @@ export function PersistentChatbot() {
         stack: error?.stack,
       });
       
-      setMessages([...updatedMessages, { 
-        role: 'assistant', 
-        content: error?.message || 'Sorry, I encountered an error. Please try again or rephrase your question.' 
-      }]);
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: error?.message || 'Sorry, I encountered an error. Please try again or rephrase your question.'
+      };
+      const finalMessages = [...updatedMessages, errorMessage];
+      setMessages(finalMessages);
+      
+      // Save error message to database
+      await saveMessageToDatabase(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -215,8 +408,19 @@ export function PersistentChatbot() {
           <Button
             variant="ghost"
             size="sm"
+            className="text-white hover:bg-white/20 text-xs px-2"
+            onClick={clearChatHistory}
+            title="Start a new chat"
+          >
+            <Trash2 className="w-3 h-3 mr-1" />
+            <span>New Chat</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-white hover:bg-white/20"
             onClick={() => setIsMinimized(true)}
+            title="Minimize"
           >
             <Minus className="w-4 h-4" />
           </Button>
@@ -225,6 +429,7 @@ export function PersistentChatbot() {
             size="sm"
             className="text-white hover:bg-white/20"
             onClick={() => setIsOpen(false)}
+            title="Close"
           >
             <X className="w-4 h-4" />
           </Button>
@@ -294,6 +499,14 @@ export function PersistentChatbot() {
                 </div>
               </div>
             ))}
+            {isLoadingHistory && (
+              <div className="flex justify-center items-center py-8">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                  <span className="text-sm text-slate-600">Loading chat history...</span>
+                </div>
+              </div>
+            )}
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-slate-100 text-slate-900 rounded-lg p-3">
