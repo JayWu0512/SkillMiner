@@ -53,19 +53,37 @@ export default function App() {
 
   const routeByHistory = async (uid: string) => {
     const supabase = createClient();
-    const { count, error } = await supabase
-      .from("skill_analyses")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", uid)
-      .not("resume_text", "is", null)
-      .neq("resume_text", "");
 
-    if (error) {
-      console.error("[App] skill_analyses query error:", error);
+    const { data: userRes } = await supabase.auth.getUser();
+    console.log("[auth] user.id =", userRes?.user?.id);
+
+    const q1 = await supabase
+      .from("skill_analyses")
+      .select("id, user_id, resume_text")
+      .eq("user_id", uid)
+      .limit(1);
+    // console.log("[q1] error =", q1.error, "rows =", q1.data?.length, q1.data);
+
+    let hasAny = false;
+    if (!q1.error && q1.data && q1.data.length > 0) {
+      const q2 = await supabase
+        .from("skill_analyses")
+        .select("id")
+        .eq("user_id", uid)
+        .not("resume_text", "is", null)
+        .neq("resume_text", "")
+        .limit(1);
+      // console.log("[q2] error =", q2.error, "rows =", q2.data?.length);
+      hasAny = !q2.error && !!q2.data && q2.data.length > 0;
+    }
+
+    if (q1.error) {
+      // console.error("[routeByHistory] Q1 failed:", q1.error);
       setAppState("upload");
       return;
     }
-    setAppState((count ?? 0) > 0 ? "dashboard" : "upload");
+
+    setAppState(hasAny ? "dashboard" : "upload");
   };
 
   useEffect(() => {
@@ -221,7 +239,6 @@ export default function App() {
         />
       )}
 
-      {/* === 除 login / upload 外，所有頁面顯示右下角聊天浮窗 === */}
       {appState !== "login" && appState !== "upload" && (
         <div className="fixed bottom-6 right-6 z-[9999] pointer-events-auto">
           <PersistentChatbot />
