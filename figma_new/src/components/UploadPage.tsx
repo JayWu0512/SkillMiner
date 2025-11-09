@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Card } from './ui/card';
 import { Brain, Upload, FileText, Sparkles, LogOut } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { projectId, publicAnonKey, edgeFunctionName } from '../utils/supabase/info';
 
 interface UploadPageProps {
   accessToken: string;
@@ -51,7 +51,7 @@ export function UploadPage({ accessToken, onAnalysisComplete, onLogout }: Upload
       formData.append('resume', resumeFile);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/analyze`,
+        `https://${projectId}.supabase.co/functions/v1/${edgeFunctionName}/analyze`,
         {
           method: 'POST',
           headers: {

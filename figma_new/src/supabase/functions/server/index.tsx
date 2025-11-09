@@ -88,7 +88,7 @@ function parseResume(resumeText: string) {
 }
 
 // Analyze job description and resume
-app.post('/analyze', async (c) => {
+app.post('/server/analyze', async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
     const supabase = createClient(
@@ -181,7 +181,7 @@ app.post('/analyze', async (c) => {
 });
 
 // Get analysis summary
-app.get('/analysis/:analysisId', async (c) => {
+app.get('/server/analysis/:analysisId', async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
     const supabase = createClient(
@@ -218,7 +218,7 @@ app.get('/analysis/:analysisId', async (c) => {
 });
 
 // Chat endpoint with LLM integration
-app.post('/chat', async (c) => {
+app.post('/server/chat', async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
     const supabase = createClient(
@@ -450,7 +450,7 @@ What would you like help with today?`;
 }
 
 // Get detailed report
-app.get('/report/:analysisId', async (c) => {
+app.get('/server/report/:analysisId', async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
     const supabase = createClient(
@@ -508,5 +508,566 @@ app.get('/report/:analysisId', async (c) => {
     return c.json({ error: `Failed to generate report: ${error.message}` }, 500);
   }
 });
+
+// -----------------------------------------
+// Study plan handlers (shared implementations)
+// -----------------------------------------
+
+const handleGenerateStudyPlan = async (c: any) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    const accessToken = authHeader?.split(' ')[1];
+    
+    // Create Supabase client with service role for database operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Try to get user, but allow anonymous access for mockup mode
+    let userId: string | null = null;
+    if (accessToken) {
+      try {
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(accessToken);
+        if (user?.id) {
+          userId = user.id;
+        }
+      } catch (authErr) {
+        // If auth fails, continue with null user_id for mockup mode
+        console.log('Auth check failed, using null user_id for mockup mode:', authErr);
+      }
+    }
+
+    // For mockup mode, use null user_id (table allows nullable user_id)
+    // This allows testing without authentication
+
+    const { analysisId, hoursPerDay, timeline, studyDays, jobDescription } = await c.req.json();
+
+    if (!analysisId || !hoursPerDay || !timeline || !studyDays) {
+      return c.json({ error: 'Missing required fields', details: { analysisId, hoursPerDay, timeline, studyDays } }, 400);
+    }
+
+    // Get analysis data from KV store (or create mock if doesn't exist)
+    let analysis = await kv.get(analysisId);
+    
+    // If analysis doesn't exist and it's a mock analysis, create one
+    if (!analysis && analysisId.startsWith('mock_analysis_')) {
+      analysis = {
+        userId: userId,
+        analysisId,
+        matchScore: 68,
+        matchingHardSkills: ['Python', 'Excel', 'Communication'],
+        missingHardSkills: ['SQL', 'Tableau', 'Statistics'],
+        matchingSoftSkills: ['Communication'],
+        missingSoftSkills: ['Problem Solving'],
+        jobDescription: jobDescription || 'Data Analyst (Entry-Level) Position',
+        totalLearningHours: 70
+      };
+    }
+    
+    if (!analysis) {
+      return c.json({ error: 'Analysis not found', analysisId }, 404);
+    }
+
+    // Generate study plan using LLM
+    const studyPlan = await generateStudyPlanWithLLM({
+      analysis,
+      hoursPerDay,
+      timeline: parseInt(timeline),
+      studyDays,
+      jobDescription: jobDescription || analysis.jobDescription
+    });
+
+    // Calculate dates
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + parseInt(timeline));
+
+    // Generate UUID for plan ID (use crypto.randomUUID or fallback)
+    let planId: string;
+    try {
+      planId = crypto.randomUUID();
+    } catch {
+      // Fallback if crypto.randomUUID is not available
+      planId = `plan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // Prepare study plan data for database
+    // user_id can be null for mockup mode (table allows nullable user_id)
+    const studyPlanData: any = {
+      id: planId,
+      analysis_id: analysisId,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      total_days: parseInt(timeline),
+      hours_per_day: hoursPerDay,
+      study_days: studyDays,
+      plan_data: studyPlan,
+      metadata: {
+        progress: 0,
+        totalXP: studyPlan.summary?.totalXP || 0,
+        completedTasks: 0
+      }
+    };
+
+    // Only include user_id if it's a valid UUID (not null)
+    if (userId && userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      studyPlanData.user_id = userId;
+    }
+    // Otherwise, user_id will be null (allowed for mockup mode)
+
+    // Store study plan in database table
+    const { data: insertedData, error: insertError } = await supabaseAdmin
+      .from('study_plans')
+      .insert(studyPlanData)
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Database insert error:', insertError);
+      // Fallback to KV store if database insert fails
+      await kv.set(planId, {
+        ...studyPlanData,
+        userId: studyPlanData.user_id,
+        analysisId: studyPlanData.analysis_id,
+        createdAt: studyPlanData.created_at,
+        updatedAt: studyPlanData.updated_at,
+        startDate: studyPlanData.start_date,
+        endDate: studyPlanData.end_date,
+        totalDays: studyPlanData.total_days,
+        hoursPerDay: studyPlanData.hours_per_day,
+        studyDays: studyPlanData.study_days,
+        planData: studyPlanData.plan_data,
+      });
+      console.log('Fell back to KV store for study plan:', planId);
+    } else {
+      console.log(`Study plan generated and stored in database for user ${userId}: ${planId}`);
+    }
+
+    // Return data in the format expected by frontend
+    return c.json({
+      planId,
+      id: planId,
+      userId: userId,
+      analysisId,
+      status: 'active',
+      createdAt: studyPlanData.created_at,
+      updatedAt: studyPlanData.updated_at,
+      startDate: studyPlanData.start_date,
+      endDate: studyPlanData.end_date,
+      totalDays: studyPlanData.total_days,
+      hoursPerDay,
+      studyDays,
+      planData: studyPlan,
+      metadata: studyPlanData.metadata
+    });
+    
+  } catch (error: any) {
+    console.error('Study plan generation error:', error);
+    console.error('Error stack:', error.stack);
+    return c.json({ 
+      error: `Failed to generate study plan: ${error.message}`,
+      details: error.stack 
+    }, 500);
+  }
+};
+
+app.post('/server/study-plan/generate', handleGenerateStudyPlan);
+app.post('/study-plan/generate', handleGenerateStudyPlan); // fallback for direct path
+
+// Get study plan
+const handleGetStudyPlan = async (c: any) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    const accessToken = authHeader?.split(' ')[1];
+    
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Try to get user, but allow anonymous access for mockup mode
+    let userId: string | null = null;
+    if (accessToken) {
+      try {
+        const { data: { user } } = await supabaseAdmin.auth.getUser(accessToken);
+        if (user?.id) {
+          userId = user.id;
+        }
+      } catch (authErr) {
+        // Continue without user for mockup mode
+      }
+    }
+
+    const planId = c.req.param('planId');
+    
+    // Try to get from database first
+    const { data: dbPlan, error: dbError } = await supabaseAdmin
+      .from('study_plans')
+      .select('*')
+      .eq('id', planId)
+      .single();
+
+    if (dbPlan && !dbError) {
+      // Convert database format to frontend format
+      const studyPlan = {
+        id: dbPlan.id,
+        userId: dbPlan.user_id,
+        analysisId: dbPlan.analysis_id,
+        status: dbPlan.status,
+        createdAt: dbPlan.created_at,
+        updatedAt: dbPlan.updated_at,
+        startDate: dbPlan.start_date,
+        endDate: dbPlan.end_date,
+        totalDays: dbPlan.total_days,
+        hoursPerDay: dbPlan.hours_per_day,
+        studyDays: dbPlan.study_days,
+        planData: dbPlan.plan_data,
+        metadata: dbPlan.metadata
+      };
+
+      // Check authorization (allow if no user, user matches, or user_id is null for mockup mode)
+      if (!userId || studyPlan.userId === userId || !studyPlan.userId) {
+        return c.json(studyPlan);
+      }
+    }
+
+    // Fallback to KV store
+    const studyPlan = await kv.get(planId);
+    
+    if (!studyPlan) {
+      return c.json({ error: 'Study plan not found', planId }, 404);
+    }
+
+    // Check authorization
+    if (userId && studyPlan.userId && studyPlan.userId !== userId && !studyPlan.userId.startsWith('mock_user_')) {
+      return c.json({ error: 'Unauthorized' }, 403);
+    }
+
+    return c.json(studyPlan);
+    
+  } catch (error: any) {
+    console.error('Error fetching study plan:', error);
+    return c.json({ error: `Failed to fetch study plan: ${error.message}` }, 500);
+  }
+};
+
+app.get('/server/study-plan/:planId', handleGetStudyPlan);
+app.get('/study-plan/:planId', handleGetStudyPlan); // fallback
+
+// Update task completion status
+const handleUpdateTask = async (c: any) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    const accessToken = authHeader?.split(' ')[1];
+    
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Try to get user, but allow anonymous access for mockup mode
+    let userId: string | null = null;
+    if (accessToken) {
+      try {
+        const { data: { user } } = await supabaseAdmin.auth.getUser(accessToken);
+        if (user?.id) {
+          userId = user.id;
+        }
+      } catch (authErr) {
+        // Continue without user for mockup mode
+      }
+    }
+
+    const planId = c.req.param('planId');
+    const taskIndex = parseInt(c.req.param('taskIndex'));
+    const { completed } = await c.req.json();
+
+    // Try to get from database first
+    const { data: dbPlan, error: dbError } = await supabaseAdmin
+      .from('study_plans')
+      .select('*')
+      .eq('id', planId)
+      .single();
+
+    if (dbPlan && !dbError) {
+      // Check authorization (allow if user_id is null for mockup mode)
+      if (userId && dbPlan.user_id && dbPlan.user_id !== userId) {
+        return c.json({ error: 'Unauthorized' }, 403);
+      }
+
+      // Update task completion status
+      if (dbPlan.plan_data.tasks && dbPlan.plan_data.tasks[taskIndex]) {
+        dbPlan.plan_data.tasks[taskIndex].completed = completed === true;
+        dbPlan.updated_at = new Date().toISOString();
+        
+        // Update metadata
+        const completedTasks = dbPlan.plan_data.tasks.filter((t: any) => t.completed).length;
+        dbPlan.metadata.completedTasks = completedTasks;
+        dbPlan.metadata.progress = Math.round((completedTasks / dbPlan.plan_data.tasks.length) * 100);
+
+        // Update in database
+        const { data: updatedPlan, error: updateError } = await supabaseAdmin
+          .from('study_plans')
+          .update({
+            plan_data: dbPlan.plan_data,
+            metadata: dbPlan.metadata,
+            updated_at: dbPlan.updated_at
+          })
+          .eq('id', planId)
+          .select()
+          .single();
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        // Return in frontend format
+        return c.json({
+          id: updatedPlan.id,
+          userId: updatedPlan.user_id,
+          analysisId: updatedPlan.analysis_id,
+          status: updatedPlan.status,
+          createdAt: updatedPlan.created_at,
+          updatedAt: updatedPlan.updated_at,
+          startDate: updatedPlan.start_date,
+          endDate: updatedPlan.end_date,
+          totalDays: updatedPlan.total_days,
+          hoursPerDay: updatedPlan.hours_per_day,
+          studyDays: updatedPlan.study_days,
+          planData: updatedPlan.plan_data,
+          metadata: updatedPlan.metadata
+        });
+      }
+    }
+
+    // Fallback to KV store
+    const studyPlan = await kv.get(planId);
+    
+    if (!studyPlan) {
+      return c.json({ error: 'Study plan not found' }, 404);
+    }
+
+    // Check authorization
+    if (userId && studyPlan.userId && studyPlan.userId !== userId && !studyPlan.userId.startsWith('mock_user_')) {
+      return c.json({ error: 'Unauthorized' }, 403);
+    }
+
+    // Update task completion status
+    if (studyPlan.planData.tasks && studyPlan.planData.tasks[taskIndex]) {
+      studyPlan.planData.tasks[taskIndex].completed = completed === true;
+      studyPlan.updatedAt = new Date().toISOString();
+      
+      // Update metadata
+      const completedTasks = studyPlan.planData.tasks.filter((t: any) => t.completed).length;
+      studyPlan.metadata.completedTasks = completedTasks;
+      studyPlan.metadata.progress = Math.round((completedTasks / studyPlan.planData.tasks.length) * 100);
+
+      await kv.set(planId, studyPlan);
+    }
+
+    return c.json(studyPlan);
+    
+  } catch (error: any) {
+    console.error('Error updating task:', error);
+    return c.json({ error: `Failed to update task: ${error.message}` }, 500);
+  }
+};
+
+app.patch('/server/study-plan/:planId/tasks/:taskIndex/complete', handleUpdateTask);
+app.patch('/study-plan/:planId/tasks/:taskIndex/complete', handleUpdateTask); // fallback
+
+// Catch-all logging for unexpected routes
+app.all('*', (c) => {
+  const path = c.req.path;
+  const method = c.req.method;
+  console.log(`Unhandled route: ${method} ${path}`);
+  return c.json({ error: 'Not Found', path, method }, 404);
+});
+
+// Helper function to generate study plan using LLM
+async function generateStudyPlanWithLLM(params: {
+  analysis: any;
+  hoursPerDay: string;
+  timeline: number;
+  studyDays: string[];
+  jobDescription: string;
+}): Promise<any> {
+  const { analysis, hoursPerDay, timeline, studyDays, jobDescription } = params;
+  
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey) {
+    // Fallback to mock data if no API key
+    return generateMockStudyPlan(params);
+  }
+
+  // Build prompt for study plan generation
+  const systemPrompt = `You are an expert career development and learning plan creator. Your task is to create a detailed, day-by-day study plan that helps users learn the skills they need for their target job.
+
+Create a structured study plan with:
+1. Daily tasks with specific learning objectives
+2. Resources and materials for each task
+3. Estimated time for each task
+4. XP points for gamification (20-100 XP per task)
+5. Phases/themes that group related tasks
+6. Realistic progression from basics to advanced topics
+
+The plan should be practical, actionable, and tailored to the user's availability and timeline.`;
+
+  const userPrompt = `Create a ${timeline}-day personalized study plan with the following requirements:
+
+**Target Job:** ${jobDescription.substring(0, 200)}...
+
+**User's Current Skills:**
+${analysis.matchingHardSkills?.map((s: string) => `- ${s}`).join('\n') || 'None identified'}
+
+**Skills to Learn (Priority Order):**
+${analysis.missingHardSkills?.map((s: string) => `- ${s}`).join('\n') || 'None'}
+
+**Availability:**
+- Hours per day: ${hoursPerDay}
+- Study days per week: ${studyDays.join(', ')}
+- Timeline: ${timeline} days
+
+**Requirements:**
+1. Create ${timeline} daily tasks (one per day)
+2. Each task should have: date, dayOfWeek, theme, task description, resources, estTime (e.g., "2h"), xp (20-100)
+3. Organize tasks into logical phases (e.g., "Foundations", "Intermediate", "Advanced", "Portfolio")
+4. Balance learning new concepts with practice and projects
+5. Include review/reflection days periodically
+6. Make tasks progressively more challenging
+
+Return a JSON object with this structure:
+{
+  "skills": [{"name": "SQL", "priority": "High", "estimatedTime": "20 hours", "resources": ["Resource 1", "Resource 2"]}],
+  "tasks": [{"date": "2024-11-11", "dayOfWeek": "Mon", "theme": "Orientation", "task": "Task description", "resources": "Resource name", "estTime": "1h", "xp": 20, "completed": false}],
+  "phases": [{"range": [0, 7], "label": "Foundations", "color": "purple"}],
+  "summary": {"totalXP": 650, "totalHours": 70, "currentProgress": 0}
+}
+
+Make sure the JSON is valid and properly formatted.`;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        max_tokens: 4000,
+        temperature: 0.5,
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('OpenAI API error:', error);
+      // Fallback to mock data
+      return generateMockStudyPlan(params);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0].message.content;
+    
+    // Parse JSON response
+    try {
+      const studyPlan = JSON.parse(content);
+      // Validate and format dates
+      if (studyPlan.tasks) {
+        const startDate = new Date();
+        studyPlan.tasks = studyPlan.tasks.map((task: any, index: number) => {
+          const taskDate = new Date(startDate);
+          taskDate.setDate(startDate.getDate() + index);
+          return {
+            ...task,
+            date: taskDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            fullDate: taskDate.toISOString().split('T')[0],
+            completed: false
+          };
+        });
+      }
+      return studyPlan;
+    } catch (parseError) {
+      console.error('Error parsing LLM response:', parseError);
+      return generateMockStudyPlan(params);
+    }
+  } catch (error: any) {
+    console.error('Error calling OpenAI:', error);
+    return generateMockStudyPlan(params);
+  }
+}
+
+// Fallback mock study plan generator
+function generateMockStudyPlan(params: {
+  analysis: any;
+  hoursPerDay: string;
+  timeline: number;
+  studyDays: string[];
+}): any {
+  const { analysis, timeline } = params;
+  const startDate = new Date();
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  
+  const tasks = [];
+  const themes = [
+    'Orientation',
+    'Python Basics',
+    'Python Practice',
+    'Statistics',
+    'SQL Basics',
+    'Weekend Challenge',
+    'Reflection'
+  ];
+  
+  for (let i = 0; i < timeline; i++) {
+    const taskDate = new Date(startDate);
+    taskDate.setDate(startDate.getDate() + i);
+    const dayOfWeek = days[taskDate.getDay() === 0 ? 6 : taskDate.getDay() - 1];
+    const themeIndex = i % themes.length;
+    
+    tasks.push({
+      date: taskDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      fullDate: taskDate.toISOString().split('T')[0],
+      dayOfWeek,
+      theme: themes[themeIndex],
+      task: `${themes[themeIndex]} - Day ${i + 1} learning task`,
+      resources: 'SkillMiner Resources',
+      estTime: '2h',
+      xp: 20 + (themeIndex * 10),
+      completed: false
+    });
+  }
+  
+  return {
+    skills: analysis.missingHardSkills?.map((skill: string) => ({
+      name: skill,
+      priority: 'High',
+      estimatedTime: '20 hours',
+      resources: [`Learn ${skill} Online`, `${skill} Tutorial`]
+    })) || [],
+    tasks,
+    phases: [
+      { range: [0, Math.floor(timeline * 0.25)], label: 'Foundations', color: 'purple' },
+      { range: [Math.floor(timeline * 0.25) + 1, Math.floor(timeline * 0.5)], label: 'Intermediate', color: 'blue' },
+      { range: [Math.floor(timeline * 0.5) + 1, Math.floor(timeline * 0.75)], label: 'Advanced', color: 'orange' },
+      { range: [Math.floor(timeline * 0.75) + 1, timeline - 1], label: 'Portfolio', color: 'green' }
+    ],
+    summary: {
+      totalXP: tasks.reduce((sum, t) => sum + t.xp, 0),
+      totalHours: Math.ceil(timeline * 2),
+      currentProgress: 0
+    }
+  };
+}
 
 Deno.serve(app.fetch);

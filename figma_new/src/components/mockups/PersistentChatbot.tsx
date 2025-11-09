@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { projectId, publicAnonKey, edgeFunctionName } from '../../utils/supabase/info';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -45,7 +45,7 @@ export function PersistentChatbot() {
       // Get analysis ID from localStorage if available
       const analysisId = localStorage.getItem('currentAnalysisId');
       
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/chat`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/${edgeFunctionName}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

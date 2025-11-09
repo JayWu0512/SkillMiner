@@ -8,7 +8,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Separator } from './ui/separator';
-import { projectId } from '../utils/supabase/info';
+import { projectId, edgeFunctionName } from '../utils/supabase/info';
 
 // Helper function to get learning platform recommendations based on skill name
 function getPlatformLinks(skillName: string): { name: string; url: string; icon: any; type: string }[] {
@@ -150,7 +150,7 @@ export function SkillReport({ accessToken, analysisId }: SkillReportProps) {
     const loadReport = async () => {
       try {
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/server/report/${analysisId}`,
+          `https://${projectId}.supabase.co/functions/v1/${edgeFunctionName}/report/${analysisId}`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`,

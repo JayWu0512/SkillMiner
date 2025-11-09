@@ -198,7 +198,15 @@ export default function App() {
           </TabsContent>
 
           <TabsContent value="report" className="m-0 bg-slate-50 min-h-screen">
-            <SkillReportMockup onGenerateStudyPlan={() => setCurrentPage("dashboard")} />
+            <SkillReportMockup 
+              onGenerateStudyPlan={(planId) => {
+                if (planId) {
+                  localStorage.setItem('currentStudyPlanId', planId);
+                }
+                setCurrentPage("plan");
+              }}
+              useBackend={true} // Set to true to test backend integration in mockup mode
+            />
           </TabsContent>
 
           <TabsContent value="dashboard" className="m-0">
@@ -207,7 +215,10 @@ export default function App() {
           </TabsContent>
 
           <TabsContent value="plan" className="m-0">
-            <StudyPlanMockup onNavigate={(page) => setCurrentPage(page)} />
+            <StudyPlanMockup 
+              onNavigate={(page) => setCurrentPage(page)}
+              planId={localStorage.getItem('currentStudyPlanId') || undefined}
+            />
             <PersistentChatbot />
           </TabsContent>
 

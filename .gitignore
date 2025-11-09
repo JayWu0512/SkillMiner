@@ -222,3 +222,5 @@ chroma/
 chroma.sqlite3
 chat_logs.json
 
+# Node.js
+node_modules/

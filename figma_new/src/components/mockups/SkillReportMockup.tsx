@@ -8,6 +8,7 @@ import {
   Calendar,
   ArrowRight,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
@@ -23,6 +24,8 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Separator } from "../ui/separator";
+import { generateStudyPlan } from "../../services/studyPlan";
+import { createClient } from "../../utils/supabase/client";
 
 const existingSkills = [
   { name: "Python", level: "Intermediate", color: "blue" },
@@ -63,11 +66,19 @@ const missingSkills = [
 ];
 
 interface SkillReportMockupProps {
-  onGenerateStudyPlan?: () => void;
+  onGenerateStudyPlan?: (planId?: string) => void;
+  // Optional: if provided, will use real backend
+  analysisId?: string;
+  accessToken?: string;
+  // Optional: if provided, will use this for testing
+  useBackend?: boolean;
 }
 
 export function SkillReportMockup({
   onGenerateStudyPlan,
+  analysisId,
+  accessToken,
+  useBackend = true,
 }: SkillReportMockupProps) {
   const [showPlanGenerator, setShowPlanGenerator] =
     useState(false);
@@ -80,6 +91,8 @@ export function SkillReportMockup({
     "Thu",
     "Fri",
   ]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const readinessScore = 68;
   const hardSkillsMissing = missingSkills.filter(
@@ -110,6 +123,66 @@ export function SkillReportMockup({
   };
 
   const readiness = getReadinessMessage(readinessScore);
+
+  const handleGenerateStudyPlan = async () => {
+    if (useBackend) {
+      setIsGenerating(true);
+      setError(null);
+      
+      try {
+        // Try to get session token, but allow null for mockup mode
+        let token: string | null = accessToken || null;
+        
+        if (!token) {
+          try {
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            token = session?.access_token || null;
+          } catch (sessionErr) {
+            console.log('No session available, proceeding without auth for mockup mode');
+            token = null;
+          }
+        }
+
+        // Use a mock analysisId for testing (backend will create mock analysis)
+        const mockAnalysisId = `mock_analysis_${Date.now()}`;
+        
+        console.log('Generating study plan with:', {
+          analysisId: mockAnalysisId,
+          hoursPerDay,
+          timeline,
+          studyDays,
+          hasToken: !!token
+        });
+
+        const studyPlan = await generateStudyPlan(token, {
+          analysisId: mockAnalysisId,
+          hoursPerDay,
+          timeline,
+          studyDays,
+          jobDescription: "Data Analyst (Entry-Level) Position",
+        });
+        
+        console.log('Study plan generated:', studyPlan.id);
+        
+        // Store planId in localStorage for StudyPlanMockup to retrieve
+        localStorage.setItem('currentStudyPlanId', studyPlan.id);
+        
+        if (onGenerateStudyPlan) {
+          onGenerateStudyPlan(studyPlan.id);
+        }
+      } catch (err: any) {
+        console.error('Error generating study plan:', err);
+        setError(err.message || 'Failed to generate study plan. Please check the console for details.');
+        setIsGenerating(false);
+      }
+    } else {
+      // Mock mode - just navigate
+      if (onGenerateStudyPlan) {
+        onGenerateStudyPlan();
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12">
@@ -494,21 +567,41 @@ export function SkillReportMockup({
                 </div>
               </div>
 
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
+                  {error}
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <Button
-                  onClick={() => setShowPlanGenerator(false)}
+                  onClick={() => {
+                    setShowPlanGenerator(false);
+                    setError(null);
+                  }}
                   variant="outline"
                   className="flex-1"
+                  disabled={isGenerating}
                 >
                   Back
                 </Button>
                 <Button
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                  onClick={onGenerateStudyPlan}
+                  onClick={handleGenerateStudyPlan}
+                  disabled={isGenerating}
                 >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Generate My 60-Day Plan
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating Plan...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Generate My {timeline}-Day Plan
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
