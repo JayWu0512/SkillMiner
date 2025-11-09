@@ -14,6 +14,7 @@ export interface DailyTask {
   estTime: string;
   xp: number;
   completed?: boolean;
+  isRestDay?: boolean;
 }
 
 export interface StudyPlanPhase {

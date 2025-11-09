@@ -444,6 +444,114 @@ app.get('/server/report/:analysisId', async (c) => {
 // Study plan handlers (shared implementations)
 // -----------------------------------------
 
+const DAY_LABELS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+
+const normalizeStudyDay = (day: string) => day.slice(0, 3).toLowerCase();
+
+const parseEstimatedHours = (estTime?: string | null): number => {
+  if (!estTime) return 0;
+  const lower = estTime.toLowerCase();
+  let total = 0;
+  const hourMatch = lower.match(/([\d.]+)\s*h/);
+  if (hourMatch) {
+    total += parseFloat(hourMatch[1]);
+  }
+  const minuteMatch = lower.match(/([\d.]+)\s*m/);
+  if (minuteMatch) {
+    total += parseFloat(minuteMatch[1]) / 60;
+  }
+  return Number.isFinite(total) ? total : 0;
+};
+
+const applyStudyDayScheduling = ({
+  baseTasks,
+  timeline,
+  studyDays,
+  startDate,
+}: {
+  baseTasks: any[];
+  timeline: number;
+  studyDays: string[];
+  startDate: Date;
+}) => {
+  const studyDaySet = new Set(studyDays.map(normalizeStudyDay));
+  const hasStudyDayFilter = studyDaySet.size > 0;
+  const sanitizedTasks = Array.isArray(baseTasks) ? baseTasks.filter(Boolean) : [];
+  const scheduledTasks: any[] = [];
+
+  let studyTaskIndex = 0;
+
+  const fallbackTask = (index: number) => ({
+    theme: `Study Session ${index + 1}`,
+    task: 'Focus on your priority skills.',
+    resources: 'SkillMiner Resources',
+    estTime: '2h',
+    xp: 40,
+    completed: false,
+  });
+
+  for (let offset = 0; offset < timeline; offset++) {
+    const currentDate = new Date(startDate);
+    currentDate.setDate(startDate.getDate() + offset);
+    const dayLabel = DAY_LABELS_SHORT[currentDate.getDay()];
+    const normalizedDay = normalizeStudyDay(dayLabel);
+    const isStudyDay = !hasStudyDayFilter || studyDaySet.has(normalizedDay);
+
+    const formattedDate = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const isoDate = currentDate.toISOString().split('T')[0];
+
+    if (isStudyDay) {
+      const sourceTask = sanitizedTasks[studyTaskIndex] ?? fallbackTask(studyTaskIndex);
+      const xp = typeof sourceTask.xp === 'number' ? sourceTask.xp : 0;
+      const estTime = sourceTask.estTime ?? '0h';
+
+      scheduledTasks.push({
+        ...sourceTask,
+        date: formattedDate,
+        fullDate: isoDate,
+        dayOfWeek: dayLabel,
+        xp,
+        estTime,
+        resources: sourceTask.resources ?? '',
+        completed: sourceTask.completed === true,
+        isRestDay: false,
+      });
+
+      studyTaskIndex += 1;
+    } else {
+      scheduledTasks.push({
+        date: formattedDate,
+        fullDate: isoDate,
+        dayOfWeek: dayLabel,
+        theme: 'Rest & Recharge',
+        task: 'Rest day — no study planned.',
+        resources: '',
+        estTime: '0h',
+        xp: 0,
+        completed: false,
+        isRestDay: true,
+      });
+    }
+  }
+
+  const totals = scheduledTasks.reduce(
+    (acc, task) => {
+      if (!task.isRestDay) {
+        acc.totalXP += typeof task.xp === 'number' ? task.xp : 0;
+        acc.totalHours += parseEstimatedHours(task.estTime);
+      }
+      return acc;
+    },
+    { totalXP: 0, totalHours: 0 },
+  );
+
+  return {
+    tasks: scheduledTasks,
+    totalXP: totals.totalXP,
+    totalHours: Math.round(totals.totalHours * 10) / 10,
+  };
+};
+
 const handleGenerateStudyPlan = async (c: any) => {
   try {
     const authHeader = c.req.header('Authorization');
@@ -789,6 +897,9 @@ const handleUpdateTask = async (c: any) => {
 
     // Update task completion status
     if (studyPlan.planData.tasks && studyPlan.planData.tasks[taskIndex]) {
+      if (studyPlan.planData.tasks[taskIndex].isRestDay) {
+        return c.json({ error: 'Cannot update rest day tasks' }, 400);
+      }
       studyPlan.planData.tasks[taskIndex].completed = completed === true;
       studyPlan.updatedAt = new Date().toISOString();
       
@@ -913,20 +1024,21 @@ Make sure the JSON is valid and properly formatted.`;
     // Parse JSON response
     try {
       const studyPlan = JSON.parse(content);
-      // Validate and format dates
-      if (studyPlan.tasks) {
-        const startDate = new Date();
-        studyPlan.tasks = studyPlan.tasks.map((task: any, index: number) => {
-          const taskDate = new Date(startDate);
-          taskDate.setDate(startDate.getDate() + index);
-          return {
-            ...task,
-            date: taskDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            fullDate: taskDate.toISOString().split('T')[0],
-            completed: false
-          };
-        });
-      }
+      const startDate = new Date();
+      const scheduling = applyStudyDayScheduling({
+        baseTasks: Array.isArray(studyPlan.tasks) ? studyPlan.tasks : [],
+        timeline,
+        studyDays,
+        startDate,
+      });
+
+      studyPlan.tasks = scheduling.tasks;
+      studyPlan.summary = {
+        ...(studyPlan.summary ?? {}),
+        totalXP: scheduling.totalXP,
+        totalHours: scheduling.totalHours,
+        currentProgress: studyPlan.summary?.currentProgress ?? 0,
+      };
       return studyPlan;
     } catch (parseError) {
       console.error('Error parsing LLM response:', parseError);
@@ -945,9 +1057,8 @@ function generateMockStudyPlan(params: {
   timeline: number;
   studyDays: string[];
 }): any {
-  const { analysis, timeline } = params;
+  const { analysis, timeline, studyDays } = params;
   const startDate = new Date();
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   
   const tasks = [];
   const themes = [
@@ -963,13 +1074,12 @@ function generateMockStudyPlan(params: {
   for (let i = 0; i < timeline; i++) {
     const taskDate = new Date(startDate);
     taskDate.setDate(startDate.getDate() + i);
-    const dayOfWeek = days[taskDate.getDay() === 0 ? 6 : taskDate.getDay() - 1];
     const themeIndex = i % themes.length;
     
     tasks.push({
       date: taskDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       fullDate: taskDate.toISOString().split('T')[0],
-      dayOfWeek,
+      dayOfWeek: DAY_LABELS_SHORT[taskDate.getDay()],
       theme: themes[themeIndex],
       task: `${themes[themeIndex]} - Day ${i + 1} learning task`,
       resources: 'SkillMiner Resources',
@@ -978,6 +1088,13 @@ function generateMockStudyPlan(params: {
       completed: false
     });
   }
+
+  const scheduling = applyStudyDayScheduling({
+    baseTasks: tasks,
+    timeline,
+    studyDays,
+    startDate,
+  });
   
   return {
     skills: analysis.missingHardSkills?.map((skill: string) => ({
@@ -986,7 +1103,7 @@ function generateMockStudyPlan(params: {
       estimatedTime: '20 hours',
       resources: [`Learn ${skill} Online`, `${skill} Tutorial`]
     })) || [],
-    tasks,
+    tasks: scheduling.tasks,
     phases: [
       { range: [0, Math.floor(timeline * 0.25)], label: 'Foundations', color: 'purple' },
       { range: [Math.floor(timeline * 0.25) + 1, Math.floor(timeline * 0.5)], label: 'Intermediate', color: 'blue' },
@@ -994,8 +1111,8 @@ function generateMockStudyPlan(params: {
       { range: [Math.floor(timeline * 0.75) + 1, timeline - 1], label: 'Portfolio', color: 'green' }
     ],
     summary: {
-      totalXP: tasks.reduce((sum, t) => sum + t.xp, 0),
-      totalHours: Math.ceil(timeline * 2),
+      totalXP: scheduling.totalXP,
+      totalHours: scheduling.totalHours,
       currentProgress: 0
     }
   };

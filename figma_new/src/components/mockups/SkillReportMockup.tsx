@@ -152,62 +152,65 @@ export function SkillReportMockup({
   const readiness = getReadinessMessage(readinessScore);
 
   const handleGenerateStudyPlan = async () => {
-    if (useBackend) {
-      setIsGenerating(true);
-      setError(null);
-      
-      try {
-        // Try to get session token, but allow null for mockup mode
-        let token: string | null = accessToken || null;
-        
-        if (!token) {
-          try {
-            const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            token = session?.access_token || null;
-          } catch (sessionErr) {
-            console.log('No session available, proceeding without auth for mockup mode');
-            token = null;
-          }
-        }
-
-        // Use a mock analysisId for testing (backend will create mock analysis)
-        const mockAnalysisId = `mock_analysis_${Date.now()}`;
-        
-        console.log('Generating study plan with:', {
-          analysisId: mockAnalysisId,
-          hoursPerDay,
-          timeline,
-          studyDays,
-          hasToken: !!token
-        });
-
-        const studyPlan = await generateStudyPlan(token, {
-          analysisId: mockAnalysisId,
-          hoursPerDay,
-          timeline,
-          studyDays,
-          jobDescription: "Data Analyst (Entry-Level) Position",
-        });
-        
-        console.log('Study plan generated:', studyPlan.id);
-        
-        // Store planId in localStorage for StudyPlanMockup to retrieve
-        localStorage.setItem('currentStudyPlanId', studyPlan.id);
-        
-        if (onGenerateStudyPlan) {
-          onGenerateStudyPlan(studyPlan.id);
-        }
-      } catch (err: any) {
-        console.error('Error generating study plan:', err);
-        setError(err.message || 'Failed to generate study plan. Please check the console for details.');
-        setIsGenerating(false);
-      }
-    } else {
-      // Mock mode - just navigate
+    if (!useBackend) {
       if (onGenerateStudyPlan) {
         onGenerateStudyPlan();
       }
+      return;
+    }
+
+    if (!analysisId) {
+      setError('Missing analysis data. Please upload your resume and job description again.');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+    
+    try {
+      // Try to get session token, but allow null for mockup mode
+      let token: string | null = accessToken || null;
+      
+      if (!token) {
+        try {
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          token = session?.access_token || null;
+        } catch (sessionErr) {
+          console.log('No session available, proceeding without auth for mockup mode');
+          token = null;
+        }
+      }
+
+      console.log('Generating study plan with:', {
+        analysisId,
+        hoursPerDay,
+        timeline,
+        studyDays,
+        hasToken: !!token
+      });
+
+      const studyPlan = await generateStudyPlan(token, {
+        analysisId,
+        hoursPerDay,
+        timeline,
+        studyDays,
+        jobDescription: "Data Analyst (Entry-Level) Position",
+      });
+      
+      console.log('Study plan generated:', studyPlan.id);
+      
+      // Store planId in localStorage for StudyPlanMockup to retrieve
+      localStorage.setItem('currentStudyPlanId', studyPlan.id);
+      
+      if (onGenerateStudyPlan) {
+        onGenerateStudyPlan(studyPlan.id);
+      }
+    } catch (err: any) {
+      console.error('Error generating study plan:', err);
+      setError(err.message || 'Failed to generate study plan. Please check the console for details.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 

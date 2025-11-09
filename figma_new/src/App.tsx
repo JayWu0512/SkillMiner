@@ -1,5 +1,5 @@
 // src/App.tsx
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { BrowserRouter } from "react-router-dom";
 
 import { LoginPage } from "./components/LoginPage";
@@ -20,6 +20,9 @@ import { PersistentChatbot } from "./components/mockups/PersistentChatbot";
 
 // ---- Supabase ----
 import { createClient } from "./utils/supabase/client";
+import { getStudyPlan, type StudyPlan as StudyPlanData } from "./services/studyPlan";
+
+type Nullable<T> = T | null;
 
 // === CONFIG ===
 const USE_REAL_AUTH = true as const;
@@ -50,12 +53,79 @@ export default function App() {
   const [appState, setAppState] = useState<AppState>("login");
   const [accessToken, setAccessToken] = useState<string>("");
   const [analysisId, setAnalysisId] = useState<string>("");
+  const [currentPlanId, setCurrentPlanId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("currentStudyPlanId");
+  });
+  const [activeStudyPlan, setActiveStudyPlan] = useState<Nullable<StudyPlanData>>(null);
 
-  const routeByHistory = async (uid: string) => {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (currentPlanId) {
+      window.localStorage.setItem("currentStudyPlanId", currentPlanId);
+    } else {
+      window.localStorage.removeItem("currentStudyPlanId");
+    }
+  }, [currentPlanId]);
+
+  const handlePlanUpdate = useCallback(
+    (plan: Nullable<StudyPlanData>) => {
+      setActiveStudyPlan(plan);
+    },
+    []
+  );
+
+  const fetchAndStorePlan = async (planId: string, tokenOverride?: string | null) => {
+    try {
+      const plan = await getStudyPlan(tokenOverride ?? accessToken ?? null, planId);
+      handlePlanUpdate(plan);
+      return plan;
+    } catch (error) {
+      console.error("[App] Failed to fetch study plan:", error);
+      handlePlanUpdate(null);
+      throw error;
+    }
+  };
+
+  const routeByHistory = async (uid: string, tokenOverride?: string) => {
     const supabase = createClient();
 
     const { data: userRes } = await supabase.auth.getUser();
     console.log("[auth] user.id =", userRes?.user?.id);
+
+    const { data: latestPlanRowsRaw, error: latestPlanError } = await supabase
+      .from("study_plans")
+      .select("id")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const latestPlanRows = (latestPlanRowsRaw as Array<{ id: string }> | null) ?? null;
+
+    if (!latestPlanError && latestPlanRows && latestPlanRows.length > 0) {
+      const latestPlanId = latestPlanRows?.[0]?.id;
+      if (latestPlanId) {
+        setCurrentPlanId(latestPlanId);
+        try {
+          await fetchAndStorePlan(latestPlanId, tokenOverride);
+        } catch (planError) {
+          console.warn("[routeByHistory] Latest study plan retrieval failed:", planError);
+        }
+        setAppState("plan");
+        return;
+      }
+    } else if (latestPlanError) {
+      console.warn("[routeByHistory] failed to fetch latest study plan:", latestPlanError);
+      if (currentPlanId) {
+        try {
+          await fetchAndStorePlan(currentPlanId, tokenOverride);
+          setAppState("plan");
+          return;
+        } catch (planError) {
+          console.warn("[routeByHistory] Stored study plan retrieval failed:", planError);
+        }
+      }
+    }
 
     const q1 = await supabase
       .from("skill_analyses")
@@ -79,11 +149,15 @@ export default function App() {
 
     if (q1.error) {
       // console.error("[routeByHistory] Q1 failed:", q1.error);
+      setCurrentPlanId(null);
+      handlePlanUpdate(null);
       setAppState("upload");
       return;
     }
 
-    setAppState(hasAny ? "dashboard" : "upload");
+    setCurrentPlanId(null);
+    handlePlanUpdate(null);
+    setAppState("upload");
   };
 
   useEffect(() => {
@@ -97,7 +171,7 @@ export default function App() {
 
       if (session?.access_token && session?.user?.id) {
         setAccessToken(session.access_token);
-        await routeByHistory(session.user.id);
+        await routeByHistory(session.user.id, session.access_token);
       } else {
         setAppState("login");
       }
@@ -111,7 +185,7 @@ export default function App() {
     } = supabase.auth.onAuthStateChange(async (_evt, session) => {
       if (session?.access_token && session?.user?.id) {
         setAccessToken(session.access_token);
-        await routeByHistory(session.user.id);
+        await routeByHistory(session.user.id, session.access_token);
       } else {
         setAppState("login");
       }
@@ -133,6 +207,8 @@ export default function App() {
   const handleLogout = () => {
     setAccessToken("");
     setAnalysisId("");
+    setCurrentPlanId(null);
+    handlePlanUpdate(null);
     setAppState("login");
 
     if (USE_REAL_AUTH) {
@@ -160,6 +236,16 @@ export default function App() {
       default:
         return "dashboard";
     }
+  };
+
+  const handleStudyPlanGenerated = (planId?: string) => {
+    if (planId) {
+      setCurrentPlanId(planId);
+      fetchAndStorePlan(planId).catch((err) => {
+        console.warn("[App] Failed to refresh study plan after generation:", err);
+      });
+    }
+    setAppState("plan");
   };
 
   const headerActive: "today" | "study-plan" | "practice" | "profile" | "resume" =
@@ -211,7 +297,13 @@ export default function App() {
       )}
 
       {appState === "plan" && (
-        <StudyPlan onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")} />
+        <StudyPlan
+          planId={currentPlanId ?? undefined}
+          accessToken={accessToken}
+          initialPlan={activeStudyPlan ?? undefined}
+        onPlanUpdate={handlePlanUpdate}
+          onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")}
+        />
       )}
 
       {appState === "coding" && (
@@ -231,7 +323,11 @@ export default function App() {
       )}
 
       {appState === "report" && (
-        <SkillReport onGenerateStudyPlan={() => setAppState("dashboard")} />
+        <SkillReport
+          analysisId={analysisId}
+          accessToken={accessToken}
+          onGenerateStudyPlan={handleStudyPlanGenerated}
+        />
       )}
 
       {appState === "chat" && (
