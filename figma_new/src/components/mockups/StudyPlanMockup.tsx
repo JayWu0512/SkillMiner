@@ -5,7 +5,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { Header } from '../Header';
+// import { Header } from '../Header';
 import { getStudyPlan, updateTaskCompletion, type StudyPlan, type DailyTask as StudyPlanDailyTask } from '../../services/studyPlan';
 import { createClient } from '../../utils/supabase/client';
 
@@ -319,7 +319,7 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken }: StudyPlanMo
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <Header 
+      {/* <Header 
         activePage="study-plan" 
         onNavigate={(page) => {
           const pageMap: Record<string, MockupPage> = {
@@ -332,7 +332,7 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken }: StudyPlanMo
           onNavigate?.(pageMap[page] || 'plan');
         }}
         onLogout={() => onNavigate?.('login')}
-      />
+      /> */}
       
       {/* Page Header */}
       <div className="bg-white border-b border-slate-200">

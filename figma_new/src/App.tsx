@@ -2,19 +2,15 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter } from "react-router-dom";
 
-// ---- Real pages (你已經把 mockup 拉出來的實作版) ----
 import { LoginPage } from "./components/LoginPage";
 import { UploadPage } from "./components/UploadPage";
 import { ChatbotPage } from "./components/ChatbotPage";
-
-// 這些如果你還沒做實作版，可以先暫時用 mockup 同名檔替代
 import { MainDashboard } from "./components/MainDashboard";
-// import { StudyPlan } from "./components/StudyPlan";
+import { StudyPlanMockup as StudyPlan } from "./components/mockups/StudyPlanMockup";
 import { CodingPractice } from "./components/CodingPractice";
 import { InterviewPractice } from "./components/InterviewPractice";
 import { Profile } from "./components/Profile";
 import { Resume } from "./components/Resume";
-// 報告頁：若你只有 mockup，先 import 你的 Mockup
 import { SkillReportMockup as SkillReport } from "./components/mockups/SkillReportMockup";
 
 // ---- Global UI ----
@@ -41,13 +37,12 @@ type AppState =
   | "report"
   | "chat";
 
-// Header 回傳的 key（含相容舊鍵名）
 type HeaderNavKey =
   | "today"
   | "study-plan"
-  | "practice"            // Header 上方主鈕高亮判斷用
-  | "coding-practice"     // 下拉子項
-  | "interview-practice"  // 下拉子項
+  | "practice"           
+  | "coding-practice"     
+  | "interview-practice" 
   | "profile"
   | "settings";
 
@@ -56,7 +51,6 @@ export default function App() {
   const [accessToken, setAccessToken] = useState<string>("");
   const [analysisId, setAnalysisId] = useState<string>("");
 
-  // 依是否已有上傳紀錄導頁（skill_analyses.user_id & resume_text）
   const routeByHistory = async (uid: string) => {
     const supabase = createClient();
     const { count, error } = await supabase
@@ -111,7 +105,6 @@ export default function App() {
   // === Handlers ===
   const handleLoginSuccess = (token: string) => {
     setAccessToken(token);
-    // 真正導頁交給 onAuthStateChange + routeByHistory
   };
 
   const handleAnalysisComplete = (id: string) => {
@@ -129,7 +122,6 @@ export default function App() {
     setAppState("login");
   };
 
-  // Header 導航鍵 → AppState
   const mapHeaderKeyToState = (key: HeaderNavKey): AppState => {
     switch (key) {
       case "today":
@@ -143,14 +135,12 @@ export default function App() {
       case "profile":
         return "profile";
       case "settings":
-        return "dashboard"; // 未做設定頁前先回 dashboard
-      // "practice" 本身只是高亮用，實際點擊在子項
+        return "dashboard"; 
       default:
         return "dashboard";
     }
   };
 
-  // 讓 Header 的 activePage 正確高亮
   const headerActive: "today" | "study-plan" | "practice" | "profile" | "resume" =
     appState === "dashboard"
       ? "today"
@@ -166,7 +156,6 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {/* === 共用 Header（login / upload 不顯示） === */}
       {appState !== "login" && appState !== "upload" && (
         <Header
           activePage={headerActive}
@@ -175,7 +164,6 @@ export default function App() {
         />
       )}
 
-      {/* === 各頁 === */}
       {appState === "login" && (
         <LoginPage onLoginSuccess={handleLoginSuccess} />
       )}
@@ -190,7 +178,6 @@ export default function App() {
 
       {appState === "dashboard" && (
         <MainDashboard
-          // 內頁如果還有自己的快速導航，做相容處理：
           onNavigate={(p: string) => {
             if (p === "report") setAppState("report");
             if (p === "coding") setAppState("coding");

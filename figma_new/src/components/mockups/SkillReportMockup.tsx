@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Separator } from "../ui/separator";
-import { Header } from "../Header";
+// import { Header } from "../Header";
 import { generateStudyPlan } from "../../services/studyPlan";
 import { createClient } from "../../utils/supabase/client";
 
@@ -213,7 +213,7 @@ export function SkillReportMockup({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <Header activePage="today" />
+      {/* <Header activePage="today" /> */}
       <div className="container mx-auto px-6 max-w-6xl py-12">
         <div className="text-center mb-8">
           <h1 className="text-4xl text-slate-900 mb-3">
