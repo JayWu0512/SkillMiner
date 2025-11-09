@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Card } from './ui/card';
 import { Brain, Upload, FileText, Sparkles, LogOut } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { createClient } from '../utils/supabase/client'; 
 
 interface UploadPageProps {
   accessToken: string;
@@ -12,20 +13,40 @@ interface UploadPageProps {
 }
 
 export function UploadPage({ accessToken, onAnalysisComplete, onLogout }: UploadPageProps) {
+  const [userId, setUserId] = useState<string>('');
   const [jobDescription, setJobDescription] = useState('');
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState('');
+  const navigate = useNavigate(); 
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          setUserId(session.user.id);
+          console.log('[UploadPage] user_id loaded:', session.user.id);
+        } else {
+          console.warn('[UploadPage] No active Supabase session');
+        }
+      } catch (err) {
+        console.error('[UploadPage] Error fetching user:', err);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
-      if (validTypes.includes(file.type) || file.name.endsWith('.pdf') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (isPdf) {
         setResumeFile(file);
         setError('');
       } else {
-        setError('Please upload a PDF or DOCX file');
+        setError('Only PDF files are supported.');
         setResumeFile(null);
       }
     }
@@ -36,9 +57,12 @@ export function UploadPage({ accessToken, onAnalysisComplete, onLogout }: Upload
       setError('Please enter a job description');
       return;
     }
-    
     if (!resumeFile) {
-      setError('Please upload your resume');
+      setError('Please upload your resume (PDF)');
+      return;
+    }
+    if (!userId?.trim()) {
+      setError('Missing user id (please log in again)');
       return;
     }
 
@@ -47,27 +71,32 @@ export function UploadPage({ accessToken, onAnalysisComplete, onLogout }: Upload
 
     try {
       const formData = new FormData();
-      formData.append('jobDescription', jobDescription);
-      formData.append('resume', resumeFile);
+      formData.append('file', resumeFile);
+      formData.append('job_description', jobDescription);
+      formData.append('user_id', userId);
 
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/analyze`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch(`http://localhost:8000/analysis`, {
+        method: 'POST',
+        // headers: { Authorization: `Bearer ${accessToken}` }, // optional
+        body: formData,
+      });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Analysis failed: ${errorText}`);
+        let message = 'Analysis failed';
+        const text = await response.text();
+        try {
+          const err = JSON.parse(text);
+          message = err?.detail || message;
+        } catch {
+          message = text || message;
+        }
+        throw new Error(message);
       }
 
-      const result = await response.json();
-      onAnalysisComplete(result.analysisId);
+      const result: { analysis_id: string; user_id: string; match_score: number } = await response.json();
+      onAnalysisComplete(result.analysis_id);
+
+      navigate('/SkillReportMockup');
     } catch (err: any) {
       console.error('Analysis error:', err);
       setError(err.message || 'Failed to analyze. Please try again.');
@@ -89,11 +118,7 @@ export function UploadPage({ accessToken, onAnalysisComplete, onLogout }: Upload
               <p className="text-slate-600 text-sm">AI-Powered Career Analysis</p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={onLogout}
-            className="gap-2"
-          >
+          <Button variant="outline" onClick={onLogout} className="gap-2">
             <LogOut className="w-4 h-4" />
             Logout
           </Button>
@@ -104,16 +129,14 @@ export function UploadPage({ accessToken, onAnalysisComplete, onLogout }: Upload
             <Sparkles className="w-6 h-6 text-purple-500" />
             <h2 className="text-slate-900 text-xl">Start Your Analysis</h2>
           </div>
-          
+
           <p className="text-slate-600 mb-8">
             Upload your resume and paste the job description to get personalized skill gap analysis and recommendations.
           </p>
 
           <div className="space-y-6">
             <div>
-              <label className="block text-slate-700 mb-2">
-                Job Description *
-              </label>
+              <label className="block text-slate-700 mb-2">Job Description *</label>
               <Textarea
                 placeholder="Paste the job description here..."
                 value={jobDescription}
@@ -123,14 +146,12 @@ export function UploadPage({ accessToken, onAnalysisComplete, onLogout }: Upload
             </div>
 
             <div>
-              <label className="block text-slate-700 mb-2">
-                Resume (PDF or DOCX) *
-              </label>
+              <label className="block text-slate-700 mb-2">Resume (PDF only) *</label>
               <div className="relative">
                 <input
                   type="file"
                   id="resume-upload"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf,application/pdf"
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -146,7 +167,7 @@ export function UploadPage({ accessToken, onAnalysisComplete, onLogout }: Upload
                   ) : (
                     <>
                       <Upload className="w-6 h-6 text-slate-400" />
-                      <span className="text-slate-600">Click to upload your resume</span>
+                      <span className="text-slate-600">Click to upload your resume (PDF)</span>
                     </>
                   )}
                 </label>
