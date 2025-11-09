@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Download, RefreshCw, ChevronLeft, ChevronRight, Target, Clock, Trophy, Loader2, AlertCircle } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -11,6 +11,13 @@ import { createClient } from '../../utils/supabase/client';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 const normalizeDayKey = (day: string) => day.slice(0, 3).toLowerCase();
+const toLocalDate = (isoDate: string | undefined | null) => {
+  if (!isoDate) return null;
+  const parts = isoDate.split('-').map((part) => Number.parseInt(part, 10));
+  if (parts.length !== 3 || parts.some((value) => Number.isNaN(value))) return null;
+  const [year, month, day] = parts;
+  return new Date(year, month - 1, day);
+};
 
 interface DailyTask {
   date: string;
@@ -30,7 +37,7 @@ const generateWeekData = (weekOffset: number): DailyTask[] => {
   const startDate = new Date(2024, 10, 11); // Nov 11, 2024
   startDate.setDate(startDate.getDate() + (weekOffset * 7));
   
-  const weekData = [
+  const weekData: Array<Omit<DailyTask, 'date' | 'dayOfWeek'>> = [
     { theme: 'Orientation', task: 'Review Skill Report + Install Jupyter/VSCode', resources: 'SkillMiner Docs', estTime: '1h', xp: 20 },
     { theme: 'Python Basics', task: 'Variables, data types, loops', resources: 'Kaggle Python 101', estTime: '2h', xp: 40 },
     { theme: 'Python Practice', task: '10 Easy LeetCode Python problems', resources: 'LeetCode', estTime: '2h', xp: 60 },
@@ -59,7 +66,7 @@ const generateWeekData = (weekOffset: number): DailyTask[] => {
 // Generate all study plan tasks (60 days)
 const generateAllTasks = (): (DailyTask & { fullDate: Date })[] => {
   const startDate = new Date(2024, 10, 11); // Nov 11, 2024
-  const allTasks = [];
+  const allTasks: Array<DailyTask & { fullDate: Date }> = [];
   
   const taskTemplates = [
     { theme: 'Orientation', task: 'Review Skill Report + Install Jupyter/VSCode', resources: 'SkillMiner Docs', estTime: '1h', xp: 20, color: 'purple' },
@@ -116,7 +123,12 @@ const generateMonthData = (monthOffset: number) => {
   startDate.setDate(startDate.getDate() - daysFromPrevMonth);
   
   // Generate 42 days (6 weeks) for calendar grid
-  const calendarDays = [];
+  const calendarDays: Array<{
+    date: Date;
+    dayNumber: number;
+    isCurrentMonth: boolean;
+    isToday: boolean;
+  }> = [];
   for (let i = 0; i < 42; i++) {
     const currentDate = new Date(startDate);
     currentDate.setDate(startDate.getDate() + i);
@@ -224,15 +236,15 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken, initialPlan, 
   const planStudyDays = studyPlan?.studyDays ?? [];
   const planStudyDaySet = new Set(planStudyDays.map(normalizeDayKey));
   const hasStudyDayFilter = planStudyDaySet.size > 0;
-  const planStartDate = studyPlan?.startDate ? new Date(studyPlan.startDate) : null;
+  const planStartDate = toLocalDate(studyPlan?.startDate ?? undefined);
   const totalWeeks = studyPlan ? Math.ceil(studyPlan.totalDays / 7) : 8;
   const allTasks: Array<DailyTask & { fullDate: Date }> = studyPlan 
     ? studyPlan.planData.tasks.map((task: StudyPlanDailyTask, index: number) => {
         // Parse date from task.fullDate or task.date
         let fullDate: Date | null = null;
         if (task.fullDate) {
-          const parsed = new Date(task.fullDate);
-          if (!Number.isNaN(parsed.getTime())) {
+          const parsed = toLocalDate(task.fullDate);
+          if (parsed && !Number.isNaN(parsed.getTime())) {
             fullDate = parsed;
           }
         }
@@ -248,15 +260,19 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken, initialPlan, 
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             const month = monthNames.indexOf(dateMatch[1]);
             const day = parseInt(dateMatch[2], 10);
-            fullDate = new Date(new Date().getFullYear(), month, day);
+            const year = planStartDate ? planStartDate.getFullYear() : new Date().getFullYear();
+            fullDate = new Date(year, month, day);
           } else {
             fullDate = new Date();
             fullDate.setDate(fullDate.getDate() + index);
           }
         }
 
-        const displayDate = task.date ?? fullDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const dayLabel = DAY_LABELS[fullDate.getDay()];
+        const resolvedDate = fullDate ?? new Date();
+        const displayDate =
+          task.date ??
+          resolvedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const dayLabel = DAY_LABELS[resolvedDate.getDay()];
         const displayDay = dayLabel === 'Sun' ? 'Sun' : dayLabel;
         const normalizedDay = normalizeDayKey(displayDay);
         const isRestDay = task.isRestDay ?? (hasStudyDayFilter && !planStudyDaySet.has(normalizedDay));
@@ -271,7 +287,7 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken, initialPlan, 
             estTime: '0h',
             xp: 0,
             completed: false,
-            fullDate,
+            fullDate: resolvedDate,
             isRestDay: true,
           };
         }
@@ -285,7 +301,7 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken, initialPlan, 
           estTime: task.estTime,
           xp: task.xp,
           completed: task.completed || false,
-          fullDate,
+          fullDate: resolvedDate,
           isRestDay: false,
           color: (task as any).color,
         };
