@@ -130,14 +130,17 @@ export default function App() {
     setAppState("report");
   };
 
-  const handleLogout = async () => {
-    if (USE_REAL_AUTH) {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-    }
+  const handleLogout = () => {
     setAccessToken("");
     setAnalysisId("");
     setAppState("login");
+
+    if (USE_REAL_AUTH) {
+      const supabase = createClient();
+      supabase.auth.signOut().catch((e) => {
+        console.error("[App] supabase signOut failed:", e);
+      });
+    }
   };
 
   const mapHeaderKeyToState = (key: HeaderNavKey): AppState => {
