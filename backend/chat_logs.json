@@ -218,5 +218,20 @@
     "timestamp": "2025-11-09T05:58:46.918677",
     "user_message": "reduce my daily hours",
     "assistant_message": "I understand that you're feeling the pressure and would like to reduce your daily study hours. We can definitely adjust your study plan to make it more manageable.\n\nHere are a couple of options for you to consider:\n\n1. **Reduce your daily hours**: We can decrease your study hours from your current schedule to a more comfortable range.\n2. **Extend your timeline**: If you prefer, we can also extend the overall timeline of your study plan to give you more breathing room.\n\nWhich option would you prefer? If you have a specific number of hours in mind or a new timeline, please let me know!"
+  },
+  {
+    "timestamp": "2025-11-09T06:06:54.172826",
+    "user_message": "Hi, I have too much pressure recently",
+    "assistant_message": "I'm sorry to hear that you're feeling overwhelmed. It's important to find a balance that allows you to manage your workload effectively. We can adjust your study plan to help alleviate some of that pressure.\n\nHere are a couple of options to consider:\n\n1. **Reduce your daily study hours**: If you're currently studying for 3-4 hours a day, we could lower that to 2-3 hours.\n2. **Extend your timeline**: We could also extend your study timeline by a couple of weeks to give you more breathing room.\n\nWhich option would you prefer?"
+  },
+  {
+    "timestamp": "2025-11-09T06:07:14.054715",
+    "user_message": "please reduce the daily hours",
+    "assistant_message": "I can reduce your daily study hours to make your plan more manageable. Would you prefer to decrease your daily hours from 3-4 to 2-3, or would you like to extend your timeline by 2 weeks? Let me know your preference!"
+  },
+  {
+    "timestamp": "2025-11-09T06:07:30.743620",
+    "user_message": "decrease your daily hours from 3-4 to 2-3",
+    "assistant_message": "I understand that you want to decrease your daily study hours from 3-4 to 2-3. I'll go ahead and update your study plan accordingly. \n\n[STUDY_PLAN_UPDATE:user_id=current_user,action=reduce_hours,params={\"hoursPerDay\":\"2-3\"}} \n\nI've updated your study plan to reduce your daily hours to 2-3. The changes will be reflected on your study plan page. If you need any further adjustments or support, feel free to reach out!"
   }
 ]
