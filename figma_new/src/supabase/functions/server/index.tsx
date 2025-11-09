@@ -242,28 +242,73 @@ app.post('/server/chat', async (c) => {
       }
     }
 
+    // Fetch latest study plan (if any)
+    let studyPlanRecord: any = null;
+    const { data: latestPlan, error: planError } = await supabase
+      .from('study_plans')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!planError && latestPlan) {
+      studyPlanRecord = latestPlan;
+    }
+
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
-    let response = '';
-
+    let llmResult: LLMResponsePayload;
     if (openAIApiKey) {
-      response = await callOpenAI(message, messages || [], analysis);
+      llmResult = await callOpenAI(message, messages || [], analysis, studyPlanRecord);
     } else {
-      // Fallback to rule-based responses if no API key configured
-      response = generateRuleBasedResponse(message, analysis);
+      llmResult = generateRuleBasedResponse(message, analysis);
     }
-    
+
+    let replyText = llmResult.reply || 'I’m here to help with your study plan.';
+    let appliedUpdates: PlanUpdateInstruction[] = [];
+    let updatedPlanPayload: any = null;
+
+    if (llmResult.plan_updates?.length && studyPlanRecord) {
+      try {
+        const updateResult = await applyPlanUpdatesToStudyPlan({
+          supabaseAdmin: supabase,
+          planRecord: studyPlanRecord,
+          updates: llmResult.plan_updates,
+        });
+
+        if (updateResult.updatedPlan) {
+          updatedPlanPayload = updateResult.updatedPlan;
+          appliedUpdates = updateResult.appliedUpdates;
+        }
+      } catch (planUpdateError) {
+        console.error('Failed to apply study plan updates:', planUpdateError);
+      }
+    }
+
+    if (llmResult.plan_updates?.length && !appliedUpdates.length) {
+      replyText += '\n\n(Heads up: I couldn’t modify your study plan because no active plan was found.)';
+    }
+
     // Store conversation history
     const conversationKey = `conversation_${user.id}_${Date.now()}`;
     await kv.set(conversationKey, {
       userId: user.id,
       analysisId,
       message,
-      response,
+      response: replyText,
+      planUpdates: appliedUpdates,
       timestamp: new Date().toISOString()
     });
     
-    return c.json({ response });
+    return c.json({
+      response: replyText,
+      reply: replyText,
+      planUpdates: appliedUpdates,
+      planUpdated: !!updatedPlanPayload,
+      updatedPlan: updatedPlanPayload ?? undefined,
+      updatedPlanId: updatedPlanPayload?.id ?? undefined,
+    });
     
   } catch (error: any) {
     console.error('Chat error:', error);
@@ -272,10 +317,15 @@ app.post('/server/chat', async (c) => {
 });
 
 // Helper function to call OpenAI API
-async function callOpenAI(userMessage: string, conversationHistory: any[], analysis: any): Promise<string> {
+async function callOpenAI(
+  userMessage: string,
+  conversationHistory: any[],
+  analysis: any,
+  studyPlan: any
+): Promise<LLMResponsePayload> {
   const apiKey = Deno.env.get('OPENAI_API_KEY');
-  
-  // Build system prompt with user's analysis context
+  const planSummary = buildPlanContextSummary(studyPlan);
+
   let systemPrompt = `You are a helpful career development and study planning assistant for SkillMiner, an application that helps users identify skill gaps and create personalized learning plans.
 
 Your role is to:
@@ -284,8 +334,26 @@ Your role is to:
 - Suggest learning resources and strategies
 - Motivate and support users in their learning journey
 - Answer questions about rescheduling tasks, adjusting difficulty, or modifying their study plan
+- When appropriate, provide structured instructions (plan updates) so the system can modify the stored study plan.
 
-Be encouraging, practical, and specific in your responses.`;
+Always respond with a JSON object that follows this schema:
+{
+  "reply": "natural language response shown to the user",
+  "plan_updates": [
+    {
+      "type": "reschedule_task",
+      "from_date": "YYYY-MM-DD",
+      "to_date": "YYYY-MM-DD",
+      "notes": "optional additional context"
+    }
+  ]
+}
+
+Guidelines for plan updates:
+- Only include plan_updates when the user explicitly requests a change to the study plan.
+- Use ISO 8601 dates (YYYY-MM-DD) that match the provided schedule.
+- If no changes are needed, set plan_updates to an empty array.
+- Focus on simple operations like rescheduling a single day.`;
 
   if (analysis) {
     systemPrompt += `\n\nUser's Current Analysis:
@@ -296,14 +364,15 @@ Be encouraging, practical, and specific in your responses.`;
 - Total Learning Hours Needed: ${analysis.totalLearningHours || 0}`;
   }
 
-  // Build messages array
+  systemPrompt += `\n\nCurrent study plan snapshot:\n${planSummary}`;
+
   const messages = [
     { role: 'system', content: systemPrompt },
     ...conversationHistory.map((msg: any) => ({
       role: msg.role,
-      content: msg.content
+      content: msg.content,
     })),
-    { role: 'user', content: userMessage }
+    { role: 'user', content: userMessage },
   ];
 
   try {
@@ -311,14 +380,15 @@ Be encouraging, practical, and specific in your responses.`;
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', // Cost-effective model
-        messages: messages,
+        model: 'gpt-4o-mini',
+        messages,
         max_tokens: 500,
-        temperature: 0.7
-      })
+        temperature: 0.7,
+        response_format: { type: 'json_object' },
+      }),
     });
 
     if (!response.ok) {
@@ -328,20 +398,36 @@ Be encouraging, practical, and specific in your responses.`;
     }
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    const content = data.choices?.[0]?.message?.content;
+    if (content) {
+      try {
+        const parsed = JSON.parse(content);
+        return {
+          reply: parsed.reply ?? '',
+          plan_updates: Array.isArray(parsed.plan_updates) ? parsed.plan_updates : [],
+        };
+      } catch (jsonError) {
+        console.error('Failed to parse LLM JSON response:', jsonError);
+      }
+    }
+
+    return {
+      reply: content ?? 'I’m here to help with your study plan.',
+      plan_updates: [],
+    };
   } catch (error: any) {
     console.error('Error calling OpenAI:', error);
-    // Fallback to rule-based if API fails
     return generateRuleBasedResponse(userMessage, analysis);
   }
 }
 
 // Fallback rule-based response generator
-function generateRuleBasedResponse(message: string, analysis: any): string {
+function generateRuleBasedResponse(message: string, analysis: any): LLMResponsePayload {
   const messageLower = message.toLowerCase();
-  
+
   if (!analysis) {
-    return `I'm here to help! I can assist you with:
+    return {
+      reply: `I'm here to help! I can assist you with:
 
 • Understanding your skill assessment
 • Creating a personalized learning plan
@@ -349,35 +435,63 @@ function generateRuleBasedResponse(message: string, analysis: any): string {
 • Finding learning resources
 • Preparing for interviews
 
-What would you like help with today?`;
+What would you like help with today?`,
+      plan_updates: [],
+    };
   }
-  
+
   if (messageLower.includes('hard skill')) {
-    if (analysis.missingHardSkills?.length > 0) {
-      return `You're missing the following hard skills:\n\n${analysis.missingHardSkills.map((skill: string) => `• ${skill}`).join('\n')}\n\nI recommend focusing on the most critical ones first. Would you like me to suggest learning resources for any specific skill?`;
-    } else {
-      return `Great news! You have all the hard skills mentioned in the job description: ${analysis.matchingHardSkills.join(', ')}.`;
-    }
+    const reply =
+      analysis.missingHardSkills?.length > 0
+        ? `You're missing the following hard skills:\n\n${analysis.missingHardSkills.map((skill: string) => `• ${skill}`).join('\n')}\n\nI recommend focusing on the most critical ones first. Would you like me to suggest learning resources for any specific skill?`
+        : `Great news! You have all the hard skills mentioned in the job description: ${analysis.matchingHardSkills.join(', ')}.`;
+    return { reply, plan_updates: [] };
   } else if (messageLower.includes('soft skill')) {
-    if (analysis.missingSoftSkills?.length > 0) {
-      return `The job requires these soft skills that could be highlighted better:\n\n${analysis.missingSoftSkills.map((skill: string) => `• ${skill}`).join('\n')}\n\nThese can often be demonstrated through your experience and achievements.`;
-    } else {
-      return `You demonstrate all the soft skills mentioned: ${analysis.matchingSoftSkills.join(', ')}. Well done!`;
-    }
+    const reply =
+      analysis.missingSoftSkills?.length > 0
+        ? `The job requires these soft skills that could be highlighted better:\n\n${analysis.missingSoftSkills.map((skill: string) => `• ${skill}`).join('\n')}\n\nThese can often be demonstrated through your experience and achievements.`
+        : `You demonstrate all the soft skills mentioned: ${analysis.matchingSoftSkills.join(', ')}. Well done!`;
+    return { reply, plan_updates: [] };
   } else if (messageLower.includes('learning plan') || messageLower.includes('study plan') || messageLower.includes('improve')) {
     const totalHours = analysis.totalLearningHours;
-    return `Based on your skill gaps, here's a recommended learning plan:\n\n**Estimated Time:** ${totalHours} hours (about ${Math.ceil(totalHours / 20)} weeks at 20 hours/week)\n\n**Priority Skills:**\n${analysis.missingHardSkills?.slice(0, 3).map((skill: string, i: number) => `${i + 1}. ${skill}`).join('\n') || 'No missing skills identified'}\n\nWould you like detailed resources for any of these?`;
+    return {
+      reply: `Based on your skill gaps, here's a recommended learning plan:\n\n**Estimated Time:** ${totalHours} hours (about ${Math.ceil(totalHours / 20)} weeks at 20 hours/week)\n\n**Priority Skills:**\n${analysis.missingHardSkills?.slice(0, 3).map((skill: string, i: number) => `${i + 1}. ${skill}`).join('\n') || 'No missing skills identified'}\n\nWould you like detailed resources for any of these?`,
+      plan_updates: [],
+    };
   } else if (messageLower.includes('reschedule') || messageLower.includes('schedule')) {
-    return `I can help you reschedule tasks! You can:\n\n• Move tasks to different days\n• Adjust your daily study hours\n• Add or remove days off\n• Extend your timeline\n\nWhat specific changes would you like to make to your schedule?`;
+    return {
+      reply: `I can help you reschedule tasks! You can:\n\n• Move tasks to different days\n• Adjust your daily study hours\n• Add or remove days off\n• Extend your timeline\n\nWhat specific changes would you like to make to your schedule?`,
+      plan_updates: [],
+    };
   } else if (messageLower.includes('harder') || messageLower.includes('difficult')) {
-    return `I'll help you increase the challenge level! This might include:\n\n• Adding more advanced topics\n• Increasing practice problems per day\n• Shortening your timeline\n• Adding real-world projects\n\nWhich aspect would you like to make more challenging?`;
+    return {
+      reply: `I'll help you increase the challenge level! This might include:\n\n• Adding more advanced topics\n• Increasing practice problems per day\n• Shortening your timeline\n• Adding real-world projects\n\nWhich aspect would you like to make more challenging?`,
+      plan_updates: [],
+    };
   } else if (messageLower.includes('easier') || messageLower.includes('slow down')) {
-    return `No problem! We can adjust the difficulty by:\n\n• Extending your timeline\n• Reducing daily study hours\n• Breaking topics into smaller chunks\n• Adding more review days\n\nWhat would help you most right now?`;
+    return {
+      reply: `No problem! We can adjust the difficulty by:\n\n• Extending your timeline\n• Reducing daily study hours\n• Breaking topics into smaller chunks\n• Adding more review days\n\nWhat would help you most right now?`,
+      plan_updates: [],
+    };
   } else if (messageLower.includes('resume')) {
-    return `Here are some tips to improve your resume:\n\n1. **Highlight matching skills** - Emphasize: ${analysis.matchingHardSkills?.slice(0, 3).join(', ') || 'your key skills'}\n2. **Add missing keywords** - Consider adding projects or experience with: ${analysis.missingHardSkills?.slice(0, 2).join(', ') || 'relevant technologies'}\n3. **Quantify achievements** - Use numbers and metrics\n4. **Tailor your summary** - Align it with the job requirements\n\nWould you like specific examples for any section?`;
-  } else {
-    return `I can help you with:\n\n• Understanding your ${analysis.matchScore}% match score\n• Creating a learning plan for the ${analysis.missingHardSkills?.length || 0} skills you need\n• Rescheduling tasks or adjusting difficulty\n• Improving your resume\n• Finding resources for specific skills\n\nWhat would you like to know more about?`;
+    return {
+      reply: `Here are some tips to improve your resume:\n\n1. **Highlight matching skills** - Emphasize: ${analysis.matchingHardSkills?.slice(0, 3).join(', ') || 'your key skills'}\n2. **Add missing keywords** - Consider adding projects or experience with: ${analysis.missingHardSkills?.slice(0, 2).join(', ') || 'relevant technologies'}\n3. **Quantify achievements** - Use numbers and metrics\n4. **Tailor your summary** - Align it with the job requirements\n\nWould you like specific examples for any section?`,
+      plan_updates: [],
+    };
   }
+
+  return {
+    reply: `I can help you with:
+
+• Understanding your ${analysis.matchScore}% match score
+• Creating a learning plan for the ${analysis.missingHardSkills?.length || 0} skills you need
+• Rescheduling tasks or adjusting difficulty
+• Improving your resume
+• Finding resources for specific skills
+
+What would you like to know more about?`,
+    plan_updates: [],
+  };
 }
 
 // Get detailed report
@@ -446,7 +560,59 @@ app.get('/server/report/:analysisId', async (c) => {
 
 const DAY_LABELS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
+type PlanUpdateInstruction = {
+  type: 'reschedule_task';
+  from_date?: string;
+  to_date?: string;
+  fromDate?: string;
+  toDate?: string;
+  notes?: string;
+};
+
+interface LLMResponsePayload {
+  reply: string;
+  plan_updates?: PlanUpdateInstruction[];
+}
+
 const normalizeStudyDay = (day: string) => day.slice(0, 3).toLowerCase();
+
+const normalizePlanUpdate = (update: PlanUpdateInstruction): PlanUpdateInstruction | null => {
+  if (!update || update.type !== 'reschedule_task') return null;
+  const fromDate = update.from_date ?? update.fromDate;
+  const toDate = update.to_date ?? update.toDate;
+  if (!fromDate || !toDate) return null;
+  return {
+    type: 'reschedule_task',
+    from_date: fromDate,
+    to_date: toDate,
+    notes: update.notes,
+  };
+};
+
+const parseISOToLocalDate = (iso: string | undefined | null): Date | null => {
+  if (!iso) return null;
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const [, year, month, day] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const formatMonthDay = (date: Date): string =>
+  date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+const createRestDayEntry = (date: Date) => ({
+  date: formatMonthDay(date),
+  fullDate: date.toISOString().split('T')[0],
+  dayOfWeek: DAY_LABELS_SHORT[date.getDay()],
+  theme: 'Rest & Recharge',
+  task: 'Rest day — no study planned.',
+  resources: '',
+  estTime: '0h',
+  xp: 0,
+  completed: false,
+  isRestDay: true,
+});
 
 const parseEstimatedHours = (estTime?: string | null): number => {
   if (!estTime) return 0;
@@ -549,6 +715,167 @@ const applyStudyDayScheduling = ({
     tasks: scheduledTasks,
     totalXP: totals.totalXP,
     totalHours: Math.round(totals.totalHours * 10) / 10,
+  };
+};
+
+const mapDbPlanToFrontend = (plan: any) => ({
+  id: plan.id,
+  userId: plan.user_id,
+  analysisId: plan.analysis_id,
+  status: plan.status,
+  createdAt: plan.created_at,
+  updatedAt: plan.updated_at,
+  startDate: plan.start_date,
+  endDate: plan.end_date,
+  totalDays: plan.total_days,
+  hoursPerDay: plan.hours_per_day,
+  studyDays: plan.study_days,
+  planData: plan.plan_data,
+  metadata: plan.metadata,
+});
+
+const buildPlanContextSummary = (plan: any | null): string => {
+  if (!plan || !plan.plan_data || !Array.isArray(plan.plan_data.tasks)) {
+    return 'No active study plan is currently available.';
+  }
+
+  const tasks: any[] = plan.plan_data.tasks;
+  if (!tasks.length) {
+    return 'The active study plan has no scheduled tasks.';
+  }
+
+  const upcoming = tasks
+    .slice(0, 14)
+    .map((task: any) => {
+      const label = task.fullDate || task.full_date || task.date || 'Unknown date';
+      const theme = task.theme || 'Task';
+      const desc = task.task || '';
+      return `- ${label}: ${theme}${desc ? ` — ${desc}` : ''}${task.isRestDay ? ' (Rest Day)' : ''}`;
+    })
+    .join('\n');
+
+  return `Upcoming schedule (max 14 days):\n${upcoming}`;
+};
+
+const applyPlanUpdatesToStudyPlan = async ({
+  supabaseAdmin,
+  planRecord,
+  updates,
+}: {
+  supabaseAdmin: any;
+  planRecord: any;
+  updates: PlanUpdateInstruction[];
+}): Promise<{ updatedPlan: any | null; appliedUpdates: PlanUpdateInstruction[] }> => {
+  if (!updates?.length || !planRecord?.plan_data?.tasks) {
+    return { updatedPlan: null, appliedUpdates: [] };
+  }
+
+  const tasks: any[] = planRecord.plan_data.tasks.map((task: any) => ({ ...task }));
+  const applied: PlanUpdateInstruction[] = [];
+
+  for (const rawUpdate of updates) {
+    const update = normalizePlanUpdate(rawUpdate);
+    if (!update) continue;
+
+    const fromDateStr = update.from_date!;
+    const toDateStr = update.to_date!;
+    const fromDate = parseISOToLocalDate(fromDateStr);
+    const toDate = parseISOToLocalDate(toDateStr);
+    if (!fromDate || !toDate) continue;
+
+    const findTaskIndex = (target: string) =>
+      tasks.findIndex((task) => {
+        const fullDate = task.fullDate || task.full_date;
+        return fullDate === target;
+      });
+
+    const fromIndex = findTaskIndex(fromDateStr);
+    const toIndex = findTaskIndex(toDateStr);
+
+    if (fromIndex === -1 || toIndex === -1) continue;
+
+    const fromTask = { ...tasks[fromIndex] };
+    const toTask = { ...tasks[toIndex] };
+
+    const updatedToTask = {
+      ...fromTask,
+      date: formatMonthDay(toDate),
+      fullDate: toDateStr,
+      dayOfWeek: DAY_LABELS_SHORT[toDate.getDay()],
+      isRestDay: false,
+      completed: false,
+    };
+
+    const updatedFromTask = toTask && !toTask.isRestDay
+      ? {
+          ...toTask,
+          date: formatMonthDay(fromDate),
+          fullDate: fromDateStr,
+          dayOfWeek: DAY_LABELS_SHORT[fromDate.getDay()],
+          isRestDay: !!toTask.isRestDay,
+          completed: !!toTask.completed,
+        }
+      : createRestDayEntry(fromDate);
+
+    tasks[toIndex] = updatedToTask;
+    tasks[fromIndex] = updatedFromTask;
+
+    applied.push({
+      type: 'reschedule_task',
+      from_date: fromDateStr,
+      to_date: toDateStr,
+      fromDate: fromDateStr,
+      toDate: toDateStr,
+      notes: update.notes,
+    });
+  }
+
+  if (!applied.length) {
+    return { updatedPlan: null, appliedUpdates: [] };
+  }
+
+  const completedTasks = tasks.filter((task) => task.completed).length;
+  const totalXP = tasks.reduce((sum, task) => {
+    if (task.isRestDay) return sum;
+    const xp = typeof task.xp === 'number' ? task.xp : parseInt(task.xp ?? '0', 10);
+    return sum + (Number.isFinite(xp) ? xp : 0);
+  }, 0);
+
+  const updatedMetadata = {
+    ...planRecord.metadata,
+    completedTasks,
+    progress: tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0,
+    totalXP,
+  };
+
+  const updatedPlanData = {
+    ...planRecord.plan_data,
+    tasks,
+  };
+
+  const updatedAt = new Date().toISOString();
+
+  const { data: updatedPlanRow, error: updateError } = await supabaseAdmin
+    .from('study_plans')
+    .update({
+      plan_data: updatedPlanData,
+      metadata: updatedMetadata,
+      updated_at: updatedAt,
+    })
+    .eq('id', planRecord.id)
+    .select()
+    .single();
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  const frontendPlan = mapDbPlanToFrontend(updatedPlanRow);
+  await kv.set(planRecord.id, frontendPlan);
+
+  return {
+    updatedPlan: frontendPlan,
+    appliedUpdates: applied,
   };
 };
 
@@ -1060,7 +1387,7 @@ function generateMockStudyPlan(params: {
   const { analysis, timeline, studyDays } = params;
   const startDate = new Date();
   
-  const tasks = [];
+  const tasks: any[] = [];
   const themes = [
     'Orientation',
     'Python Basics',

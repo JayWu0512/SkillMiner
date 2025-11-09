@@ -75,6 +75,20 @@ export default function App() {
     []
   );
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleStudyPlanUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<StudyPlanData>).detail;
+      if (!detail || !detail.id) return;
+      setCurrentPlanId(detail.id);
+      handlePlanUpdate(detail);
+    };
+    window.addEventListener("studyPlanUpdatedFromChat", handleStudyPlanUpdate as EventListener);
+    return () => {
+      window.removeEventListener("studyPlanUpdatedFromChat", handleStudyPlanUpdate as EventListener);
+    };
+  }, [handlePlanUpdate]);
+
   const fetchAndStorePlan = async (planId: string, tokenOverride?: string | null) => {
     try {
       const plan = await getStudyPlan(tokenOverride ?? accessToken ?? null, planId);
