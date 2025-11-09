@@ -1,14 +1,13 @@
+// src/App.tsx
 import { useState, useEffect } from "react";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "./components/ui/tabs";
+import { BrowserRouter } from "react-router-dom";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Switch } from "./components/ui/switch";
 import { Label } from "./components/ui/label";
+import { Toaster } from "./components/ui/sonner";
 
-// Mockup components
+// === Mockups ===
 import { LoginPageMockup } from "./components/mockups/LoginPageMockup";
 import { UploadPageMockup } from "./components/mockups/UploadPageMockup";
 import { MainDashboardMockup } from "./components/mockups/MainDashboardMockup";
@@ -21,65 +20,93 @@ import { ProfileMockup } from "./components/mockups/ProfileMockup";
 import { ResumeMockup } from "./components/mockups/ResumeMockup";
 import { PersistentChatbot } from "./components/mockups/PersistentChatbot";
 
-// Real components (for production)
+// === Real components ===
 import { LoginPage } from "./components/LoginPage";
 import { UploadPage } from "./components/UploadPage";
 import { ChatbotPage } from "./components/ChatbotPage";
-import { createClient } from "./utils/supabase/client";
-import { Toaster } from "./components/ui/sonner";
-import { BrowserRouter } from "react-router-dom";
 
-// Set to true when ready to use real authentication
+import { createClient } from "./utils/supabase/client";
+
+// === CONFIG ===
 const USE_REAL_AUTH = true;
 
-type AppState = "login" | "upload" | "chat"| "report" ;
-
-type MockupPage = "login" | "upload" | "report" | "dashboard" | "plan" | "coding" | "interview" | "profile" | "resume";
+// app state types
+type AppState = "login" | "upload" | "report" | "dashboard" | "chat";
+type MockupPage =
+  | "login"
+  | "upload"
+  | "report"
+  | "dashboard"
+  | "plan"
+  | "coding"
+  | "interview"
+  | "profile"
+  | "resume";
 
 export default function App() {
   const [mockupMode, setMockupMode] = useState(false);
   const [currentPage, setCurrentPage] = useState<MockupPage>("login");
+
   const [appState, setAppState] = useState<AppState>("login");
   const [accessToken, setAccessToken] = useState<string>("");
   const [analysisId, setAnalysisId] = useState<string>("");
 
+  // 導頁：依是否已有上傳紀錄
+  const routeByHistory = async (uid: string) => {
+    const supabase = createClient();
+    const { count, error } = await supabase
+      .from("skill_analyses")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", uid)
+      .not("resume_text", "is", null)
+      .neq("resume_text", "");
+
+    if (error) {
+      console.error("[App] skill_analyses query error:", error);
+      setAppState("upload");
+      return;
+    }
+    setAppState((count ?? 0) > 0 ? "dashboard" : "upload");
+  };
+
   useEffect(() => {
     if (USE_REAL_AUTH && !mockupMode) {
-      // Check for existing session on mount
       const checkSession = async () => {
         const supabase = createClient();
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
-        if (session?.access_token) {
+        if (session?.access_token && session?.user?.id) {
           setAccessToken(session.access_token);
-          setAppState("upload");
+          await routeByHistory(session.user.id);
+        } else {
+          setAppState("login");
         }
       };
 
       checkSession();
 
-      // Listen for auth state changes (OAuth redirect)
       const supabase = createClient();
       const {
         data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.access_token) {
+      } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session?.access_token && session?.user?.id) {
           setAccessToken(session.access_token);
-          setAppState("upload");
+          await routeByHistory(session.user.id);
+        } else {
+          setAppState("login");
         }
       });
 
-      return () => {
-        subscription.unsubscribe();
-      };
+      return () => subscription.unsubscribe();
     }
   }, [mockupMode]);
 
+  // handlers
   const handleLoginSuccess = (token: string) => {
     setAccessToken(token);
-    setAppState("upload");
+    // 將跳轉交給 onAuthStateChange / routeByHistory
   };
 
   const handleAnalysisComplete = (id: string) => {
@@ -97,21 +124,16 @@ export default function App() {
     setAppState("login");
   };
 
-  // Mockup mode - show tabbed interface
+  // ===== Mockup mode =====
   if (mockupMode) {
     return (
       <div className="min-h-screen bg-slate-100">
         <div className="bg-white border-b border-slate-200 p-4">
           <div className="container mx-auto">
             <div className="flex items-center justify-between mb-2">
-              <h1 className="text-slate-900 text-xl">
-                SkillMiner - Figma Mockups
-              </h1>
+              <h1 className="text-slate-900 text-xl">SkillMiner - Figma Mockups</h1>
               <div className="flex items-center gap-3">
-                <Label
-                  htmlFor="mode-toggle"
-                  className="text-sm text-slate-600"
-                >
+                <Label htmlFor="mode-toggle" className="text-sm text-slate-600">
                   Mockup Mode
                 </Label>
                 <Switch
@@ -121,71 +143,51 @@ export default function App() {
                 />
               </div>
             </div>
-            <p className="text-slate-600 text-sm">
-              Browse and customize each page design. Switch
-              between tabs to view different screens.
-            </p>
+            <p className="text-slate-600 text-sm">Browse and customize each page design.</p>
           </div>
         </div>
 
-        <Tabs value={currentPage} onValueChange={(value) => setCurrentPage(value as MockupPage)} className="w-full">
+        <Tabs
+          value={currentPage}
+          onValueChange={(v) => setCurrentPage(v as MockupPage)}
+          className="w-full"
+        >
           <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
             <div className="container mx-auto px-4">
               <TabsList className="w-full justify-start h-auto p-0 bg-transparent overflow-x-auto">
-                <TabsTrigger
-                  value="login"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent"
-                >
-                  Login
-                </TabsTrigger>
-                <TabsTrigger
-                  value="upload"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent"
-                >
-                  Upload
-                </TabsTrigger>
-                <TabsTrigger
-                  value="report"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent"
-                >
-                  Skill Report
-                </TabsTrigger>
-                <TabsTrigger
-                  value="dashboard"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent"
-                >
-                  Dashboard
-                </TabsTrigger>
-                <TabsTrigger
-                  value="plan"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent"
-                >
-                  Study Plan
-                </TabsTrigger>
-                <TabsTrigger
-                  value="coding"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent"
-                >
-                  Coding Practice
-                </TabsTrigger>
-                <TabsTrigger
-                  value="interview"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent"
-                >
-                  Interview Practice
-                </TabsTrigger>
-                <TabsTrigger
-                  value="profile"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent"
-                >
-                  Profile
-                </TabsTrigger>
-                <TabsTrigger
-                  value="resume"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent"
-                >
-                  Resume
-                </TabsTrigger>
+                {[
+                  "login",
+                  "upload",
+                  "report",
+                  "dashboard",
+                  "plan",
+                  "coding",
+                  "interview",
+                  "profile",
+                  "resume",
+                ].map((k) => (
+                  <TabsTrigger
+                    key={k}
+                    value={k}
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent"
+                  >
+                    {
+                      (
+                        {
+                          login: "Login",
+                          upload: "Upload",
+                          report: "Skill Report",
+                          dashboard: "Dashboard",
+                          plan: "Study Plan",
+                          coding: "Coding Practice",
+                          interview: "Interview Practice",
+                          profile: "Profile",
+                          resume: "Resume",
+                        } as const
+                      )[k as keyof typeof LABELS]
+                    }
+                  </TabsTrigger>
+                ))}
               </TabsList>
             </div>
           </div>
@@ -203,31 +205,31 @@ export default function App() {
           </TabsContent>
 
           <TabsContent value="dashboard" className="m-0">
-            <MainDashboardMockup onNavigate={(page) => setCurrentPage(page)} />
+            <MainDashboardMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
             <PersistentChatbot />
           </TabsContent>
 
           <TabsContent value="plan" className="m-0">
-            <StudyPlanMockup onNavigate={(page) => setCurrentPage(page)} />
+            <StudyPlanMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
             <PersistentChatbot />
           </TabsContent>
 
           <TabsContent value="coding" className="m-0">
-            <CodingPracticeMockup onNavigate={(page) => setCurrentPage(page)} />
+            <CodingPracticeMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
           </TabsContent>
 
           <TabsContent value="interview" className="m-0">
-            <InterviewPracticeMockup onNavigate={(page) => setCurrentPage(page)} />
+            <InterviewPracticeMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
             <PersistentChatbot />
           </TabsContent>
 
           <TabsContent value="profile" className="m-0">
-            <ProfileMockup onNavigate={(page) => setCurrentPage(page)} />
+            <ProfileMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
             <PersistentChatbot />
           </TabsContent>
 
           <TabsContent value="resume" className="m-0">
-            <ResumeMockup onNavigate={(page) => setCurrentPage(page)} />
+            <ResumeMockup onNavigate={(p) => setCurrentPage(p as MockupPage)} />
             <PersistentChatbot />
           </TabsContent>
         </Tabs>
@@ -235,10 +237,11 @@ export default function App() {
     );
   }
 
-  // Real app mode - show actual authentication flow
+  // ===== Real app mode =====
   return (
     <BrowserRouter>
       {appState === "login" && <LoginPage onLoginSuccess={handleLoginSuccess} />}
+
       {appState === "upload" && (
         <UploadPage
           accessToken={accessToken}
@@ -246,9 +249,20 @@ export default function App() {
           onLogout={handleLogout}
         />
       )}
+
       {appState === "report" && (
-        <SkillReportMockup onGenerateStudyPlan={() => setAppState("chat")} />
+        <SkillReportMockup onGenerateStudyPlan={() => setAppState("dashboard")} />
       )}
+
+      {appState === "dashboard" && (
+        <MainDashboardMockup
+          onNavigate={(page) => {
+            if (page === "report") setAppState("report");
+            if (page === "coding") setAppState("dashboard");
+          }}
+        />
+      )}
+
       {appState === "chat" && (
         <ChatbotPage
           accessToken={accessToken}
@@ -256,7 +270,30 @@ export default function App() {
           onLogout={handleLogout}
         />
       )}
+
+      {/* ✅ 除了 login 與 upload，其餘頁面都顯示浮窗 */}
+      {appState !== "login" && appState !== "upload" && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className="pointer-events-auto">
+            <PersistentChatbot />
+          </div>
+        </div>
+      )}
+
       <Toaster />
     </BrowserRouter>
   );
 }
+
+// Helper label map for Tabs (kept outside component to avoid re-creation)
+const LABELS = {
+  login: "Login",
+  upload: "Upload",
+  report: "Skill Report",
+  dashboard: "Dashboard",
+  plan: "Study Plan",
+  coding: "Coding Practice",
+  interview: "Interview Practice",
+  profile: "Profile",
+  resume: "Resume",
+} as const;

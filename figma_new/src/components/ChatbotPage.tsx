@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Brain, Send, Menu, FileText, LogOut, MessageSquare } from 'lucide-react';
 import { SkillReport } from './SkillReport';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { projectId, publicAnonKey, edgeFunctionName } from '../utils/supabase/info';
 
 interface Message {
   id: string;
@@ -31,7 +31,7 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
     const loadInitialData = async () => {
       try {
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/server/analysis/${analysisId}`,
+          `https://${projectId}.supabase.co/functions/v1/${edgeFunctionName}/analysis/${analysisId}`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`,
@@ -78,7 +78,7 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/chat`,
+        `https://${projectId}.supabase.co/functions/v1/${edgeFunctionName}/chat`,
         {
           method: 'POST',
           headers: {

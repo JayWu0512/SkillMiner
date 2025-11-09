@@ -5,6 +5,7 @@ import { Textarea } from './ui/textarea';
 import { Card } from './ui/card';
 import { Brain, Upload, FileText, Sparkles, LogOut } from 'lucide-react';
 import { createClient } from '../utils/supabase/client'; 
+import { projectId, publicAnonKey, edgeFunctionName } from '../utils/supabase/info';
 
 interface UploadPageProps {
   accessToken: string;

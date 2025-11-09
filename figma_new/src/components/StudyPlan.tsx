@@ -1,13 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Calendar, Download, RefreshCw, ChevronLeft, ChevronRight, Target, Clock, Trophy, Loader2 } from 'lucide-react';
-import { Card } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { Header } from '../Header';
-import { getStudyPlan, updateTaskCompletion, type StudyPlan, type DailyTask as StudyPlanDailyTask } from '../../services/studyPlan';
-import { createClient } from '../../utils/supabase/client';
+import { useState } from 'react';
+import { Calendar, Download, RefreshCw, ChevronLeft, ChevronRight, Target, Clock, Trophy } from 'lucide-react';
+import { Card } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+// import { Header } from './Header';
 
 interface DailyTask {
   date: string;
@@ -133,185 +131,41 @@ const generateMonthData = (monthOffset: number) => {
   };
 };
 
+type MockupPage = "login" | "upload" | "report" | "dashboard" | "plan" | "coding" | "interview" | "profile" | "resume";
+
 interface StudyPlanMockupProps {
-  onNavigate?: (page: string) => void;
-  planId?: string;
-  accessToken?: string;
+  onNavigate?: (page: MockupPage) => void;
 }
 
-export function StudyPlanMockup({ onNavigate, planId, accessToken }: StudyPlanMockupProps) {
+export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
   const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'month'>('calendar');
   const [currentWeek, setCurrentWeek] = useState(0);
   const [currentMonthOffset, setCurrentMonthOffset] = useState(0);
-  const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [useRealData, setUseRealData] = useState(!!planId);
 
-  // Fetch study plan data if planId is provided
-  useEffect(() => {
-    if (planId && useRealData) {
-      const fetchStudyPlan = async () => {
-        setIsLoading(true);
-        try {
-          let token: string | null = accessToken || null;
-          if (!token) {
-            // Try to get session token
-            try {
-              const supabase = createClient();
-              const { data: { session } } = await supabase.auth.getSession();
-              token = session?.access_token || null;
-            } catch (sessionErr) {
-              console.log('No session available, proceeding without auth for mockup mode');
-              token = null;
-            }
-          }
-          
-          // Try to fetch study plan (works without token in mockup mode)
-          try {
-            const plan = await getStudyPlan(token, planId);
-            setStudyPlan(plan);
-          } catch (fetchErr: any) {
-            console.error('Error fetching study plan:', fetchErr);
-            console.warn('Falling back to mock data');
-            setUseRealData(false);
-          }
-        } catch (error) {
-          console.error('Error fetching study plan:', error);
-          setUseRealData(false); // Fall back to mock data
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      
-      fetchStudyPlan();
-    }
-  }, [planId, useRealData, accessToken]);
-
-  // Determine which data to use
-  const totalWeeks = studyPlan ? Math.ceil(studyPlan.totalDays / 7) : 8;
-  const allTasks: Array<DailyTask & { fullDate: Date }> = studyPlan 
-    ? studyPlan.planData.tasks.map((task: StudyPlanDailyTask) => {
-        // Parse date from task.fullDate or task.date
-        let fullDate: Date;
-        if (task.fullDate) {
-          fullDate = new Date(task.fullDate);
-        } else {
-          // Try to parse from date string (format: "Nov 11")
-          const dateMatch = task.date.match(/(\w+)\s+(\d+)/);
-          if (dateMatch) {
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const month = monthNames.indexOf(dateMatch[1]);
-            const day = parseInt(dateMatch[2]);
-            fullDate = new Date(2024, month, day);
-          } else {
-            fullDate = new Date();
-          }
-        }
-        return {
-          date: task.date,
-          dayOfWeek: task.dayOfWeek,
-          theme: task.theme,
-          task: task.task,
-          resources: task.resources,
-          estTime: task.estTime,
-          xp: task.xp,
-          completed: task.completed || false,
-          fullDate,
-        };
-      })
-    : generateAllTasks();
-  
-  const currentWeekData = studyPlan
-    ? allTasks.slice(currentWeek * 7, (currentWeek + 1) * 7).map((task, index) => ({
-        date: task.date,
-        dayOfWeek: task.dayOfWeek,
-        theme: task.theme,
-        task: task.task,
-        resources: task.resources,
-        estTime: task.estTime,
-        xp: task.xp,
-        completed: task.completed || false,
-      }))
-    : generateWeekData(currentWeek);
-  
-  const startDate = currentWeekData[0]?.date || '';
-  const endDate = currentWeekData[6]?.date || '';
+  const totalWeeks = 8; // 2 months = ~8 weeks
+  const currentWeekData = generateWeekData(currentWeek);
+  const startDate = currentWeekData[0].date;
+  const endDate = currentWeekData[6].date;
   
   // Month view data
   const monthData = generateMonthData(currentMonthOffset);
-  
-  const weeksPhases = studyPlan
-    ? studyPlan.planData.phases.map(phase => ({
-        range: phase.range,
-        label: phase.label,
-        color: phase.color,
-      }))
-    : [
-        { range: [0, 1], label: 'Foundations', color: 'purple' },
-        { range: [2, 3], label: 'Visualization & EDA', color: 'blue' },
-        { range: [4, 5], label: 'Advanced Topics', color: 'orange' },
-        { range: [6, 7], label: 'Portfolio & Interview', color: 'green' },
-      ];
+  const allTasks = generateAllTasks();
   
   // Get tasks for a specific date
   const getTasksForDate = (date: Date) => {
-    return allTasks.filter(task => {
-      const taskDate = task.fullDate instanceof Date ? task.fullDate : new Date(task.fullDate);
-      return (
-        taskDate.getDate() === date.getDate() &&
-        taskDate.getMonth() === date.getMonth() &&
-        taskDate.getFullYear() === date.getFullYear()
-      );
-    });
-  };
-
-  // Handle task completion
-  const handleTaskComplete = async (taskIndex: number, completed: boolean) => {
-    if (!studyPlan || !planId) return;
-    
-    try {
-      let token: string | null = accessToken || null;
-      if (!token) {
-        try {
-          const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          token = session?.access_token || null;
-        } catch (sessionErr) {
-          token = null;
-        }
-      }
-      
-      try {
-        const updatedPlan = await updateTaskCompletion(token, planId, taskIndex, completed);
-        setStudyPlan(updatedPlan);
-      } catch (updateErr) {
-        console.error('Error updating task, updating locally:', updateErr);
-        // Update locally if API call fails
-        const updatedTasks = [...studyPlan.planData.tasks];
-        updatedTasks[taskIndex].completed = completed;
-        setStudyPlan({
-          ...studyPlan,
-          planData: {
-            ...studyPlan.planData,
-            tasks: updatedTasks,
-          },
-        });
-      }
-    } catch (error) {
-      console.error('Error updating task completion:', error);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
-          <p className="text-slate-600">Loading your study plan...</p>
-        </div>
-      </div>
+    return allTasks.filter(task => 
+      task.fullDate.getDate() === date.getDate() &&
+      task.fullDate.getMonth() === date.getMonth() &&
+      task.fullDate.getFullYear() === date.getFullYear()
     );
-  }
+  };
+
+  const weeksPhases = [
+    { range: [0, 1], label: 'Foundations', color: 'purple' },
+    { range: [2, 3], label: 'Visualization & EDA', color: 'blue' },
+    { range: [4, 5], label: 'Advanced Topics', color: 'orange' },
+    { range: [6, 7], label: 'Portfolio & Interview', color: 'green' },
+  ];
 
   const currentPhase = weeksPhases.find(phase => 
     currentWeek >= phase.range[0] && currentWeek <= phase.range[1]
@@ -319,7 +173,7 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken }: StudyPlanMo
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <Header 
+      {/* <Header 
         activePage="study-plan" 
         onNavigate={(page) => {
           const pageMap: Record<string, MockupPage> = {
@@ -332,7 +186,7 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken }: StudyPlanMo
           onNavigate?.(pageMap[page] || 'plan');
         }}
         onLogout={() => onNavigate?.('login')}
-      />
+      /> */}
       
       {/* Page Header */}
       <div className="bg-white border-b border-slate-200">
@@ -340,12 +194,7 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken }: StudyPlanMo
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl text-slate-900 mb-2">Study Plan</h1>
-              <p className="text-slate-600">
-                {studyPlan 
-                  ? `Data Analyst Role • ${studyPlan.totalDays}-day timeline • Target: ${new Date(studyPlan.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                  : 'Data Analyst Role • 60-day timeline • Target: Feb 10, 2025'
-                }
-              </p>
+              <p className="text-slate-600">Data Analyst Role • 60-day timeline • Target: Feb 10, 2025</p>
             </div>
             <div className="flex gap-3">
               <Dialog>
@@ -421,9 +270,7 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken }: StudyPlanMo
                 </div>
                 <div>
                   <div className="text-sm text-slate-600">Progress</div>
-                  <div className="text-xl text-slate-900">
-                    {studyPlan ? `${studyPlan.metadata.progress}%` : '34%'}
-                  </div>
+                  <div className="text-xl text-slate-900">34%</div>
                 </div>
               </div>
             </Card>
@@ -434,12 +281,7 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken }: StudyPlanMo
                 </div>
                 <div>
                   <div className="text-sm text-slate-600">Days Remaining</div>
-                  <div className="text-xl text-slate-900">
-                    {studyPlan 
-                      ? Math.max(0, Math.ceil((new Date(studyPlan.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
-                      : '52'
-                    }
-                  </div>
+                  <div className="text-xl text-slate-900">52</div>
                 </div>
               </div>
             </Card>
@@ -450,12 +292,7 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken }: StudyPlanMo
                 </div>
                 <div>
                   <div className="text-sm text-slate-600">Total XP</div>
-                  <div className="text-xl text-slate-900">
-                    {studyPlan 
-                      ? `${studyPlan.planData.tasks.filter(t => t.completed).reduce((sum, t) => sum + t.xp, 0)} / ${studyPlan.metadata.totalXP}`
-                      : '220 / 650'
-                    }
-                  </div>
+                  <div className="text-xl text-slate-900">220 / 650</div>
                 </div>
               </div>
             </Card>
@@ -526,7 +363,7 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken }: StudyPlanMo
                     <div className="text-lg text-slate-900 mb-1">{task.date}</div>
                     <div className="text-xs text-slate-600">{task.theme}</div>
                   </div>
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                     <div className="bg-white rounded p-2 border border-slate-200">
                       <div className="text-xs text-slate-900 mb-1 line-clamp-2">{task.task}</div>
                       <div className="flex items-center gap-1 text-xs text-slate-500">
@@ -541,23 +378,6 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken }: StudyPlanMo
                     }`}>
                       {task.completed ? '✓ Completed' : `${task.xp} XP`}
                     </Badge>
-                    {studyPlan && planId && (
-                      <Button
-                        size="sm"
-                        variant={task.completed ? "outline" : "default"}
-                        className="w-full text-xs"
-                        onClick={() => {
-                          const taskIndex = studyPlan.planData.tasks.findIndex(t => 
-                            t.date === task.date && t.dayOfWeek === task.dayOfWeek
-                          );
-                          if (taskIndex !== -1) {
-                            handleTaskComplete(taskIndex, !task.completed);
-                          }
-                        }}
-                      >
-                        {task.completed ? 'Mark Incomplete' : 'Mark Complete'}
-                      </Button>
-                    )}
                   </div>
                 </Card>
               ))}

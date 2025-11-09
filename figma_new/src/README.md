@@ -57,10 +57,8 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 SUPABASE_DB_URL=your_database_connection_string
 
-# Optional - For AI Chatbot
+# Optional - For AI Chatbot (OpenAI only)
 OPENAI_API_KEY=sk-...          # Use OpenAI GPT
-# OR
-ANTHROPIC_API_KEY=sk-ant-...   # Use Anthropic Claude
 ```
 
 ### 4. Start Using the App
@@ -159,23 +157,14 @@ Toggle the "Mockup Mode" switch in the app header to switch between modes.
 
 ## 🤖 Chatbot Integration
 
-The chatbot supports two LLM providers:
+The chatbot uses OpenAI when an API key is provided:
 
-### OpenAI (GPT)
 ```bash
 OPENAI_API_KEY=sk-...
 ```
 - Uses `gpt-4o-mini` model (cost-effective)
 - Excellent for conversational responses
 - Good context understanding
-
-### Anthropic (Claude)
-```bash
-ANTHROPIC_API_KEY=sk-ant-...
-```
-- Uses `claude-3-haiku` model (cost-effective)
-- Strong reasoning capabilities
-- Great for detailed explanations
 
 ### Fallback Mode
 If no API key is configured, the chatbot uses rule-based responses:

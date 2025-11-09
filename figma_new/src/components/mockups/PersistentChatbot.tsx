@@ -7,6 +7,8 @@ import { Badge } from '../ui/badge';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { sendChatMessage } from '../../services/api';
 import { createClient } from '../../utils/supabase/client';
+import { projectId, publicAnonKey, edgeFunctionName } from '../../utils/supabase/info';
+
 
 interface Message {
   role: 'user' | 'assistant';
@@ -282,6 +284,7 @@ export function PersistentChatbot() {
       console.log('Sending chat message:', userMessage);
       console.log('Resume text length:', resumeText?.length || 0);
       
+
       // Use the API service to send chat message
       const data = await sendChatMessage(
         userMessage,

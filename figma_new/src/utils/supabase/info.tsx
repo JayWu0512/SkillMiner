@@ -2,3 +2,6 @@
 
 export const projectId = "wjfodecgrlbievxtzfoq"
 export const publicAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqZm9kZWNncmxiaWV2eHR6Zm9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxOTUxMjYsImV4cCI6MjA3Nzc3MTEyNn0.b4kWNXDG53krE3K6TY1FNsclwRUBI5zVnwEpqNF_0iw"
+
+// Supabase Edge Function name (update this if you rename/redeploy the function)
+export const edgeFunctionName = "server"
