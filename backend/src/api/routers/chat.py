@@ -2,6 +2,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from typing import Iterator
 import traceback
+import re
+import json
 
 from src.schemas import ChatRequest, ChatResponse
 from src.util.io import message, save_chat_log
@@ -65,14 +67,46 @@ def chat(req: ChatRequest):
         except Exception as e:
             print(f"[Log] Error saving chat log: {e}")
 
-        # Simple citations surface (headers of retrieved)
-        citations = [hdr for hdr, _ in retrieved]
+        # Don't include RAG citations in normal responses - only include special citations like study plan updates
+        citations = []
         
         # Ensure reply is not empty
         if not reply or not reply.strip():
             reply = "I apologize, but I couldn't generate a response. Please try again or rephrase your question."
         
-        return ChatResponse(reply=reply, citations=citations)
+        # Check if the reply contains a study plan update action
+        study_plan_update = None
+        reply_text = reply
+        
+        # Look for [STUDY_PLAN_UPDATE:...] pattern
+        update_pattern = r'\[STUDY_PLAN_UPDATE:([^\]]+)\]'
+        match = re.search(update_pattern, reply)
+        
+        if match:
+            try:
+                # Parse the update parameters
+                params_str = match.group(1)
+                # Extract user_id, action, and params
+                user_id_match = re.search(r'user_id=([^,]+)', params_str)
+                action_match = re.search(r'action=([^,]+)', params_str)
+                params_match = re.search(r'params=({.+?})', params_str)
+                
+                if action_match:
+                    study_plan_update = {
+                        'user_id': user_id_match.group(1).strip() if user_id_match else 'current_user',
+                        'action': action_match.group(1).strip(),
+                        'params': json.loads(params_match.group(1)) if params_match else {}
+                    }
+                    # Remove the action marker from the reply
+                    reply_text = re.sub(update_pattern, '', reply).strip()
+            except Exception as e:
+                print(f"[Chat] Error parsing study plan update: {e}")
+        
+        # Add study plan update info to citations if present
+        if study_plan_update:
+            citations.append(f"STUDY_PLAN_UPDATE:{json.dumps(study_plan_update)}")
+        
+        return ChatResponse(reply=reply_text, citations=citations)
         
     except HTTPException:
         raise

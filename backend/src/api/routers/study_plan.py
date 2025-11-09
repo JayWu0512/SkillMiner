@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, validator
 
 from src.db.supabase_client import get_supabase_client
 from src.llm.client import get_openai_client
+from src.schemas import StudyPlanUpdateRequest, StudyPlanUpdateResponse
 
 router = APIRouter()
 
@@ -567,4 +568,91 @@ async def update_task_completion(plan_id: str, task_index: int, completed: bool)
     record["updated_at"] = updated_at
 
     return _format_study_plan_response(record)
+
+
+@router.post("/update", response_model=StudyPlanUpdateResponse)
+def update_study_plan(req: StudyPlanUpdateRequest):
+    """
+    Update a study plan based on user feedback about workload/pressure.
+    Actions: reduce_hours, increase_hours, extend_timeline, shorten_timeline, add_rest_days, reduce_rest_days
+    Uses user_id to find and update the study plan (one study plan per user).
+    """
+    try:
+        supabase = get_supabase_client()
+        
+        # Require user_id to find the study plan
+        if not req.user_id:
+            raise HTTPException(status_code=400, detail="user_id is required to update study plan")
+        
+        # Get the current study plan by user_id (most recent one)
+        # Get all plans for user and sort by created_at descending
+        result = supabase.table('study_plans').select('*').eq('user_id', req.user_id).execute()
+        
+        if not result.data or len(result.data) == 0:
+            raise HTTPException(status_code=404, detail=f"Study plan not found for user {req.user_id}")
+        
+        # Sort by created_at descending and get the most recent one
+        plans = sorted(result.data, key=lambda x: x.get('created_at', ''), reverse=True)
+        plan = plans[0]
+        plan_id = plan['id']
+
+        # Apply updates based on action
+        updated_fields = {'updated_at': datetime.utcnow().isoformat()}
+
+        if req.action == "reduce_hours":
+            new_hours = req.params.get('hoursPerDay')
+            if new_hours:
+                updated_fields['hours_per_day'] = new_hours
+        elif req.action == "increase_hours":
+            new_hours = req.params.get('hoursPerDay')
+            if new_hours:
+                updated_fields['hours_per_day'] = new_hours
+        elif req.action == "extend_timeline":
+            additional_days = req.params.get('additionalDays')
+            if additional_days is not None:
+                current_total_days = plan['total_days']
+                new_total_days = current_total_days + additional_days
+                current_end_date = datetime.fromisoformat(plan['end_date'].replace('Z', '+00:00').split('+')[0])
+                new_end_date = current_end_date + timedelta(days=additional_days)
+                updated_fields['total_days'] = new_total_days
+                updated_fields['end_date'] = new_end_date.isoformat().split('T')[0]
+        elif req.action == "shorten_timeline":
+            reduce_days = req.params.get('reduceDays')
+            if reduce_days is not None:
+                current_total_days = plan['total_days']
+                new_total_days = max(1, current_total_days - reduce_days)
+                current_end_date = datetime.fromisoformat(plan['end_date'].replace('Z', '+00:00').split('+')[0])
+                new_end_date = current_end_date - timedelta(days=reduce_days)
+                updated_fields['total_days'] = new_total_days
+                updated_fields['end_date'] = new_end_date.isoformat().split('T')[0]
+        elif req.action == "add_rest_days":
+            new_study_days = req.params.get('studyDays')
+            if new_study_days and isinstance(new_study_days, list):
+                updated_fields['study_days'] = new_study_days
+        elif req.action == "reduce_rest_days":
+            new_study_days = req.params.get('studyDays')
+            if new_study_days and isinstance(new_study_days, list):
+                updated_fields['study_days'] = new_study_days
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown action: {req.action}")
+
+        # Update the database using plan_id from the found plan
+        update_result = supabase.table('study_plans').update(updated_fields).eq('id', plan_id).execute()
+
+        if update_result.data is None:
+            raise HTTPException(status_code=500, detail="Failed to update study plan in database")
+
+        return StudyPlanUpdateResponse(
+            success=True, 
+            message="Study plan updated successfully", 
+            plan_id=plan_id
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"[StudyPlanRouter] Error updating study plan: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 

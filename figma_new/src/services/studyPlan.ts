@@ -187,3 +187,59 @@ export async function updateTaskCompletion(
   return response.json();
 }
 
+export interface UpdateStudyPlanRequest {
+  userId: string;
+  action: 'reduce_hours' | 'increase_hours' | 'extend_timeline' | 'shorten_timeline' | 'add_rest_days' | 'reduce_rest_days';
+  params: {
+    hoursPerDay?: string;
+    totalDays?: number;
+    additionalDays?: number;
+    reduceDays?: number;
+    studyDays?: string[];
+  };
+}
+
+export interface UpdateStudyPlanResponse {
+  success: boolean;
+  message: string;
+  planId: string;
+}
+
+/**
+ * Update a study plan based on user feedback
+ */
+export async function updateStudyPlan(
+  accessToken: string | null,
+  request: UpdateStudyPlanRequest
+): Promise<UpdateStudyPlanResponse> {
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE || "http://localhost:8000";
+  
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  const response = await fetch(
+    `${API_BASE}/study-plan/update`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        user_id: request.userId,
+        action: request.action,
+        params: request.params,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to update study plan: ${error}`);
+  }
+
+  return response.json();
+}
+

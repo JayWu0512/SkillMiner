@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
 import traceback
 
-from src.api.routers import health, chat, upload, analysis
+from src.api.routers import health, chat, upload, analysis, study_plan
 
 app = FastAPI(title="Resume RAG API")
 
@@ -59,3 +59,4 @@ app.include_router(health.router)
 app.include_router(upload.router)
 app.include_router(chat.router)
 app.include_router(analysis.router)
+app.include_router(study_plan.router, prefix="/study-plan", tags=["study-plan"])

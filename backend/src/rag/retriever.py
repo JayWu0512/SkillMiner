@@ -203,7 +203,7 @@ def build_context_block(resume_text: str, user_message: str, retrieved: List[Tup
     parts = [f"{hdr}\n{doc}" for hdr, doc in retrieved]
     bullets = "\n\n".join(parts)
     return (
-        "CONTEXT (cite like [1], [2] if used):\n"
+        "CONTEXT (use this information naturally in your response, do NOT cite it):\n"
         f"{bullets}\n\n"
         f"RESUME (truncated):\n{(resume_text or '')[:MAX_RESUME_CTX]}\n\n"
         f"QUESTION:\n{(user_message or '')[:MAX_USER_CTX]}\n"
