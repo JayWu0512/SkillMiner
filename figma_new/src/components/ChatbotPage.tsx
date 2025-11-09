@@ -94,13 +94,22 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
 
       if (response.ok) {
         const data = await response.json();
+        const reply = data.reply ?? data.response ?? 'I’m here to help!';
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: data.response,
+          content: reply,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, assistantMessage]);
+
+        if (typeof window !== 'undefined' && data.updatedPlan) {
+          try {
+            window.dispatchEvent(new CustomEvent('studyPlanUpdatedFromChat', { detail: data.updatedPlan }));
+          } catch (eventError) {
+            console.error('Failed to dispatch study plan update event:', eventError);
+          }
+        }
       } else {
         throw new Error('Failed to get response');
       }

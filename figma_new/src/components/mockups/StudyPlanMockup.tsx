@@ -232,6 +232,22 @@ export function StudyPlanMockup({ onNavigate, planId, accessToken, initialPlan, 
     };
   }, [planId, accessToken, initialPlan, onPlanUpdate, retryKey]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleUpdatedPlan = (event: Event) => {
+      const updated = (event as CustomEvent<StudyPlan>).detail;
+      if (!updated) return;
+      if (planId && updated.id !== planId) return;
+      setStudyPlan(updated);
+      onPlanUpdate?.(updated);
+    };
+
+    window.addEventListener('studyPlanUpdatedFromChat', handleUpdatedPlan as EventListener);
+    return () => {
+      window.removeEventListener('studyPlanUpdatedFromChat', handleUpdatedPlan as EventListener);
+    };
+  }, [planId, onPlanUpdate]);
+
   // Determine which data to use
   const planStudyDays = studyPlan?.studyDays ?? [];
   const planStudyDaySet = new Set(planStudyDays.map(normalizeDayKey));
