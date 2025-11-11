@@ -27,16 +27,17 @@ import { UploadPage } from "./components/UploadPage";
 import { ChatbotPage } from "./components/ChatbotPage";
 import { createClient } from "./utils/supabase/client";
 import { Toaster } from "./components/ui/sonner";
+import { BrowserRouter } from "react-router-dom";
 
 // Set to true when ready to use real authentication
 const USE_REAL_AUTH = true;
 
-type AppState = "login" | "upload" | "chat";
+type AppState = "login" | "upload" | "chat"| "report" ;
 
 type MockupPage = "login" | "upload" | "report" | "dashboard" | "plan" | "coding" | "interview" | "profile" | "resume";
 
 export default function App() {
-  const [mockupMode, setMockupMode] = useState(true);
+  const [mockupMode, setMockupMode] = useState(false);
   const [currentPage, setCurrentPage] = useState<MockupPage>("login");
   const [appState, setAppState] = useState<AppState>("login");
   const [accessToken, setAccessToken] = useState<string>("");
@@ -83,7 +84,7 @@ export default function App() {
 
   const handleAnalysisComplete = (id: string) => {
     setAnalysisId(id);
-    setAppState("chat");
+    setAppState("report");
   };
 
   const handleLogout = async () => {
@@ -236,16 +237,17 @@ export default function App() {
 
   // Real app mode - show actual authentication flow
   return (
-    <>
-      {appState === "login" && (
-        <LoginPage onLoginSuccess={handleLoginSuccess} />
-      )}
+    <BrowserRouter>
+      {appState === "login" && <LoginPage onLoginSuccess={handleLoginSuccess} />}
       {appState === "upload" && (
         <UploadPage
           accessToken={accessToken}
           onAnalysisComplete={handleAnalysisComplete}
           onLogout={handleLogout}
         />
+      )}
+      {appState === "report" && (
+        <SkillReportMockup onGenerateStudyPlan={() => setAppState("chat")} />
       )}
       {appState === "chat" && (
         <ChatbotPage
@@ -255,6 +257,6 @@ export default function App() {
         />
       )}
       <Toaster />
-    </>
+    </BrowserRouter>
   );
 }
