@@ -1,3 +1,4 @@
+# backend/src/db/supabase_client.py
 import os
 from supabase import create_client, Client
 from typing import Optional

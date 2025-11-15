@@ -7,6 +7,7 @@ from datetime import datetime
 from src.rag.parser import parse_resume
 from src.services.skill_matcher import SkillMatcher
 from src.db.supabase_client import get_supabase_client
+from src.db.aws_client import get_learning_resources_for_skills
 
 router = APIRouter()
 
@@ -31,8 +32,8 @@ async def create_analysis(
     user_id: str = Form(...)
 ):
     """
-    Upload resume PDF + job description, calculate match score, save to database.
-    Returns: analysis_id, user_id, match_score
+    Upload resume PDF + job description, calculate match score and identify skills.
+    Returns: analysis_id, user_id, match_score, and skills breakdown.
     """
     try:
         print(f"[Analysis] Received request - filename: {file.filename}, user_id: {user_id}")
@@ -84,10 +85,19 @@ async def create_analysis(
                 detail=resume_text
             )
         
-        # Calculate match score with error handling
+        # Calculate match score and identify skills
         try:
             matcher = _get_matcher()
-            match_score = matcher.calculate_match_score(resume_text, job_description)
+            result = matcher.calculate_match_score(resume_text, job_description)
+            
+            match_score = result["match_score"]
+            matched_technical = result["matched_skills_technical"]
+            matched_soft = result["matched_skills_soft"]
+            missing_technical = result["missing_skills_technical"]
+            missing_soft = result["missing_skills_soft"]
+            
+            print(f"[Analysis] Score: {match_score}, Matched: {len(matched_technical) + len(matched_soft)}, Missing: {len(missing_technical) + len(missing_soft)}")
+            
         except Exception as e:
             print(f"[Analysis] Error calculating match score: {e}")
             print(traceback.format_exc())
@@ -109,6 +119,10 @@ async def create_analysis(
                 "resume_text": resume_text,
                 "job_description": job_description,
                 "match_score": match_score,
+                "matched_skills_technical": matched_technical,
+                "matched_skills_soft": matched_soft,
+                "missing_skills_technical": missing_technical,
+                "missing_skills_soft": missing_soft,
                 "created_at": datetime.utcnow().isoformat()
             }).execute()
             
@@ -126,7 +140,11 @@ async def create_analysis(
         return {
             "analysis_id": analysis_id,
             "user_id": user_id,
-            "match_score": round(match_score, 2)
+            "match_score": round(match_score, 2),
+            "matched_skills_technical": matched_technical,
+            "matched_skills_soft": matched_soft,
+            "missing_skills_technical": missing_technical,
+            "missing_skills_soft": missing_soft
         }
         
     except HTTPException:
@@ -144,12 +162,12 @@ async def create_analysis(
 async def get_analysis(analysis_id: str):
     """
     Get analysis by ID.
-    Returns: full analysis data including resume_text, job_description, and match_score.
+    Returns: full analysis data including skills breakdown.
     """
     try:
         print(f"[Analysis] Fetching analysis - analysis_id: {analysis_id}")
         
-        # Validate analysis_id format (basic UUID check)
+        # Validate analysis_id format
         if not analysis_id or not analysis_id.strip():
             raise HTTPException(status_code=400, detail="analysis_id is required")
         
@@ -186,6 +204,119 @@ async def get_analysis(analysis_id: str):
         raise
     except Exception as e:
         print(f"[Analysis] Unexpected error: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
+
+
+@router.get("/analysis/{analysis_id}/resources")
+async def get_learning_resources(analysis_id: str, limit_per_skill: int = 3):
+    """
+    Get learning resources for missing skills in an analysis.
+    
+    Args:
+        analysis_id: The analysis ID
+        limit_per_skill: Max resources per skill (default: 3)
+    
+    Returns:
+        {
+            "technical": {
+                "python": [resources],
+                "aws": [resources]
+            },
+            "soft": {
+                "leadership": [resources]
+            }
+        }
+    """
+    try:
+        print(f"[Resources] Fetching resources for analysis - analysis_id: {analysis_id}")
+        
+        # Validate analysis_id
+        if not analysis_id or not analysis_id.strip():
+            raise HTTPException(status_code=400, detail="analysis_id is required")
+        
+        # Get analysis from Supabase
+        try:
+            supabase = _get_supabase()
+            
+            result = supabase.table("skill_analyses")\
+                .select("missing_skills_technical, missing_skills_soft")\
+                .eq("id", analysis_id)\
+                .execute()
+            
+        except Exception as e:
+            print(f"[Resources] Database error fetching analysis: {e}")
+            print(traceback.format_exc())
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to fetch analysis: {str(e)}"
+            )
+        
+        # Check if analysis exists
+        if not result.data or len(result.data) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Analysis not found"
+            )
+        
+        analysis = result.data[0]
+        missing_technical = analysis.get('missing_skills_technical', [])
+        missing_soft = analysis.get('missing_skills_soft', [])
+        
+        print(f"[Resources] Missing skills - Technical: {len(missing_technical)}, Soft: {len(missing_soft)}")
+        
+        # Get all missing skills
+        all_missing_skills = missing_technical + missing_soft
+        
+        if not all_missing_skills:
+            return {
+                "technical": {},
+                "soft": {},
+                "message": "No missing skills found"
+            }
+        
+        # Query PostgreSQL for learning resources
+        try:
+            resources_by_skill = get_learning_resources_for_skills(
+                all_missing_skills, 
+                limit_per_skill=limit_per_skill
+            )
+        except Exception as e:
+            print(f"[Resources] Error fetching learning resources: {e}")
+            print(traceback.format_exc())
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to fetch learning resources: {str(e)}"
+            )
+        
+        # Organize by technical/soft
+        technical_resources = {}
+        soft_resources = {}
+        
+        for skill in missing_technical:
+            skill_lower = skill.lower()
+            if skill_lower in resources_by_skill:
+                technical_resources[skill] = resources_by_skill[skill_lower]
+        
+        for skill in missing_soft:
+            skill_lower = skill.lower()
+            if skill_lower in resources_by_skill:
+                soft_resources[skill] = resources_by_skill[skill_lower]
+        
+        print(f"[Resources] Found resources for {len(technical_resources)} technical and {len(soft_resources)} soft skills")
+        
+        return {
+            "technical": technical_resources,
+            "soft": soft_resources
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Resources] Unexpected error: {e}")
         print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
