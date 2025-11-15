@@ -28,7 +28,7 @@ class SkillMatcher:
         """
         # Use RAG to get relevant role context
         try:
-            retrieved_roles = retrieve(resume_text, job_description, top_k=5)
+            retrieved_roles = retrieve(resume_text, job_description, top_k=3)
             rag_context = "\n".join([doc for _, doc in retrieved_roles[:2]]) if retrieved_roles else ""
             print(f"[SkillMatcher] RAG context retrieved")
         except Exception as e:
