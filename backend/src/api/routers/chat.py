@@ -10,6 +10,7 @@ from src.util.io import message, save_chat_log
 from src.llm.client import get_openai_client
 from src.core.config import SYSTEM_PROMPT, MODEL_CHAT
 from src.rag.retriever import retrieve, build_context_block
+from src.services.memory_augmented_chat import get_memory_chat_service
 
 router = APIRouter()
 
@@ -26,6 +27,9 @@ def chat(req: ChatRequest):
         # Get client
         client = _get_client()
         
+        # Get memory-augmented chat service
+        memory_service = get_memory_chat_service()
+        
         # RAG retrieval with error handling
         try:
             retrieved = retrieve(req.resume_text or "", req.message or "")
@@ -36,14 +40,41 @@ def chat(req: ChatRequest):
             # Continue with empty context if retrieval fails
             retrieved = []
             context_block = build_context_block(req.resume_text or "", req.message or "", [])
-
-        # Build messages
-        messages = [
-            message("system", SYSTEM_PROMPT),
-        ]
-        if req.resume_text:
-            messages.append(message("user", f"(Resume context)\n{(req.resume_text or '')[:4000]}"))
-        messages.append(message("user", context_block))
+        
+        # Build memory-augmented input if user_id is provided
+        if req.user_id:
+            try:
+                # Get memory context
+                memory_input = memory_service.build_memory_augmented_input(
+                    user_id=req.user_id,
+                    current_message=req.message,
+                    resume_text=req.resume_text,
+                    rag_context=context_block
+                )
+                
+                # Build messages with memory augmentation
+                messages = [
+                    message("system", SYSTEM_PROMPT),
+                    message("user", memory_input)
+                ]
+            except Exception as e:
+                print(f"[Memory] Error building memory context: {e}")
+                print(traceback.format_exc())
+                # Fallback to non-memory approach
+                messages = [
+                    message("system", SYSTEM_PROMPT),
+                ]
+                if req.resume_text:
+                    messages.append(message("user", f"(Resume context)\n{(req.resume_text or '')[:4000]}"))
+                messages.append(message("user", context_block))
+        else:
+            # Build messages without memory (backward compatibility)
+            messages = [
+                message("system", SYSTEM_PROMPT),
+            ]
+            if req.resume_text:
+                messages.append(message("user", f"(Resume context)\n{(req.resume_text or '')[:4000]}"))
+            messages.append(message("user", context_block))
 
         # OpenAI API call with error handling
         try:
@@ -61,6 +92,18 @@ def chat(req: ChatRequest):
                 detail=f"OpenAI API error: {str(e)}"
             )
 
+        # Update memory if user_id is provided
+        if req.user_id:
+            try:
+                memory_service.update_memory(
+                    user_id=req.user_id,
+                    user_message=req.message,
+                    assistant_reply=reply
+                )
+            except Exception as e:
+                print(f"[Memory] Error updating memory: {e}")
+                print(traceback.format_exc())
+        
         # Save chat log (non-critical, don't fail if this errors)
         try:
             save_chat_log(req.message, reply)
@@ -117,7 +160,7 @@ def chat(req: ChatRequest):
 
 # Optional: SSE streaming endpoint
 @router.get("/chat/stream")
-def chat_stream(message: str, resume_text: str = ""):
+def chat_stream(message: str, resume_text: str = "", user_id: str = None):
     # Validate input
     if not message or not message.strip():
         raise HTTPException(status_code=422, detail="Message cannot be empty")
@@ -128,6 +171,7 @@ def chat_stream(message: str, resume_text: str = ""):
     def gen() -> Iterator[bytes]:
         try:
             client = _get_client()
+            memory_service = get_memory_chat_service()
             
             # RAG retrieval with error handling
             try:
@@ -138,10 +182,27 @@ def chat_stream(message: str, resume_text: str = ""):
                 retrieved = []
                 context_block = build_context_block(resume_text or "", message or "", [])
             
-            messages = [message_fn("system", SYSTEM_PROMPT)]
-            if resume_text:
-                messages.append(message_fn("user", f"(Resume context)\n{resume_text[:4000]}"))
-            messages.append(message_fn("user", context_block))
+            # Build memory-augmented input if user_id is provided
+            if user_id:
+                try:
+                    memory_input = memory_service.build_memory_augmented_input(
+                        user_id=user_id,
+                        current_message=message,
+                        resume_text=resume_text,
+                        rag_context=context_block
+                    )
+                    messages = [message_fn("system", SYSTEM_PROMPT), message_fn("user", memory_input)]
+                except Exception as e:
+                    print(f"[Memory] Error in streaming: {e}")
+                    messages = [message_fn("system", SYSTEM_PROMPT)]
+                    if resume_text:
+                        messages.append(message_fn("user", f"(Resume context)\n{resume_text[:4000]}"))
+                    messages.append(message_fn("user", context_block))
+            else:
+                messages = [message_fn("system", SYSTEM_PROMPT)]
+                if resume_text:
+                    messages.append(message_fn("user", f"(Resume context)\n{resume_text[:4000]}"))
+                messages.append(message_fn("user", context_block))
 
             stream = client.chat.completions.create(
                 model=MODEL_CHAT,
@@ -155,6 +216,17 @@ def chat_stream(message: str, resume_text: str = ""):
                 if delta:
                     partial += delta
                     yield f"data: {delta}\n\n".encode("utf-8")
+            
+            # Update memory if user_id is provided
+            if user_id:
+                try:
+                    memory_service.update_memory(
+                        user_id=user_id,
+                        user_message=message,
+                        assistant_reply=partial
+                    )
+                except Exception as e:
+                    print(f"[Memory] Error updating memory in stream: {e}")
             
             # Save chat log (non-critical)
             try:

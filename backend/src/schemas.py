@@ -4,6 +4,7 @@ from typing import List, Optional
 class ChatRequest(BaseModel):
     message: str = Field(..., description="User's latest message", min_length=1)
     resume_text: Optional[str] = Field(None, description="Optional resume text you already extracted")
+    user_id: Optional[str] = Field(None, description="Optional user ID for memory-augmented context retention")
     
     @validator('message')
     def validate_message(cls, v):
