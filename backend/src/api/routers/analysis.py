@@ -31,8 +31,8 @@ async def create_analysis(
     user_id: str = Form(...)
 ):
     """
-    Upload resume PDF + job description, calculate match score, save to database.
-    Returns: analysis_id, user_id, match_score
+    Upload resume PDF + job description, calculate match score and identify skills.
+    Returns: analysis_id, user_id, match_score, and skills breakdown.
     """
     try:
         print(f"[Analysis] Received request - filename: {file.filename}, user_id: {user_id}")
@@ -84,10 +84,19 @@ async def create_analysis(
                 detail=resume_text
             )
         
-        # Calculate match score with error handling
+        # Calculate match score and identify skills
         try:
             matcher = _get_matcher()
-            match_score = matcher.calculate_match_score(resume_text, job_description)
+            result = matcher.calculate_match_score(resume_text, job_description)
+            
+            match_score = result["match_score"]
+            matched_technical = result["matched_skills_technical"]
+            matched_soft = result["matched_skills_soft"]
+            missing_technical = result["missing_skills_technical"]
+            missing_soft = result["missing_skills_soft"]
+            
+            print(f"[Analysis] Score: {match_score}, Matched: {len(matched_technical) + len(matched_soft)}, Missing: {len(missing_technical) + len(missing_soft)}")
+            
         except Exception as e:
             print(f"[Analysis] Error calculating match score: {e}")
             print(traceback.format_exc())
@@ -109,6 +118,10 @@ async def create_analysis(
                 "resume_text": resume_text,
                 "job_description": job_description,
                 "match_score": match_score,
+                "matched_skills_technical": matched_technical,
+                "matched_skills_soft": matched_soft,
+                "missing_skills_technical": missing_technical,
+                "missing_skills_soft": missing_soft,
                 "created_at": datetime.utcnow().isoformat()
             }).execute()
             
@@ -126,7 +139,11 @@ async def create_analysis(
         return {
             "analysis_id": analysis_id,
             "user_id": user_id,
-            "match_score": round(match_score, 2)
+            "match_score": round(match_score, 2),
+            "matched_skills_technical": matched_technical,
+            "matched_skills_soft": matched_soft,
+            "missing_skills_technical": missing_technical,
+            "missing_skills_soft": missing_soft
         }
         
     except HTTPException:
@@ -144,12 +161,12 @@ async def create_analysis(
 async def get_analysis(analysis_id: str):
     """
     Get analysis by ID.
-    Returns: full analysis data including resume_text, job_description, and match_score.
+    Returns: full analysis data including skills breakdown.
     """
     try:
         print(f"[Analysis] Fetching analysis - analysis_id: {analysis_id}")
         
-        # Validate analysis_id format (basic UUID check)
+        # Validate analysis_id format
         if not analysis_id or not analysis_id.strip():
             raise HTTPException(status_code=400, detail="analysis_id is required")
         
