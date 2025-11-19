@@ -171,7 +171,10 @@ export default function App() {
 
     setCurrentPlanId(null);
     handlePlanUpdate(null);
-    setAppState("upload");
+    // if you want to start from the first
+    // setAppState("upload");
+    // default
+    setAppState("dashboard");
   };
 
   useEffect(() => {
