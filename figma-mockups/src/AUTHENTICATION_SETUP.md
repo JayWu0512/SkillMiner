@@ -1,130 +1,205 @@
-# SkillMiner - Authentication Setup Guide
+# Authentication Setup Guide
 
-This guide will help you enable real authentication for the SkillMiner application.
+This guide will help you set up Google and GitHub OAuth authentication for SkillMiner.
 
-## Current State
+## Prerequisites
 
-The application is currently running in **Mockup Mode**, which allows you to preview and customize all pages without authentication.
+1. A Supabase account and project
+2. Your Supabase project credentials configured (see `CHANGE_SUPABASE_ACCOUNT.md`)
 
-## Quick Toggle
+## Step 1: Configure Google OAuth
 
-You can now switch between Mockup Mode and Real Auth Mode using the toggle in the top-right corner of the header.
+### 1.1 Create Google OAuth Credentials
 
-## Enabling Real Authentication
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Go to **APIs & Services** → **Credentials**
+4. Click **Create Credentials** → **OAuth client ID**
+5. If prompted, configure the OAuth consent screen first:
+   - Choose **External** user type
+   - Fill in app name: "SkillMiner"
+   - Add your email as support email
+   - Skip optional fields
+   - Add test users if needed
+   - Save and continue
 
-### Step 1: Configure OAuth Providers in Supabase
+### 1.2 Configure OAuth Client
 
-You need to set up OAuth providers in your Supabase dashboard:
+1. Select **Application type**: **Web application**
+2. Name: "SkillMiner Web Client"
+3. **Authorized JavaScript origins**:
+   - Add: `https://<your-project-id>.supabase.co`
+   - For local testing: `http://localhost:5173` (if applicable)
+4. **Authorized redirect URIs**:
+   - Add: `https://<your-project-id>.supabase.co/auth/v1/callback`
+5. Click **Create**
+6. Copy the **Client ID** and **Client Secret**
 
-#### Google OAuth Setup
-1. Go to your Supabase project dashboard
-2. Navigate to **Authentication** → **Providers**
-3. Find **Google** and click to configure
-4. Follow the setup guide: https://supabase.com/docs/guides/auth/social-login/auth-google
-5. You'll need to:
-   - Create a Google Cloud project
-   - Set up OAuth consent screen
-   - Create OAuth 2.0 credentials
-   - Add authorized redirect URIs
-   - Copy Client ID and Client Secret to Supabase
+### 1.3 Enable Google Provider in Supabase
 
-#### GitHub OAuth Setup
-1. In Supabase dashboard, go to **Authentication** → **Providers**
-2. Find **GitHub** and click to configure
-3. Follow the setup guide: https://supabase.com/docs/guides/auth/social-login/auth-github
-4. You'll need to:
-   - Create a GitHub OAuth App
-   - Set Authorization callback URL
-   - Copy Client ID and Client Secret to Supabase
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Navigate to **Authentication** → **Providers**
+4. Find **Google** and toggle it **ON**
+5. Paste your **Client ID** and **Client Secret**
+6. Click **Save**
 
-### Step 2: Update App.tsx Configuration
+## Step 2: Configure GitHub OAuth
 
-Once OAuth is configured, you can enable real authentication:
+### 2.1 Create GitHub OAuth App
 
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Click **OAuth Apps** → **New OAuth App**
+3. Fill in the details:
+   - **Application name**: SkillMiner
+   - **Homepage URL**: `https://<your-project-id>.supabase.co` or your custom domain
+   - **Authorization callback URL**: `https://<your-project-id>.supabase.co/auth/v1/callback`
+4. Click **Register application**
+5. On the app page, note the **Client ID**
+6. Click **Generate a new client secret** and copy the secret
+
+### 2.2 Enable GitHub Provider in Supabase
+
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Navigate to **Authentication** → **Providers**
+4. Find **GitHub** and toggle it **ON**
+5. Paste your **Client ID** and **Client Secret**
+6. Click **Save**
+
+## Step 3: Configure Redirect URLs
+
+### 3.1 Update Site URL
+
+1. In Supabase Dashboard, go to **Authentication** → **URL Configuration**
+2. Set **Site URL** to your application URL:
+   - Production: Your custom domain or `https://<your-project-id>.supabase.co`
+   - Local dev: `http://localhost:5173`
+
+### 3.2 Add Redirect URLs
+
+Under **Redirect URLs**, add:
+- Your production URL
+- Any development/staging URLs
+- For local dev: `http://localhost:5173`
+
+Click **Save** after adding URLs.
+
+## Step 4: Test Authentication
+
+### 4.1 Enable Real Authentication
+
+In `/App.tsx`, ensure the flag is set:
 ```typescript
-// In /App.tsx, change this line:
-const USE_REAL_AUTH = false;
-
-// To:
 const USE_REAL_AUTH = true;
 ```
 
-### Step 3: Test Authentication Flow
+### 4.2 Test Google Login
 
-1. Turn off "Mockup Mode" using the toggle switch
-2. You should see the real login page
-3. Click "Continue with Google" or "Continue with GitHub"
-4. Complete the OAuth flow
-5. You'll be redirected back to the Upload page
+1. Toggle off "Mockup Mode" in the app
+2. Click "Continue with Google"
+3. You should be redirected to Google's login page
+4. After successful login, you'll be redirected back to the app
 
-## File Structure
+### 4.3 Test GitHub Login
 
-### Real Authentication Components
-- `/components/LoginPage.tsx` - Real login with OAuth
-- `/components/UploadPage.tsx` - Resume and JD upload with backend
-- `/components/ChatbotPage.tsx` - Chat interface with AI analysis
-- `/components/SkillReport.tsx` - Full skill gap report
-
-### Mockup Components (for design preview)
-- `/components/mockups/LoginPageMockup.tsx`
-- `/components/mockups/UploadPageMockup.tsx`
-- `/components/mockups/ChatbotPageMockup.tsx`
-- `/components/mockups/SkillReportMockup.tsx`
-
-### Backend
-- `/supabase/functions/server/index.tsx` - Hono server with all API routes
-- `/utils/supabase/client.tsx` - Supabase client configuration
-
-## API Routes
-
-The backend server provides these routes:
-
-- `POST /make-server-b8961ff5/analyze` - Analyze resume vs job description
-- `GET /make-server-b8961ff5/analysis/:analysisId` - Get analysis summary
-- `POST /make-server-b8961ff5/chat` - Send chat message and get AI response
-- `GET /make-server-b8961ff5/report/:analysisId` - Get detailed skill report
-
-## Authentication Flow
-
-1. **Login** → User clicks Google/GitHub → OAuth redirect → Session created
-2. **Upload** → User uploads resume and JD → Server processes → Analysis ID returned
-3. **Chat** → User asks questions → Server provides contextual answers
-4. **Report** → User views detailed report → Server returns skill gaps and resources
-
-## Security Notes
-
-- All routes except login require authentication
-- Access tokens are validated on the server
-- User data is stored in KV store with user ID as key
-- OAuth tokens are handled by Supabase Auth
+1. Click "Continue with GitHub"
+2. You should be redirected to GitHub's authorization page
+3. After authorizing, you'll be redirected back to the app
 
 ## Troubleshooting
 
-### "Provider is not enabled" Error
-- Make sure you've configured OAuth providers in Supabase dashboard
-- Check that redirect URIs are correctly set
+### Error: "Provider not enabled"
 
-### "Unauthorized" Error
-- Ensure OAuth flow completed successfully
-- Check browser console for access token
-- Verify server is validating tokens correctly
+**Solution**: Make sure you've enabled the provider in Supabase Dashboard and saved the credentials.
 
-### Session Not Persisting
-- Check that Supabase client is properly configured
-- Ensure `onAuthStateChange` listener is working
-- Clear browser cookies and try again
+### Error: "Invalid redirect URI"
+
+**Solution**: 
+- Check that your redirect URL in Google/GitHub matches exactly: `https://<project-id>.supabase.co/auth/v1/callback`
+- Verify the Site URL in Supabase matches your app's URL
+- For local dev, ensure `http://localhost:5173` is in both redirect URLs lists
+
+### Error: "Failed to fetch"
+
+**Solution**: Check your browser console for CORS errors. Make sure:
+- The Site URL in Supabase is correctly configured
+- Your app is running on the same domain as configured
+
+### Login button shows error immediately
+
+**Solution**: 
+- Verify `/utils/supabase/info.tsx` has correct credentials
+- Check browser console for detailed error messages
+- Ensure your Supabase project is active
+
+### OAuth redirect happens but no login
+
+**Solution**: 
+- Check browser console for session errors
+- Verify that `onLoginSuccess` callback is being called
+- Try clearing browser cookies and cache
+
+## Security Best Practices
+
+1. **Never commit secrets**: Keep OAuth secrets secure and never commit them to version control
+2. **Use environment variables**: Store sensitive credentials in Supabase environment variables
+3. **Restrict domains**: Only add necessary redirect URLs
+4. **Enable email confirmation**: For production, consider enabling email confirmation
+5. **Review permissions**: Only request necessary OAuth scopes
+
+## Additional Features
+
+### Email Authentication (Optional)
+
+You can also enable email/password authentication:
+
+1. In Supabase Dashboard, go to **Authentication** → **Providers**
+2. Enable **Email** provider
+3. Configure email templates if desired
+4. Update LoginPage.tsx to include email/password inputs
+
+### Multi-Factor Authentication (Optional)
+
+For enhanced security:
+
+1. Go to **Authentication** → **Settings**
+2. Enable **Multi-factor authentication**
+3. Choose factors: SMS, Authenticator app, etc.
+
+### Session Management
+
+The app automatically handles:
+- Session persistence across page reloads
+- Token refresh
+- Logout functionality
+
+Sessions are stored securely in localStorage by Supabase client.
 
 ## Next Steps
 
-1. Configure OAuth providers in Supabase
-2. Set `USE_REAL_AUTH = true` in App.tsx
-3. Test login flow
-4. Customize mockup pages as needed
-5. Deploy to production
+Once authentication is working:
 
-## Support
+1. Test the complete user flow (login → upload → analysis → chatbot)
+2. Configure LLM API keys for intelligent chatbot responses (see `CHANGE_SUPABASE_ACCOUNT.md`)
+3. Customize the user experience
+4. Deploy to production
 
-For issues with:
-- **Supabase Auth**: https://supabase.com/docs/guides/auth
-- **OAuth Setup**: See provider-specific guides above
-- **Application Logic**: Check browser console and server logs
+## Support Resources
+
+- [Supabase Auth Documentation](https://supabase.com/docs/guides/auth)
+- [Google OAuth Setup](https://supabase.com/docs/guides/auth/social-login/auth-google)
+- [GitHub OAuth Setup](https://supabase.com/docs/guides/auth/social-login/auth-github)
+- [OAuth 2.0 Overview](https://oauth.net/2/)
+
+## Common OAuth Scopes
+
+### Google
+- Default: `openid`, `email`, `profile`
+- Additional: `https://www.googleapis.com/auth/userinfo.email`
+
+### GitHub
+- Default: `read:user`, `user:email`
+- Additional: `repo`, `gist` (if needed for your app)
+
+You can customize scopes in the Supabase provider configuration if needed.

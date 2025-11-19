@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Brain, Send, Menu, FileText, LogOut, MessageSquare } from 'lucide-react';
 import { SkillReport } from './SkillReport';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { projectId, publicAnonKey, edgeFunctionName } from '../utils/supabase/info';
 
 interface Message {
   id: string;
@@ -31,7 +31,7 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
     const loadInitialData = async () => {
       try {
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-b8961ff5/analysis/${analysisId}`,
+          `https://${projectId}.supabase.co/functions/v1/${edgeFunctionName}/analysis/${analysisId}`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`,
@@ -78,7 +78,7 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-b8961ff5/chat`,
+        `https://${projectId}.supabase.co/functions/v1/${edgeFunctionName}/chat`,
         {
           method: 'POST',
           headers: {
@@ -94,13 +94,22 @@ export function ChatbotPage({ accessToken, analysisId, onLogout }: ChatbotPagePr
 
       if (response.ok) {
         const data = await response.json();
+        const reply = data.reply ?? data.response ?? 'I’m here to help!';
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: data.response,
+          content: reply,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, assistantMessage]);
+
+        if (typeof window !== 'undefined' && data.updatedPlan) {
+          try {
+            window.dispatchEvent(new CustomEvent('studyPlanUpdatedFromChat', { detail: data.updatedPlan }));
+          } catch (eventError) {
+            console.error('Failed to dispatch study plan update event:', eventError);
+          }
+        }
       } else {
         throw new Error('Failed to get response');
       }
