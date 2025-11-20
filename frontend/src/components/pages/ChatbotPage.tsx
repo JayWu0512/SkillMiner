@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 import { Brain, Send, Menu, FileText, LogOut, MessageSquare } from 'lucide-react';
-import { SkillReport } from './SkillReport';
-import { projectId, publicAnonKey, edgeFunctionName } from '../utils/supabase/info';
+import { SkillReport } from './SkillReportPage';
+import { projectId, publicAnonKey, edgeFunctionName } from '../../utils/supabase/info';
 
 interface Message {
   id: string;

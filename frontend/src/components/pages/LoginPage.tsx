@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { createClient } from '../utils/supabase/client';
+import { Button } from '../ui/button';
+import { createClient } from '../../utils/supabase/client';
 import { Brain, Github, Loader2, AlertCircle } from 'lucide-react';
 
 interface LoginPageProps {

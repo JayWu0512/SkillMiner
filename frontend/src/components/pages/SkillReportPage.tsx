@@ -92,7 +92,7 @@ const missingSkills = [
   },
 ];
 
-interface SkillReportMockupProps {
+interface SkillReportProps {
   onGenerateStudyPlan?: (planId?: string) => void;
   // Optional: if provided, will use real backend
   analysisId?: string;
@@ -101,12 +101,12 @@ interface SkillReportMockupProps {
   useBackend?: boolean;
 }
 
-export function SkillReportMockup({
+export function SkillReport({
   onGenerateStudyPlan,
   analysisId,
   accessToken,
   useBackend = true,
-}: SkillReportMockupProps) {
+}: SkillReportProps) {
   const [showPlanGenerator, setShowPlanGenerator] =
     useState(false);
   const [hoursPerDay, setHoursPerDay] = useState("2-3");
@@ -168,7 +168,7 @@ export function SkillReportMockup({
     setError(null);
     
     try {
-      // Try to get session token, but allow null for mockup mode
+      // Try to get session token
       let token: string | null = accessToken || null;
       
       if (!token) {
@@ -177,7 +177,7 @@ export function SkillReportMockup({
           const { data: { session } } = await supabase.auth.getSession();
           token = session?.access_token || null;
         } catch (sessionErr) {
-          console.log('No session available, proceeding without auth for mockup mode');
+          console.log('No session available');
           token = null;
         }
       }
@@ -200,7 +200,7 @@ export function SkillReportMockup({
       
       console.log('Study plan generated:', studyPlan.id);
       
-      // Store planId in localStorage for StudyPlanMockup to retrieve
+      // Store planId in localStorage for StudyPlan to retrieve
       localStorage.setItem('currentStudyPlanId', studyPlan.id);
       
       if (onGenerateStudyPlan) {

@@ -2,21 +2,21 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { BrowserRouter } from "react-router-dom";
 
-import { LoginPage } from "./components/LoginPage";
-import { UploadPage } from "./components/UploadPage";
-import { ChatbotPage } from "./components/ChatbotPage";
-import { MainDashboard } from "./components/MainDashboard";
-import { StudyPlanMockup as StudyPlan } from "./components/mockups/StudyPlanMockup";
-import { CodingPractice } from "./components/CodingPractice";
-import { InterviewPractice } from "./components/InterviewPractice";
-import { Profile } from "./components/Profile";
-import { Resume } from "./components/Resume";
-import { SkillReportMockup as SkillReport } from "./components/mockups/SkillReportMockup";
+import { LoginPage } from "./components/pages/LoginPage";
+import { UploadPage } from "./components/pages/UploadPage";
+import { ChatbotPage } from "./components/pages/ChatbotPage";
+import { MainDashboard } from "./components/pages/MainDashboardPage";
+import { StudyPlan } from "./components/features/StudyPlan";
+import { CodingPractice } from "./components/pages/CodingPracticePage";
+import { InterviewPractice } from "./components/pages/InterviewPracticePage";
+import { Profile } from "./components/pages/ProfilePage";
+import { Resume } from "./components/pages/ResumePage";
+import { SkillReport } from "./components/pages/SkillReportPage";
 
 // ---- Global UI ----
-import { Header } from "./components/Header";
+import { Header } from "./components/features/Header";
 import { Toaster } from "./components/ui/sonner";
-import { PersistentChatbot } from "./components/mockups/PersistentChatbot";
+import { PersistentChatbot } from "./components/features/PersistentChatbot";
 
 // ---- Supabase ----
 import { createClient } from "./utils/supabase/client";
@@ -171,7 +171,10 @@ export default function App() {
 
     setCurrentPlanId(null);
     handlePlanUpdate(null);
-    setAppState("upload");
+    // if you want to start from the first
+    // setAppState("upload");
+    // default
+    setAppState("dashboard");
   };
 
   useEffect(() => {
