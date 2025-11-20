@@ -1,0 +1,79 @@
+test request terminal output:
+
+(.venv) PS C:\GitHub\SkillMiner> Invoke-WebRequest -Uri "http://localhost:8000/chat" `                                                                                                                                                      >>   -Method POST `                                                                                                                                                                                                                         >>   -ContentType "application/json" `                                                                                                                                                                                                      >>   -Body '{                                                                                                                                                                                                                               
+>>     "message": "I want to learn Python",
+>>     "user_id": "test-user-123"
+>>   }'
+       
+
+StatusCode        : 200
+StatusDescription : OK
+Content           : {"reply":"That's a great decision! Learning Python can open up many opportunities in software development, data science, and more. Here are some actionable steps to get you started:\n\n1. **Set Clear ...
+RawContent        : HTTP/1.1 200 OK
+                    Content-Length: 1632
+                    Content-Type: application/json
+                    Date: Thu, 20 Nov 2025 23:27:46 GMT
+                    Server: uvicorn
+
+                    {"reply":"That's a great decision! Learning Python can open up many oppor...
+Forms             : {}
+Headers           : {[Content-Length, 1632], [Content-Type, application/json], [Date, Thu, 20 Nov 2025 23:27:46 GMT], [Server, uvicorn]}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 1632
+
+
+
+(.venv) PS C:\GitHub\SkillMiner> Invoke-WebRequest -Uri "http://localhost:8000/chat" `
+>>   -Method POST `                                                                                                                                                                                                                         >>   -ContentType "application/json" `                                                                                                                                                                                                      >>   -Body '{                                                                                                                                                                                                                               >>     "message": "I want to become a data scientist. What should I learn?",                                                                                                                                                                
+>>     "resume_text": "I have 2 years of Python experience.",
+>>     "user_id": "test-user-123"
+>>   }'
+
+
+StatusCode        : 200
+StatusDescription : OK
+Content           : {"reply":"To become a data scientist, especially with your background in Python, here are some key areas and skills you should focus on:\n\n1. **Statistical Analysis**: Understanding statistics is cru...
+RawContent        : HTTP/1.1 200 OK
+                    Content-Length: 2115
+                    Content-Type: application/json
+                    Date: Thu, 20 Nov 2025 23:37:06 GMT
+                    Server: uvicorn
+
+                    {"reply":"To become a data scientist, especially with your background in ...
+Forms             : {}
+Headers           : {[Content-Length, 2115], [Content-Type, application/json], [Date, Thu, 20 Nov 2025 23:37:06 GMT], [Server, uvicorn]}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 2115
+
+server terminal output:
+
+[Memory] Building memory context for user: test-user-123
+Device set to use cpu
+[Memory] STM summary length: 0 chars, messages: 0
+[Memory] Retrieving LTM memories for query: I want to learn Python...
+[LTM] Skipping LTM retrieval because user_id is not a valid UUID: test-user-123
+[Memory] Retrieved 0 LTM memories
+[Memory] Combined context built: 0 total chars
+[Memory] Updating memory for user: test-user-123
+[Memory] Added user message to STM (22 chars)
+[Memory] Added assistant reply to STM (1584 chars)
+INFO:     127.0.0.1:63731 - "POST /chat HTTP/1.1" 200 OK
+
+[Memory] Building memory context for user: test-user-123
+Device set to use cpu
+[Memory] STM summary length: 0 chars, messages: 0
+[Memory] Retrieving LTM memories for query: I want to become a data scientist. What should I l...
+[LTM] Skipping LTM retrieval because user_id is not a valid UUID: test-user-123
+[Memory] Retrieved 0 LTM memories
+[Memory] Combined context built: 0 total chars
+[Memory] Updating memory for user: test-user-123
+[Memory] Added user message to STM (55 chars)
+Your max_length is set to 500, but your input_length is only 456. Since this is a summarization task, where outputs shorter than the input are typically wanted, you might consider decreasing max_length manually, e.g. summarizer('...', max_length=228)
+[Memory] Added assistant reply to STM (2068 chars)
+INFO:     127.0.0.1:54553 - "POST /chat HTTP/1.1" 200 OK
