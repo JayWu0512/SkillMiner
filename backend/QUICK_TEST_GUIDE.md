@@ -31,10 +31,23 @@ uvicorn src.api.main:app --reload
 ```
 
 ### Step 2: Send a test message with user_id
+
+**On macOS/Linux (curl):**
 ```bash
 curl -X POST "http://localhost:8000/chat" \
   -H "Content-Type: application/json" \
   -d '{
+    "message": "I want to learn Python",
+    "user_id": "test-user-123"
+  }'
+```
+
+**On Windows PowerShell (Invoke-WebRequest):**
+```powershell
+Invoke-WebRequest -Uri "http://localhost:8000/chat" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body '{
     "message": "I want to learn Python",
     "user_id": "test-user-123"
   }'

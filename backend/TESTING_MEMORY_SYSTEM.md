@@ -250,24 +250,28 @@ curl -X POST "http://localhost:8000/chat" \
 ### Check if data is being stored:
 
 ```sql
+-- NOTE: user_id column is UUID. Use a real Supabase auth.users.id here.
+-- Example placeholder UUID:
+--   '00000000-0000-0000-0000-000000000000'
+
 -- Check chat messages
 SELECT id, user_id, role, content, created_at 
 FROM chat_messages 
-WHERE user_id = 'test-user-123'
+WHERE user_id = '00000000-0000-0000-0000-000000000000'
 ORDER BY created_at DESC
 LIMIT 10;
 
 -- Check LTM memories
 SELECT id, user_id, message_content, ner_entities, created_at
 FROM chat_ltm_memory
-WHERE user_id = 'test-user-123'
+WHERE user_id = '00000000-0000-0000-0000-000000000000'
 ORDER BY created_at DESC
 LIMIT 10;
 
 -- Check if embeddings are stored (should show vector type)
 SELECT id, semantic_embedding, pg_typeof(semantic_embedding) as embedding_type
 FROM chat_ltm_memory
-WHERE user_id = 'test-user-123'
+WHERE user_id = '00000000-0000-0000-0000-000000000000'
 LIMIT 1;
 ```
 
@@ -280,7 +284,7 @@ SELECT semantic_embedding FROM chat_ltm_memory LIMIT 1;
 -- Then test the function (replace with actual embedding)
 SELECT * FROM match_ltm_memories(
   query_embedding := (SELECT semantic_embedding FROM chat_ltm_memory LIMIT 1),
-  match_user_id := 'test-user-123'::uuid,
+  match_user_id := '00000000-0000-0000-0000-000000000000'::uuid,
   match_threshold := 0.7,
   match_count := 5
 );

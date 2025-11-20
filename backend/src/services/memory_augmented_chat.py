@@ -5,10 +5,22 @@ Orchestrates STM and LTM retrieval and integrates memory summaries with chat inp
 from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
 import uuid
+from uuid import UUID
 
 from src.models.stm import get_stm, ShortTermMemory
 from src.models.ltm import get_ltm, LongTermMemory
 from src.db.supabase_client import get_supabase_client
+
+
+def _is_valid_uuid(value: Optional[str]) -> bool:
+    """Return True if the given value is a valid UUID string."""
+    if not value or not isinstance(value, str):
+        return False
+    try:
+        UUID(value)
+        return True
+    except (ValueError, TypeError):
+        return False
 
 
 class MemoryAugmentedChatService:
@@ -98,12 +110,13 @@ class MemoryAugmentedChatService:
         stm.add_message("assistant", assistant_reply)
         print(f"[Memory] Added assistant reply to STM ({len(assistant_reply)} chars)")
         
-        # Store messages in database if Supabase is available
+        # Store messages in database if Supabase is available and user_id is valid UUID
         user_msg_id = None
         assistant_msg_id = None
         
-        if self.supabase is not None:
+        if self.supabase is not None and _is_valid_uuid(user_id):
             try:
+                print("[Memory] user_id is a valid UUID, storing messages in Supabase")
                 # Store user message
                 user_result = self.supabase.table("chat_messages").insert({
                     "id": message_id or str(uuid.uuid4()),

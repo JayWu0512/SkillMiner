@@ -11,10 +11,28 @@ except ImportError:
 import json
 import numpy as np
 from datetime import datetime
+from uuid import UUID
 
 from src.core.config import LTM_TOP_K, LTM_SIMILARITY_THRESHOLD, NER_MODEL, MODEL_EMBED
 from src.llm.client import get_openai_client
 from src.db.supabase_client import get_supabase_client
+
+
+def _is_valid_uuid(value: Optional[str]) -> bool:
+    """Return True if the given value is a valid UUID string.
+
+    Supabase columns for user_id are UUID, so during local testing we often
+    pass non-UUID placeholders like \"test-user-123\". In those cases we skip
+    all Supabase / LTM DB operations and rely only on STM, to avoid noisy
+    database errors while keeping production behaviour unchanged.
+    """
+    if not value or not isinstance(value, str):
+        return False
+    try:
+        UUID(value)
+        return True
+    except (ValueError, TypeError):
+        return False
 
 
 class NERExtractor:
@@ -225,6 +243,11 @@ class LongTermMemory:
         if not message_content or not message_content.strip():
             return None
         
+        # If user_id is not a valid UUID, skip Supabase storage (use STM-only mode)
+        if not _is_valid_uuid(user_id):
+            print(f"[LTM] Skipping LTM storage because user_id is not a valid UUID: {user_id}")
+            return None
+        
         if self.supabase is None:
             print("[LTM] Warning: Supabase not available, cannot store memory")
             return None
@@ -273,6 +296,11 @@ class LongTermMemory:
             List of LTM entries with similarity scores
         """
         if not query_text or not query_text.strip():
+            return []
+        
+        # If user_id is not a valid UUID, skip Supabase and just use STM
+        if not _is_valid_uuid(user_id):
+            print(f"[LTM] Skipping LTM retrieval because user_id is not a valid UUID: {user_id}")
             return []
         
         if self.supabase is None:
@@ -335,6 +363,11 @@ class LongTermMemory:
         Returns:
             List of LTM entries with similarity scores
         """
+        # If user_id is not a valid UUID, skip Supabase and just return []
+        if not _is_valid_uuid(user_id):
+            print(f"[LTM] Skipping Python LTM retrieval because user_id is not a valid UUID: {user_id}")
+            return []
+        
         try:
             # Get all LTM entries for user
             # Get more than top_k to compute similarities
