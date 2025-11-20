@@ -209,6 +209,5 @@ Every push or pull request to `IDS706/` will:
     1. Python and SQL dominate across all roles
     2. Software engineering postings outweigh DA/DS/DE combined
     3. Each role has unique skills, making a personalized study roadmap and resume tailoring critical for ATS success
-   
 
 These results show how structured pipelines and targeted analysis can provide practical, career-oriented insights into the job market.
