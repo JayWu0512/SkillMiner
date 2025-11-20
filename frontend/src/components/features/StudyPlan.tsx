@@ -1,11 +1,23 @@
-import { useState } from 'react';
-import { Calendar, Download, RefreshCw, ChevronLeft, ChevronRight, Target, Clock, Trophy } from 'lucide-react';
-import { Card } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-// import { Header } from './Header';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Download, RefreshCw, ChevronLeft, ChevronRight, Target, Clock, Trophy, Loader2, AlertCircle } from 'lucide-react';
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+// import { Header } from '../Header';
+import { getStudyPlan, updateTaskCompletion, type StudyPlan, type DailyTask as StudyPlanDailyTask } from '../../services/studyPlan';
+import { createClient } from '../../utils/supabase/client';
+
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+const normalizeDayKey = (day: string) => day.slice(0, 3).toLowerCase();
+const toLocalDate = (isoDate: string | undefined | null) => {
+  if (!isoDate) return null;
+  const parts = isoDate.split('-').map((part) => Number.parseInt(part, 10));
+  if (parts.length !== 3 || parts.some((value) => Number.isNaN(value))) return null;
+  const [year, month, day] = parts;
+  return new Date(year, month - 1, day);
+};
 
 interface DailyTask {
   date: string;
@@ -16,6 +28,8 @@ interface DailyTask {
   estTime: string;
   xp: number;
   completed?: boolean;
+  isRestDay?: boolean;
+  color?: string;
 }
 
 // Generate dates starting from Nov 11, 2024 (Monday)
@@ -23,7 +37,7 @@ const generateWeekData = (weekOffset: number): DailyTask[] => {
   const startDate = new Date(2024, 10, 11); // Nov 11, 2024
   startDate.setDate(startDate.getDate() + (weekOffset * 7));
   
-  const weekData = [
+  const weekData: Array<Omit<DailyTask, 'date' | 'dayOfWeek'>> = [
     { theme: 'Orientation', task: 'Review Skill Report + Install Jupyter/VSCode', resources: 'SkillMiner Docs', estTime: '1h', xp: 20 },
     { theme: 'Python Basics', task: 'Variables, data types, loops', resources: 'Kaggle Python 101', estTime: '2h', xp: 40 },
     { theme: 'Python Practice', task: '10 Easy LeetCode Python problems', resources: 'LeetCode', estTime: '2h', xp: 60 },
@@ -43,7 +57,8 @@ const generateWeekData = (weekOffset: number): DailyTask[] => {
       date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       dayOfWeek: days[index],
       ...data,
-      completed: weekOffset === 0 && index < 3 // Mark first 3 days of current week as completed
+      completed: weekOffset === 0 && index < 3, // Mark first 3 days of current week as completed
+      isRestDay: false,
     };
   });
 };
@@ -51,7 +66,7 @@ const generateWeekData = (weekOffset: number): DailyTask[] => {
 // Generate all study plan tasks (60 days)
 const generateAllTasks = (): (DailyTask & { fullDate: Date })[] => {
   const startDate = new Date(2024, 10, 11); // Nov 11, 2024
-  const allTasks = [];
+  const allTasks: Array<DailyTask & { fullDate: Date }> = [];
   
   const taskTemplates = [
     { theme: 'Orientation', task: 'Review Skill Report + Install Jupyter/VSCode', resources: 'SkillMiner Docs', estTime: '1h', xp: 20, color: 'purple' },
@@ -77,7 +92,8 @@ const generateAllTasks = (): (DailyTask & { fullDate: Date })[] => {
       date: currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       dayOfWeek: days[currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1],
       ...task,
-      completed: i < 3 // First 3 days completed
+      completed: i < 3, // First 3 days completed
+      isRestDay: false,
     });
   }
   
@@ -107,7 +123,12 @@ const generateMonthData = (monthOffset: number) => {
   startDate.setDate(startDate.getDate() - daysFromPrevMonth);
   
   // Generate 42 days (6 weeks) for calendar grid
-  const calendarDays = [];
+  const calendarDays: Array<{
+    date: Date;
+    dayNumber: number;
+    isCurrentMonth: boolean;
+    isToday: boolean;
+  }> = [];
   for (let i = 0; i < 42; i++) {
     const currentDate = new Date(startDate);
     currentDate.setDate(startDate.getDate() + i);
@@ -131,45 +152,308 @@ const generateMonthData = (monthOffset: number) => {
   };
 };
 
-type MockupPage = "login" | "upload" | "report" | "dashboard" | "plan" | "coding" | "interview" | "profile" | "resume";
-
-interface StudyPlanMockupProps {
-  onNavigate?: (page: MockupPage) => void;
+interface StudyPlanProps {
+  onNavigate?: (page: string) => void;
+  planId?: string;
+  accessToken?: string;
+  initialPlan?: StudyPlan | null;
+  onPlanUpdate?: (plan: StudyPlan | null) => void;
 }
 
-export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
+export function StudyPlan({ onNavigate, planId, accessToken, initialPlan, onPlanUpdate }: StudyPlanProps) {
   const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'month'>('calendar');
   const [currentWeek, setCurrentWeek] = useState(0);
   const [currentMonthOffset, setCurrentMonthOffset] = useState(0);
+  const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
-  const totalWeeks = 8; // 2 months = ~8 weeks
-  const currentWeekData = generateWeekData(currentWeek);
-  const startDate = currentWeekData[0].date;
-  const endDate = currentWeekData[6].date;
+  // Fetch study plan data if planId is provided
+  useEffect(() => {
+    if (!planId) {
+      setStudyPlan(null);
+      setLoadError(null);
+      setIsLoading(false);
+      onPlanUpdate?.(null);
+      return;
+    }
+
+    // Use initial plan if provided and matches the requested planId
+    if (initialPlan && initialPlan.id === planId) {
+      setStudyPlan(initialPlan);
+      setLoadError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchStudyPlan = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+      try {
+        let token: string | null = accessToken || null;
+        if (!token) {
+          // Try to get session token
+          try {
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            token = session?.access_token || null;
+          } catch (sessionErr) {
+            console.log('No session available');
+            token = null;
+        }
+        }
+
+        const plan = await getStudyPlan(token, planId);
+        if (!isCancelled) {
+          setStudyPlan(plan);
+          onPlanUpdate?.(plan);
+        }
+      } catch (error: any) {
+        if (!isCancelled) {
+          console.error('Error fetching study plan:', error);
+          setStudyPlan(null);
+          setLoadError(error?.message ? `Unable to load your study plan: ${error.message}` : 'Unable to load your study plan.');
+          onPlanUpdate?.(null);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchStudyPlan();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [planId, accessToken, initialPlan, onPlanUpdate, retryKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleUpdatedPlan = (event: Event) => {
+      const updated = (event as CustomEvent<StudyPlan>).detail;
+      if (!updated) return;
+      if (planId && updated.id !== planId) return;
+      setStudyPlan(updated);
+      onPlanUpdate?.(updated);
+    };
+
+    window.addEventListener('studyPlanUpdatedFromChat', handleUpdatedPlan as EventListener);
+    return () => {
+      window.removeEventListener('studyPlanUpdatedFromChat', handleUpdatedPlan as EventListener);
+    };
+  }, [planId, onPlanUpdate]);
+
+  // Determine which data to use
+  const planStudyDays = studyPlan?.studyDays ?? [];
+  const planStudyDaySet = new Set(planStudyDays.map(normalizeDayKey));
+  const hasStudyDayFilter = planStudyDaySet.size > 0;
+  const planStartDate = toLocalDate(studyPlan?.startDate ?? undefined);
+  const totalWeeks = studyPlan ? Math.ceil(studyPlan.totalDays / 7) : 8;
+  const allTasks: Array<DailyTask & { fullDate: Date }> = studyPlan 
+    ? studyPlan.planData.tasks.map((task: StudyPlanDailyTask, index: number) => {
+        // Parse date from task.fullDate or task.date
+        let fullDate: Date | null = null;
+        if (task.fullDate) {
+          const parsed = toLocalDate(task.fullDate);
+          if (parsed && !Number.isNaN(parsed.getTime())) {
+            fullDate = parsed;
+          }
+        }
+
+        if (!fullDate && planStartDate) {
+          fullDate = new Date(planStartDate);
+          fullDate.setDate(planStartDate.getDate() + index);
+        }
+
+        if (!fullDate) {
+          const dateMatch = task.date?.match(/(\w+)\s+(\d+)/);
+          if (dateMatch) {
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const month = monthNames.indexOf(dateMatch[1]);
+            const day = parseInt(dateMatch[2], 10);
+            const year = planStartDate ? planStartDate.getFullYear() : new Date().getFullYear();
+            fullDate = new Date(year, month, day);
+          } else {
+            fullDate = new Date();
+            fullDate.setDate(fullDate.getDate() + index);
+          }
+        }
+
+        const resolvedDate = fullDate ?? new Date();
+        const displayDate =
+          task.date ??
+          resolvedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const dayLabel = DAY_LABELS[resolvedDate.getDay()];
+        const displayDay = dayLabel === 'Sun' ? 'Sun' : dayLabel;
+        const normalizedDay = normalizeDayKey(displayDay);
+        const isRestDay = task.isRestDay ?? (hasStudyDayFilter && !planStudyDaySet.has(normalizedDay));
+
+        if (isRestDay) {
+          return {
+            date: displayDate,
+            dayOfWeek: displayDay,
+            theme: 'Rest & Recharge',
+            task: 'Take a break—no study scheduled.',
+            resources: '',
+            estTime: '0h',
+            xp: 0,
+            completed: false,
+            fullDate: resolvedDate,
+            isRestDay: true,
+          };
+        }
+
+        return {
+          date: displayDate,
+          dayOfWeek: task.dayOfWeek ?? displayDay,
+          theme: task.theme,
+          task: task.task,
+          resources: task.resources,
+          estTime: task.estTime,
+          xp: task.xp,
+          completed: task.completed || false,
+          fullDate: resolvedDate,
+          isRestDay: false,
+          color: (task as any).color,
+        };
+      })
+    : generateAllTasks();
+  
+  const currentWeekData = studyPlan
+    ? allTasks.slice(currentWeek * 7, (currentWeek + 1) * 7).map((task, index) => ({
+        date: task.date,
+        dayOfWeek: task.dayOfWeek,
+        theme: task.theme,
+        task: task.task,
+        resources: task.resources,
+        estTime: task.estTime,
+        xp: task.xp,
+        completed: task.completed || false,
+        isRestDay: task.isRestDay ?? false,
+      }))
+    : generateWeekData(currentWeek);
+  
+  const startDate = currentWeekData[0]?.date || '';
+  const endDate = currentWeekData[6]?.date || '';
   
   // Month view data
   const monthData = generateMonthData(currentMonthOffset);
-  const allTasks = generateAllTasks();
+  
+  const weeksPhases = studyPlan
+    ? studyPlan.planData.phases.map(phase => ({
+        range: phase.range,
+        label: phase.label,
+        color: phase.color,
+      }))
+    : [
+        { range: [0, 1], label: 'Foundations', color: 'purple' },
+        { range: [2, 3], label: 'Visualization & EDA', color: 'blue' },
+        { range: [4, 5], label: 'Advanced Topics', color: 'orange' },
+        { range: [6, 7], label: 'Portfolio & Interview', color: 'green' },
+      ];
   
   // Get tasks for a specific date
   const getTasksForDate = (date: Date) => {
-    return allTasks.filter(task => 
-      task.fullDate.getDate() === date.getDate() &&
-      task.fullDate.getMonth() === date.getMonth() &&
-      task.fullDate.getFullYear() === date.getFullYear()
-    );
+    return allTasks.filter(task => {
+      const taskDate = task.fullDate instanceof Date ? task.fullDate : new Date(task.fullDate);
+      return (
+        taskDate.getDate() === date.getDate() &&
+        taskDate.getMonth() === date.getMonth() &&
+        taskDate.getFullYear() === date.getFullYear()
+      );
+    });
   };
 
-  const weeksPhases = [
-    { range: [0, 1], label: 'Foundations', color: 'purple' },
-    { range: [2, 3], label: 'Visualization & EDA', color: 'blue' },
-    { range: [4, 5], label: 'Advanced Topics', color: 'orange' },
-    { range: [6, 7], label: 'Portfolio & Interview', color: 'green' },
-  ];
+  // Handle task completion
+  const handleTaskComplete = async (taskIndex: number, completed: boolean) => {
+    if (!studyPlan || !planId) return;
+    if (studyPlan.planData.tasks[taskIndex]?.isRestDay) return;
+    
+    try {
+      let token: string | null = accessToken || null;
+      if (!token) {
+        try {
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          token = session?.access_token || null;
+        } catch (sessionErr) {
+          token = null;
+        }
+      }
+      
+      try {
+        const updatedPlan = await updateTaskCompletion(token, planId, taskIndex, completed);
+        setStudyPlan(updatedPlan);
+        onPlanUpdate?.(updatedPlan);
+      } catch (updateErr) {
+        console.error('Error updating task, updating locally:', updateErr);
+        // Update locally if API call fails
+        const updatedTasks = [...studyPlan.planData.tasks];
+        updatedTasks[taskIndex].completed = completed;
+        const locallyUpdatedPlan: StudyPlan = {
+          ...studyPlan,
+          planData: {
+            ...studyPlan.planData,
+            tasks: updatedTasks,
+          },
+        };
+        setStudyPlan(locallyUpdatedPlan);
+        onPlanUpdate?.(locallyUpdatedPlan);
+      }
+    } catch (error) {
+      console.error('Error updating task completion:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
+          <p className="text-slate-600">Loading your study plan...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (planId && loadError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center px-6">
+        <Card className="max-w-lg w-full p-6 border border-red-200 bg-red-50">
+          <div className="flex items-start gap-3">
+            <div className="bg-red-100 p-2 rounded-full">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <h2 className="text-xl text-red-700 mb-2">We couldn&apos;t load your study plan</h2>
+              <p className="text-sm text-red-600 mb-4">
+                {loadError}
+              </p>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => onNavigate?.('dashboard')}>
+                  Go to Dashboard
+                </Button>
+                <Button onClick={() => setRetryKey((prev) => prev + 1)} className="bg-red-600 hover:bg-red-700">
+                  Try Again
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   const currentPhase = weeksPhases.find(phase => 
     currentWeek >= phase.range[0] && currentWeek <= phase.range[1]
   );
+
+  const isUsingMockData = !studyPlan;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -194,7 +478,14 @@ export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl text-slate-900 mb-2">Study Plan</h1>
-              <p className="text-slate-600">Data Analyst Role • 60-day timeline • Target: Feb 10, 2025</p>
+              <p className="text-slate-600">
+                {studyPlan 
+                  ? `Data Analyst Role • ${studyPlan.totalDays}-day timeline • Target: ${new Date(studyPlan.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                  : isUsingMockData
+                  ? 'Data Analyst Role • 60-day timeline • Target: Feb 10, 2025'
+                  : 'Fetching your personalized study plan...'
+                }
+              </p>
             </div>
             <div className="flex gap-3">
               <Dialog>
@@ -270,7 +561,9 @@ export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
                 </div>
                 <div>
                   <div className="text-sm text-slate-600">Progress</div>
-                  <div className="text-xl text-slate-900">34%</div>
+                  <div className="text-xl text-slate-900">
+                    {studyPlan ? `${studyPlan.metadata.progress}%` : '34%'}
+                  </div>
                 </div>
               </div>
             </Card>
@@ -281,7 +574,12 @@ export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
                 </div>
                 <div>
                   <div className="text-sm text-slate-600">Days Remaining</div>
-                  <div className="text-xl text-slate-900">52</div>
+                  <div className="text-xl text-slate-900">
+                    {studyPlan 
+                      ? Math.max(0, Math.ceil((new Date(studyPlan.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
+                      : '52'
+                    }
+                  </div>
                 </div>
               </div>
             </Card>
@@ -292,7 +590,12 @@ export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
                 </div>
                 <div>
                   <div className="text-sm text-slate-600">Total XP</div>
-                  <div className="text-xl text-slate-900">220 / 650</div>
+                  <div className="text-xl text-slate-900">
+                    {studyPlan 
+                      ? `${studyPlan.planData.tasks.filter(t => t.completed).reduce((sum, t) => sum + t.xp, 0)} / ${studyPlan.metadata.totalXP}`
+                      : '220 / 650'
+                    }
+                  </div>
                 </div>
               </div>
             </Card>
@@ -348,37 +651,64 @@ export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
             {/* Calendar Grid - One Week */}
             <div className="grid grid-cols-7 gap-4">
               {currentWeekData.map((task) => (
-                <Card 
-                  key={task.date} 
+                <Card
+                  key={task.date}
                   className={`p-4 ${
-                    task.completed 
-                      ? 'bg-green-50 border-green-300' 
+                    task.isRestDay
+                      ? 'bg-slate-50 border-dashed border-slate-300 text-slate-500'
+                      : task.completed
+                      ? 'bg-green-50 border-green-300'
                       : task.dayOfWeek === 'Fri' && currentWeek === 0
-                      ? 'border-2 border-purple-300 bg-purple-50' 
+                      ? 'border-2 border-purple-300 bg-purple-50'
                       : ''
                   }`}
                 >
                   <div className="mb-3">
                     <div className="text-sm text-slate-500 mb-1">{task.dayOfWeek}</div>
-                    <div className="text-lg text-slate-900 mb-1">{task.date}</div>
-                    <div className="text-xs text-slate-600">{task.theme}</div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="bg-white rounded p-2 border border-slate-200">
-                      <div className="text-xs text-slate-900 mb-1 line-clamp-2">{task.task}</div>
-                      <div className="flex items-center gap-1 text-xs text-slate-500">
-                        <Clock className="w-3 h-3" />
-                        {task.estTime}
-                      </div>
+                    <div className={`text-lg mb-1 ${task.isRestDay ? 'text-slate-500' : 'text-slate-900'}`}>{task.date}</div>
+                    <div className={`text-xs ${task.isRestDay ? 'text-slate-500' : 'text-slate-600'}`}>
+                      {task.isRestDay ? 'Rest Day' : task.theme}
                     </div>
-                    <Badge className={`w-full justify-center text-xs ${
-                      task.completed 
-                        ? 'bg-green-600' 
-                        : 'bg-purple-100 text-purple-700'
-                    }`}>
-                      {task.completed ? '✓ Completed' : `${task.xp} XP`}
-                    </Badge>
                   </div>
+                  {task.isRestDay ? (
+                    <div className="text-sm text-slate-500">
+                      Recharge and enjoy your day off.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="bg-white rounded p-2 border border-slate-200">
+                        <div className="text-xs text-slate-900 mb-1 line-clamp-2">{task.task}</div>
+                        <div className="flex items-center gap-1 text-xs text-slate-500">
+                          <Clock className="w-3 h-3" />
+                          {task.estTime}
+                        </div>
+                      </div>
+                      <Badge
+                        className={`w-full justify-center text-xs ${
+                          task.completed ? 'bg-green-600' : 'bg-purple-100 text-purple-700'
+                        }`}
+                      >
+                        {task.completed ? '✓ Completed' : `${task.xp} XP`}
+                      </Badge>
+                      {studyPlan && planId && (
+                        <Button
+                          size="sm"
+                          variant={task.completed ? 'outline' : 'default'}
+                          className="w-full text-xs"
+                          onClick={() => {
+                            const taskIndex = studyPlan.planData.tasks.findIndex(
+                              (t) => t.date === task.date && t.dayOfWeek === task.dayOfWeek,
+                            );
+                            if (taskIndex !== -1) {
+                              handleTaskComplete(taskIndex, !task.completed);
+                            }
+                          }}
+                        >
+                          {task.completed ? 'Mark Incomplete' : 'Mark Complete'}
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </Card>
               ))}
             </div>
@@ -436,6 +766,8 @@ export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
               <div className="grid grid-cols-7">
                 {monthData.calendarDays.map((day, index) => {
                   const tasksForDay = getTasksForDate(day.date);
+                  const studyTasksForDay = tasksForDay.filter(task => !task.isRestDay);
+                  const hasRestOnly = studyTasksForDay.length === 0 && tasksForDay.some(task => task.isRestDay);
                   
                   return (
                     <div
@@ -453,7 +785,7 @@ export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
                       </div>
                       
                       <div className="space-y-1">
-                        {tasksForDay.slice(0, 2).map((task, taskIndex) => (
+                        {studyTasksForDay.slice(0, 2).map((task, taskIndex) => (
                           <div
                             key={taskIndex}
                             className={`text-xs px-2 py-1 rounded truncate ${
@@ -469,9 +801,14 @@ export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
                             {task.theme}
                           </div>
                         ))}
-                        {tasksForDay.length > 2 && (
+                        {studyTasksForDay.length > 2 && (
                           <div className="text-xs text-slate-500 px-2">
-                            +{tasksForDay.length - 2} more
+                            +{studyTasksForDay.length - 2} more
+                          </div>
+                        )}
+                        {hasRestOnly && (
+                          <div className="text-xs text-slate-400 px-2 italic">
+                            Rest day
                           </div>
                         )}
                       </div>
@@ -525,26 +862,34 @@ export function StudyPlanMockup({ onNavigate }: StudyPlanMockupProps) {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <Badge variant="outline">{task.dayOfWeek}, {task.date}</Badge>
-                        <h3 className="text-slate-900">{task.theme}</h3>
-                        {task.completed && (
+                        <h3 className={`text-slate-900 ${task.isRestDay ? 'text-slate-500' : ''}`}>
+                          {task.isRestDay ? 'Rest Day' : task.theme}
+                        </h3>
+                        {task.completed && !task.isRestDay && (
                           <Badge className="bg-green-600">✓ Completed</Badge>
                         )}
                       </div>
-                      <p className="text-slate-700 mb-3">{task.task}</p>
-                      <div className="flex items-center gap-4 text-sm text-slate-600">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {task.estTime}
-                        </span>
-                        <span>•</span>
-                        <span>📚 {task.resources}</span>
-                      </div>
+                      <p className={`mb-3 ${task.isRestDay ? 'text-slate-500 italic' : 'text-slate-700'}`}>
+                        {task.isRestDay ? 'Recharge day — no study session planned.' : task.task}
+                      </p>
+                      {!task.isRestDay && (
+                        <div className="flex items-center gap-4 text-sm text-slate-600">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {task.estTime}
+                          </span>
+                          <span>•</span>
+                          <span>📚 {task.resources}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <Badge className="bg-purple-100 text-purple-700">
-                        {task.xp} XP
-                      </Badge>
-                      {!task.completed && (
+                      {!task.isRestDay && (
+                        <Badge className="bg-purple-100 text-purple-700">
+                          {task.xp} XP
+                        </Badge>
+                      )}
+                      {!task.completed && !task.isRestDay && (
                         <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
                           Start
                         </Button>

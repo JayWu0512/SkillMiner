@@ -1,9 +1,9 @@
 // components/Resume.tsx
 import { useRef, useState } from "react";
 import { Upload, FileText, Download, Trash2, Check, Clock, Plus } from "lucide-react";
-import { Card } from "./ui/card";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
+import { Card } from "../ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
 import { toast } from "sonner";
 
 type MockupPage =

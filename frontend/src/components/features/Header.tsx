@@ -1,12 +1,12 @@
 // src/components/Header.tsx
 import { Brain, Calendar, Code, ChevronDown, User, LogOut } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from "../ui/dropdown-menu";
 
 interface HeaderProps {
   activePage?: "today" | "study-plan" | "practice" | "profile" | "resume";

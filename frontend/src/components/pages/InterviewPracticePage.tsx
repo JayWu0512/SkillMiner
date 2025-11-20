@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Play, Video, ArrowLeft, ChevronRight, Circle, CheckCircle2, Lightbulb } from 'lucide-react';
-import { Card } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Progress } from './ui/progress';
+import { Card } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Progress } from '../ui/progress';
 // import { Header } from './Header';
 import { Brain } from 'lucide-react';
 
