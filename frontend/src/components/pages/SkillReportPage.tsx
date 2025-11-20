@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Target,
   TrendingUp,
@@ -32,6 +32,30 @@ import { Separator } from "../ui/separator";
 import { generateStudyPlan } from "../../services/studyPlan";
 import { createClient } from "../../utils/supabase/client";
 
+// === helpers for mapping weekly_hours <-> hoursPerDay 選項 ===
+type HoursPerDayOption = "1-2" | "2-3" | "3-4" | "4+";
+
+function mapWeeklyHoursToDailyOption(weekly: number | null): HoursPerDayOption {
+  if (!weekly || weekly <= 10) return "1-2";
+  if (weekly <= 20) return "2-3";
+  if (weekly <= 28) return "3-4";
+  return "4+";
+}
+
+function estimateWeeklyHours(
+  hoursPerDay: HoursPerDayOption,
+  daysPerWeek: number
+): number {
+  const mid =
+    hoursPerDay === "1-2"
+      ? 1.5
+      : hoursPerDay === "2-3"
+      ? 2.5
+      : hoursPerDay === "3-4"
+      ? 3.5
+      : 4.5;
+  return Math.round(mid * daysPerWeek);
+}
 
 const existingSkills = [
   { name: "Python", level: "Intermediate", color: "blue" },
@@ -47,10 +71,7 @@ const softSkillsYouHave = [
   "Time Management",
 ];
 
-const softSkillsToDevelop = [
-  "Leadership",
-  "Strategic Thinking",
-];
+const softSkillsToDevelop = ["Leadership", "Strategic Thinking"];
 
 const missingSkills = [
   {
@@ -68,8 +89,14 @@ const missingSkills = [
     priority: "High",
     estimatedTime: "15 hours",
     resources: [
-      { name: "Tableau Public Tutorials", url: "https://public.tableau.com/en-us/s/resources" },
-      { name: "DataCamp Tableau Courses", url: "https://www.datacamp.com/courses/tableau" },
+      {
+        name: "Tableau Public Tutorials",
+        url: "https://public.tableau.com/en-us/s/resources",
+      },
+      {
+        name: "DataCamp Tableau Courses",
+        url: "https://www.datacamp.com/courses/tableau",
+      },
     ],
     type: "hard",
   },
@@ -78,7 +105,10 @@ const missingSkills = [
     priority: "Medium",
     estimatedTime: "25 hours",
     resources: [
-      { name: "Khan Academy Statistics", url: "https://www.khanacademy.org/math/statistics-probability" },
+      {
+        name: "Khan Academy Statistics",
+        url: "https://www.khanacademy.org/math/statistics-probability",
+      },
       { name: "StatQuest (YouTube)", url: "https://www.youtube.com/c/joshstarmer" },
     ],
     type: "hard",
@@ -94,10 +124,8 @@ const missingSkills = [
 
 interface SkillReportProps {
   onGenerateStudyPlan?: (planId?: string) => void;
-  // Optional: if provided, will use real backend
   analysisId?: string;
   accessToken?: string;
-  // Optional: if provided, will use this for testing
   useBackend?: boolean;
 }
 
@@ -107,11 +135,10 @@ export function SkillReport({
   accessToken,
   useBackend = true,
 }: SkillReportProps) {
-  const [showPlanGenerator, setShowPlanGenerator] =
-    useState(false);
-  const [hoursPerDay, setHoursPerDay] = useState("2-3");
+  const [showPlanGenerator, setShowPlanGenerator] = useState(false);
+  const [hoursPerDay, setHoursPerDay] = useState<HoursPerDayOption>("2-3");
   const [timeline, setTimeline] = useState("60");
-  const [studyDays, setStudyDays] = useState([
+  const [studyDays, setStudyDays] = useState<string[]>([
     "Mon",
     "Tue",
     "Wed",
@@ -122,12 +149,45 @@ export function SkillReport({
   const [error, setError] = useState<string | null>(null);
 
   const readinessScore = 68;
-  const hardSkillsMissing = missingSkills.filter(
-    (s) => s.type === "hard",
-  );
-  const softSkillsMissing = missingSkills.filter(
-    (s) => s.type === "soft",
-  );
+  const hardSkillsMissing = missingSkills.filter((s) => s.type === "hard");
+  const softSkillsMissing = missingSkills.filter((s) => s.type === "soft");
+
+  useEffect(() => {
+    if (!useBackend) return;
+
+    const loadProfilePreferences = async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        const userId = session?.user?.id;
+        if (!userId) return;
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("weekly_hours")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (error) {
+          console.warn("[SkillReport] Failed to load profile preferences:", error);
+          return;
+        }
+
+        const row = data as { weekly_hours: number | null } | null;
+
+        if (!row || row.weekly_hours == null) return;
+
+        setHoursPerDay(mapWeeklyHoursToDailyOption(row.weekly_hours));
+      } catch (err) {
+        console.warn("[SkillReport] loadProfilePreferences error:", err);
+      }
+    };
+
+    loadProfilePreferences();
+  }, [useBackend]);
 
   const getReadinessMessage = (score: number) => {
     if (score >= 80)
@@ -153,41 +213,75 @@ export function SkillReport({
 
   const handleGenerateStudyPlan = async () => {
     if (!useBackend) {
-      if (onGenerateStudyPlan) {
-        onGenerateStudyPlan();
-      }
+      onGenerateStudyPlan?.();
       return;
     }
 
     if (!analysisId) {
-      setError('Missing analysis data. Please upload your resume and job description again.');
+      setError(
+        "Missing analysis data. Please upload your resume and job description again."
+      );
       return;
     }
 
     setIsGenerating(true);
     setError(null);
-    
+
     try {
-      // Try to get session token
+      const supabase = createClient();
+
       let token: string | null = accessToken || null;
-      
+      let userId: string | null = null;
+
       if (!token) {
         try {
-          const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
           token = session?.access_token || null;
+          userId = session?.user?.id ?? null;
         } catch (sessionErr) {
-          console.log('No session available');
+          console.log("No session available");
           token = null;
+        }
+      } else {
+        try {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          userId = user?.id ?? null;
+        } catch (userErr) {
+          console.log("Could not fetch auth user:", userErr);
         }
       }
 
-      console.log('Generating study plan with:', {
+      if (userId) {
+        try {
+          const weeklyHours = estimateWeeklyHours(hoursPerDay, studyDays.length);
+
+          await supabase
+            .from("profiles")
+            .upsert(
+              {
+                id: userId,
+                weekly_hours: weeklyHours,
+              } as any
+            );
+
+        } catch (profileErr) {
+          console.warn(
+            "[SkillReport] Failed to sync profile preferences (weekly_hours):",
+            profileErr
+          );
+        }
+}
+
+      console.log("Generating study plan with:", {
         analysisId,
         hoursPerDay,
         timeline,
         studyDays,
-        hasToken: !!token
+        hasToken: !!token,
       });
 
       const studyPlan = await generateStudyPlan(token, {
@@ -197,18 +291,18 @@ export function SkillReport({
         studyDays,
         jobDescription: "Data Analyst (Entry-Level) Position",
       });
-      
-      console.log('Study plan generated:', studyPlan.id);
-      
-      // Store planId in localStorage for StudyPlan to retrieve
-      localStorage.setItem('currentStudyPlanId', studyPlan.id);
-      
-      if (onGenerateStudyPlan) {
-        onGenerateStudyPlan(studyPlan.id);
-      }
+
+      console.log("Study plan generated:", studyPlan.id);
+
+      localStorage.setItem("currentStudyPlanId", studyPlan.id);
+
+      onGenerateStudyPlan?.(studyPlan.id);
     } catch (err: any) {
-      console.error('Error generating study plan:', err);
-      setError(err.message || 'Failed to generate study plan. Please check the console for details.');
+      console.error("Error generating study plan:", err);
+      setError(
+        err?.message ||
+          "Failed to generate study plan. Please check the console for details."
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -235,48 +329,32 @@ export function SkillReport({
                 <div className="text-4xl text-purple-600 mb-1">
                   {readinessScore}%
                 </div>
-                <div className="text-xs text-slate-600">
-                  Ready
-                </div>
+                <div className="text-xs text-slate-600">Ready</div>
               </div>
             </div>
             <h2 className={`text-2xl mb-2 ${readiness.color}`}>
               {readiness.icon} {readiness.text}
             </h2>
             <p className="text-slate-700 max-w-2xl mx-auto">
-              You have a solid foundation with{" "}
-              <strong>4 relevant skills</strong>. Focus on
-              building <strong>4 key areas</strong> to become
-              fully qualified for this role. With consistent
-              effort, you could be ready in about{" "}
-              <strong>2-3 months</strong>.
+              You have a solid foundation with <strong>4 relevant skills</strong>.
+              Focus on building <strong>4 key areas</strong> to become fully
+              qualified for this role. With consistent effort, you could be ready
+              in about <strong>2-3 months</strong>.
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-6 mt-6">
             <div className="text-center p-4 bg-white rounded-lg border border-purple-200">
-              <div className="text-2xl text-green-600 mb-1">
-                4
-              </div>
-              <div className="text-sm text-slate-600">
-                Skills You Have
-              </div>
+              <div className="text-2xl text-green-600 mb-1">4</div>
+              <div className="text-sm text-slate-600">Skills You Have</div>
             </div>
             <div className="text-center p-4 bg-white rounded-lg border border-purple-200">
-              <div className="text-2xl text-purple-600 mb-1">
-                4
-              </div>
-              <div className="text-sm text-slate-600">
-                Skills to Learn
-              </div>
+              <div className="text-2xl text-purple-600 mb-1">4</div>
+              <div className="text-sm text-slate-600">Skills to Learn</div>
             </div>
             <div className="text-center p-4 bg-white rounded-lg border border-purple-200">
-              <div className="text-2xl text-blue-600 mb-1">
-                ~70h
-              </div>
-              <div className="text-sm text-slate-600">
-                Total Study Time
-              </div>
+              <div className="text-2xl text-blue-600 mb-1">~70h</div>
+              <div className="text-sm text-slate-600">Total Study Time</div>
             </div>
           </div>
         </Card>
@@ -292,8 +370,8 @@ export function SkillReport({
                 Generate Your Personalized Study Plan
               </h2>
               <p className="text-sm text-slate-600">
-                Tell us your availability and we'll create a
-                day-by-day roadmap to reach your goal
+                Tell us your availability and we&apos;ll create a day-by-day
+                roadmap to reach your goal
               </p>
             </div>
           </div>
@@ -318,7 +396,9 @@ export function SkillReport({
                   </Label>
                   <Select
                     value={hoursPerDay}
-                    onValueChange={setHoursPerDay}
+                    onValueChange={(v: HoursPerDayOption) =>
+                      setHoursPerDay(v)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -344,29 +424,16 @@ export function SkillReport({
                   <Label htmlFor="timeline">
                     When do you want to be job-ready?
                   </Label>
-                  <Select
-                    value={timeline}
-                    onValueChange={setTimeline}
-                  >
+                  <Select value={timeline} onValueChange={setTimeline}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="30">
-                        1 month (30 days)
-                      </SelectItem>
-                      <SelectItem value="60">
-                        2 months (60 days)
-                      </SelectItem>
-                      <SelectItem value="90">
-                        3 months (90 days)
-                      </SelectItem>
-                      <SelectItem value="120">
-                        4 months (120 days)
-                      </SelectItem>
-                      <SelectItem value="180">
-                        6 months (180 days)
-                      </SelectItem>
+                      <SelectItem value="30">1 month (30 days)</SelectItem>
+                      <SelectItem value="60">2 months (60 days)</SelectItem>
+                      <SelectItem value="90">3 months (90 days)</SelectItem>
+                      <SelectItem value="120">4 months (120 days)</SelectItem>
+                      <SelectItem value="180">6 months (180 days)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -377,38 +444,30 @@ export function SkillReport({
                   Which days are you available to study?
                 </Label>
                 <div className="flex gap-2">
-                  {[
-                    "Mon",
-                    "Tue",
-                    "Wed",
-                    "Thu",
-                    "Fri",
-                    "Sat",
-                    "Sun",
-                  ].map((day) => (
-                    <Button
-                      key={day}
-                      variant={
-                        studyDays.includes(day)
-                          ? "default"
-                          : "outline"
-                      }
-                      className={
-                        studyDays.includes(day)
-                          ? "bg-green-600 hover:bg-green-700"
-                          : ""
-                      }
-                      onClick={() => {
-                        setStudyDays((prev) =>
-                          prev.includes(day)
-                            ? prev.filter((d) => d !== day)
-                            : [...prev, day],
-                        );
-                      }}
-                    >
-                      {day}
-                    </Button>
-                  ))}
+                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+                    (day) => (
+                      <Button
+                        key={day}
+                        variant={
+                          studyDays.includes(day) ? "default" : "outline"
+                        }
+                        className={
+                          studyDays.includes(day)
+                            ? "bg-green-600 hover:bg-green-700"
+                            : ""
+                        }
+                        onClick={() => {
+                          setStudyDays((prev) =>
+                            prev.includes(day)
+                              ? prev.filter((d) => d !== day)
+                              : [...prev, day]
+                          );
+                        }}
+                      >
+                        {day}
+                      </Button>
+                    )
+                  )}
                 </div>
               </div>
 
@@ -438,9 +497,7 @@ export function SkillReport({
                   <Separator className="my-3" />
                   <div className="flex justify-between text-base">
                     <span>Expected readiness level:</span>
-                    <strong className="text-green-600">
-                      95%
-                    </strong>
+                    <strong className="text-green-600">95%</strong>
                   </div>
                 </div>
               </div>
@@ -493,9 +550,7 @@ export function SkillReport({
               <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <h2 className="text-xl text-slate-900">
-                Your Existing Strengths
-              </h2>
+              <h2 className="text-xl text-slate-900">Your Existing Strengths</h2>
               <p className="text-sm text-slate-600">
                 Skills you already have for this role
               </p>
@@ -509,16 +564,14 @@ export function SkillReport({
                 className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200"
               >
                 <div>
-                  <div className="text-slate-900 mb-1">
-                    {skill.name}
-                  </div>
+                  <div className="text-slate-900 mb-1">{skill.name}</div>
                   <Badge
                     className={
                       skill.color === "green"
                         ? "bg-green-100 text-green-700"
                         : skill.color === "blue"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-yellow-100 text-yellow-700"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-yellow-100 text-yellow-700"
                     }
                   >
                     {skill.level}
@@ -537,9 +590,7 @@ export function SkillReport({
               <TrendingUp className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-xl text-slate-900">
-                Skills to Develop
-              </h2>
+              <h2 className="text-xl text-slate-900">Skills to Develop</h2>
               <p className="text-sm text-slate-600">
                 Focus areas to reach your career goal
               </p>
@@ -561,9 +612,7 @@ export function SkillReport({
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="text-slate-900">
-                          {skill.name}
-                        </h4>
+                        <h4 className="text-slate-900">{skill.name}</h4>
                         <Badge
                           className={
                             skill.priority === "High"
@@ -615,9 +664,7 @@ export function SkillReport({
                 <Award className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <h3 className="text-lg text-slate-900">
-                  Soft Skills
-                </h3>
+                <h3 className="text-lg text-slate-900">Soft Skills</h3>
                 <p className="text-sm text-slate-600">
                   Interpersonal and transferable skills
                 </p>
@@ -679,10 +726,12 @@ export function SkillReport({
           </div>
 
           <p className="text-sm text-slate-700 mb-2">
-            Develop your soft skills and prepare for behavioral interviews with these curated resources:
+            Develop your soft skills and prepare for behavioral interviews with
+            these curated resources:
           </p>
           <p className="text-sm text-slate-500 italic mb-4">
-            Note: Preparation time varies based on your own pace and experience level.
+            Note: Preparation time varies based on your own pace and experience
+            level.
           </p>
 
           {/* Exponent Card */}
@@ -693,7 +742,9 @@ export function SkillReport({
                   Exponent - Behavioral Interview Prep
                 </h4>
                 <p className="text-sm text-slate-600 mb-3">
-                  Practice common behavioral questions for Leadership, Strategic Thinking, and other soft skills with expert feedback and frameworks.
+                  Practice common behavioral questions for Leadership, Strategic
+                  Thinking, and other soft skills with expert feedback and
+                  frameworks.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {softSkillsToDevelop.map((skill) => (

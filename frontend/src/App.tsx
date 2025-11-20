@@ -6,7 +6,7 @@ import { LoginPage } from "./components/pages/LoginPage";
 import { UploadPage } from "./components/pages/UploadPage";
 import { ChatbotPage } from "./components/pages/ChatbotPage";
 import { MainDashboard } from "./components/pages/MainDashboardPage";
-import { StudyPlan } from "./components/features/StudyPlan";
+import { StudyPlan } from "./components/pages/StudyPlanPage";
 import { CodingPractice } from "./components/pages/CodingPracticePage";
 import { InterviewPractice } from "./components/pages/InterviewPracticePage";
 import { Profile } from "./components/pages/ProfilePage";
@@ -23,6 +23,11 @@ import { createClient } from "./utils/supabase/client";
 import { getStudyPlan, type StudyPlan as StudyPlanData } from "./services/studyPlan";
 
 type Nullable<T> = T | null;
+
+type AuthUser = {
+  id: string;
+  email: string | null;
+};
 
 // === CONFIG ===
 const USE_REAL_AUTH = true as const;
@@ -53,6 +58,7 @@ export default function App() {
   const [appState, setAppState] = useState<AppState>("login");
   const [accessToken, setAccessToken] = useState<string>("");
   const [analysisId, setAnalysisId] = useState<string>("");
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return window.localStorage.getItem("currentStudyPlanId");
@@ -188,8 +194,13 @@ export default function App() {
 
       if (session?.access_token && session?.user?.id) {
         setAccessToken(session.access_token);
+        setAuthUser({
+          id: session.user.id,
+          email: session.user.email ?? null,
+        });                                    
         await routeByHistory(session.user.id, session.access_token);
       } else {
+        setAuthUser(null);                    
         setAppState("login");
       }
     };
@@ -202,8 +213,13 @@ export default function App() {
     } = supabase.auth.onAuthStateChange(async (_evt, session) => {
       if (session?.access_token && session?.user?.id) {
         setAccessToken(session.access_token);
+        setAuthUser({
+          id: session.user.id,
+          email: session.user.email ?? null,
+        });                                   
         await routeByHistory(session.user.id, session.access_token);
       } else {
+        setAuthUser(null);                   
         setAppState("login");
       }
     });
@@ -225,6 +241,7 @@ export default function App() {
     setAccessToken("");
     setAnalysisId("");
     setCurrentPlanId(null);
+    setAuthUser(null);
     handlePlanUpdate(null);
     setAppState("login");
 
@@ -332,7 +349,14 @@ export default function App() {
       )}
 
       {appState === "profile" && (
-        <Profile onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")} />
+        <Profile
+          user={authUser}
+          onNavigate={(p: string) => {
+            if (p === "dashboard") setAppState("dashboard");
+            if (p === "resume") setAppState("resume");
+            if (p === "report") setAppState("report");
+          }}
+        />
       )}
 
       {appState === "resume" && (
