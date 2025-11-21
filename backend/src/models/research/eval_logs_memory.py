@@ -236,18 +236,30 @@ def main():
     logs = load_logs_csv(csv_path)
 
     models = [
-        LogModelWrapper(
-            "BaseLSTM_NoMemory", model0_base_lstm_predict
-        ),  # ★ New Base LSTM
+        LogModelWrapper("BaseLSTM_NoMemory", model0_base_lstm_predict),
         LogModelWrapper("LogModel_1_BaselineConstant", model1_predict),
         LogModelWrapper("LogModel_2_BaselineHistoryLen", model2_predict),
         LogModelWrapper("LogModel_3_ExpHeuristic", model3_predict),
         LogModelWrapper("LogModel_4_FullMemoryHeuristic", model4_predict),
     ]
 
+    print("=== Exact match accuracy (no off-by-one) ===")
     for m in models:
-        evaluate_level_prediction(m, logs, history_size=50, allow_off_by_one=False)
-        evaluate_level_prediction(m, logs, history_size=50, allow_off_by_one=True)
+        evaluate_level_prediction(
+            m,
+            logs,
+            history_size=50,
+            allow_off_by_one=False,
+        )
+
+    print("\n=== Off-by-one accuracy (|pred - true| <= 1) ===")
+    for m in models:
+        evaluate_level_prediction(
+            m,
+            logs,
+            history_size=50,
+            allow_off_by_one=True,
+        )
 
 
 if __name__ == "__main__":
