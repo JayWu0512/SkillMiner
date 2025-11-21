@@ -39,6 +39,14 @@ TOP_K: int = _int_env("TOP_K", 6)
 MAX_RESUME_CTX: int = _int_env("MAX_RESUME_CTX", 4000)
 MAX_USER_CTX: int   = _int_env("MAX_USER_CTX", 1200)
 
+# Memory-Augmented LSTM configuration
+STM_MAX_MESSAGES: int = _int_env("STM_MAX_MESSAGES", 15)
+STM_MAX_TOKENS: int = _int_env("STM_MAX_TOKENS", 500)
+LTM_TOP_K: int = _int_env("LTM_TOP_K", 5)
+LTM_SIMILARITY_THRESHOLD: float = float(os.getenv("LTM_SIMILARITY_THRESHOLD", "0.7"))
+NER_MODEL: str = os.getenv("NER_MODEL", "en_core_web_sm")
+SUMMARIZATION_MODEL: str = os.getenv("SUMMARIZATION_MODEL", "facebook/bart-large-cnn")
+
 
 # ------------------------------------------------------------------------------
 # Dataset / files
@@ -140,5 +148,11 @@ __all__ = [
     "CHROMA_DIR",
     "LOG_FILE",
     "SYSTEM_PROMPT",
+    "STM_MAX_MESSAGES",
+    "STM_MAX_TOKENS",
+    "LTM_TOP_K",
+    "LTM_SIMILARITY_THRESHOLD",
+    "NER_MODEL",
+    "SUMMARIZATION_MODEL",
     "validate_paths",
 ]
