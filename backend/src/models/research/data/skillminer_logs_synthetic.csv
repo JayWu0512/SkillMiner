@@ -1,0 +1,201 @@
+log_id,timestamp,user_id,event_type,exp_delta,total_exp,level,message
+1,2024-11-03 08:24:00,leo,create_study_plan,0,0,1,2024-11-03 08:24:00 - user leo created a new study plan.
+2,2024-11-09 02:34:00,he,update_profile,0,0,1,2024-11-09 02:34:00 - user he updated profile information.
+3,2024-11-10 01:15:00,leo,complete_lesson,15,15,1,2024-11-10 01:15:00 - user leo completed a lesson and gained 15 exp.
+4,2024-11-07 14:02:00,leo,gain_exp,20,35,1,2024-11-07 14:02:00 - user leo gained 20 exp from activities.
+5,2024-11-07 16:42:00,he,create_study_plan,0,0,1,2024-11-07 16:42:00 - user he created a new study plan.
+6,2024-11-03 06:53:00,he,complete_lesson,15,15,1,2024-11-03 06:53:00 - user he completed a lesson and gained 15 exp.
+7,2024-11-09 13:24:00,leo,gain_exp,10,45,1,2024-11-09 13:24:00 - user leo gained 10 exp from activities.
+8,2024-11-09 05:41:00,leo,gain_exp,20,65,2,2024-11-09 05:41:00 - user leo gained 20 exp from activities.
+9,2024-11-02 02:47:00,jay,update_profile,0,0,1,2024-11-02 02:47:00 - user jay updated profile information.
+10,2024-11-07 05:45:00,he,create_study_plan,0,15,1,2024-11-07 05:45:00 - user he created a new study plan.
+11,2024-11-02 01:52:00,jay,logout,0,0,1,2024-11-02 01:52:00 - user jay logged out.
+12,2024-11-04 23:46:00,he,create_study_plan,0,15,1,2024-11-04 23:46:00 - user he created a new study plan.
+13,2024-11-05 05:48:00,leo,complete_lesson,5,70,2,2024-11-05 05:48:00 - user leo completed a lesson and gained 5 exp.
+14,2024-11-04 16:58:00,leo,gain_exp,20,90,2,2024-11-04 16:58:00 - user leo gained 20 exp from activities.
+15,2024-11-10 10:03:00,leo,update_profile,0,90,2,2024-11-10 10:03:00 - user leo updated profile information.
+16,2024-11-01 02:16:00,he,gain_exp,20,35,1,2024-11-01 02:16:00 - user he gained 20 exp from activities.
+17,2024-11-03 09:19:00,leo,create_study_plan,0,90,2,2024-11-03 09:19:00 - user leo created a new study plan.
+18,2024-11-09 03:40:00,he,gain_exp,30,65,2,2024-11-09 03:40:00 - user he gained 30 exp from activities.
+19,2024-11-05 08:41:00,he,update_profile,0,65,2,2024-11-05 08:41:00 - user he updated profile information.
+20,2024-11-05 05:56:00,leo,update_profile,0,90,2,2024-11-05 05:56:00 - user leo updated profile information.
+21,2024-11-09 04:21:00,jay,gain_exp,10,10,1,2024-11-09 04:21:00 - user jay gained 10 exp from activities.
+22,2024-11-04 00:36:00,jay,update_profile,0,10,1,2024-11-04 00:36:00 - user jay updated profile information.
+23,2024-11-02 12:14:00,jay,create_study_plan,0,10,1,2024-11-02 12:14:00 - user jay created a new study plan.
+24,2024-11-04 11:41:00,he,update_profile,0,65,2,2024-11-04 11:41:00 - user he updated profile information.
+25,2024-11-01 10:25:00,jay,update_profile,0,10,1,2024-11-01 10:25:00 - user jay updated profile information.
+26,2024-11-05 15:36:00,jay,complete_lesson,15,25,1,2024-11-05 15:36:00 - user jay completed a lesson and gained 15 exp.
+27,2024-11-02 13:23:00,leo,update_profile,0,90,2,2024-11-02 13:23:00 - user leo updated profile information.
+28,2024-11-04 17:28:00,jay,gain_exp,30,55,2,2024-11-04 17:28:00 - user jay gained 30 exp from activities.
+29,2024-11-04 12:42:00,jay,create_study_plan,0,55,2,2024-11-04 12:42:00 - user jay created a new study plan.
+30,2024-11-07 10:14:00,he,update_profile,0,65,2,2024-11-07 10:14:00 - user he updated profile information.
+31,2024-11-06 12:07:00,jay,gain_exp,30,85,2,2024-11-06 12:07:00 - user jay gained 30 exp from activities.
+32,2024-11-01 17:30:00,leo,gain_exp,20,110,3,2024-11-01 17:30:00 - user leo gained 20 exp from activities.
+33,2024-11-08 14:47:00,leo,login,0,110,3,2024-11-08 14:47:00 - user leo logged in.
+34,2024-11-08 11:04:00,he,logout,0,65,2,2024-11-08 11:04:00 - user he logged out.
+35,2024-11-02 20:32:00,jay,logout,0,85,2,2024-11-02 20:32:00 - user jay logged out.
+36,2024-11-07 01:56:00,he,login,0,65,2,2024-11-07 01:56:00 - user he logged in.
+37,2024-11-01 13:54:00,jay,complete_lesson,5,90,2,2024-11-01 13:54:00 - user jay completed a lesson and gained 5 exp.
+38,2024-11-07 10:41:00,jay,complete_lesson,10,100,3,2024-11-07 10:41:00 - user jay completed a lesson and gained 10 exp.
+39,2024-11-10 06:43:00,he,update_profile,0,65,2,2024-11-10 06:43:00 - user he updated profile information.
+40,2024-11-05 18:58:00,he,login,0,65,2,2024-11-05 18:58:00 - user he logged in.
+41,2024-11-09 12:03:00,leo,login,0,110,3,2024-11-09 12:03:00 - user leo logged in.
+42,2024-11-01 05:48:00,he,logout,0,65,2,2024-11-01 05:48:00 - user he logged out.
+43,2024-11-02 01:41:00,leo,logout,0,110,3,2024-11-02 01:41:00 - user leo logged out.
+44,2024-11-10 23:46:00,jay,complete_lesson,15,115,3,2024-11-10 23:46:00 - user jay completed a lesson and gained 15 exp.
+45,2024-11-06 17:14:00,jay,logout,0,115,3,2024-11-06 17:14:00 - user jay logged out.
+46,2024-11-03 00:25:00,jay,login,0,115,3,2024-11-03 00:25:00 - user jay logged in.
+47,2024-11-07 01:18:00,he,update_profile,0,65,2,2024-11-07 01:18:00 - user he updated profile information.
+48,2024-11-01 08:48:00,jay,login,0,115,3,2024-11-01 08:48:00 - user jay logged in.
+49,2024-11-03 15:53:00,he,gain_exp,30,95,2,2024-11-03 15:53:00 - user he gained 30 exp from activities.
+50,2024-11-09 21:30:00,he,complete_lesson,15,110,3,2024-11-09 21:30:00 - user he completed a lesson and gained 15 exp.
+51,2024-11-05 10:52:00,jay,complete_lesson,5,120,3,2024-11-05 10:52:00 - user jay completed a lesson and gained 5 exp.
+52,2024-11-08 22:02:00,leo,update_profile,0,110,3,2024-11-08 22:02:00 - user leo updated profile information.
+53,2024-11-09 05:12:00,jay,update_profile,0,120,3,2024-11-09 05:12:00 - user jay updated profile information.
+54,2024-11-04 14:13:00,leo,update_profile,0,110,3,2024-11-04 14:13:00 - user leo updated profile information.
+55,2024-11-09 22:41:00,jay,gain_exp,10,130,3,2024-11-09 22:41:00 - user jay gained 10 exp from activities.
+56,2024-11-10 11:24:00,leo,update_profile,0,110,3,2024-11-10 11:24:00 - user leo updated profile information.
+57,2024-11-02 02:00:00,leo,update_profile,0,110,3,2024-11-02 02:00:00 - user leo updated profile information.
+58,2024-11-04 11:10:00,he,logout,0,110,3,2024-11-04 11:10:00 - user he logged out.
+59,2024-11-07 14:27:00,he,update_profile,0,110,3,2024-11-07 14:27:00 - user he updated profile information.
+60,2024-11-10 16:15:00,leo,logout,0,110,3,2024-11-10 16:15:00 - user leo logged out.
+61,2024-11-09 06:27:00,jay,gain_exp,20,150,4,2024-11-09 06:27:00 - user jay gained 20 exp from activities.
+62,2024-11-08 07:48:00,jay,complete_lesson,5,155,4,2024-11-08 07:48:00 - user jay completed a lesson and gained 5 exp.
+63,2024-11-07 01:27:00,jay,logout,0,155,4,2024-11-07 01:27:00 - user jay logged out.
+64,2024-11-04 16:11:00,leo,update_profile,0,110,3,2024-11-04 16:11:00 - user leo updated profile information.
+65,2024-11-07 04:48:00,jay,login,0,155,4,2024-11-07 04:48:00 - user jay logged in.
+66,2024-11-10 20:15:00,he,create_study_plan,0,110,3,2024-11-10 20:15:00 - user he created a new study plan.
+67,2024-11-10 10:19:00,leo,update_profile,0,110,3,2024-11-10 10:19:00 - user leo updated profile information.
+68,2024-11-10 08:40:00,he,logout,0,110,3,2024-11-10 08:40:00 - user he logged out.
+69,2024-11-04 18:36:00,jay,update_profile,0,155,4,2024-11-04 18:36:00 - user jay updated profile information.
+70,2024-11-02 12:02:00,he,complete_lesson,10,120,3,2024-11-02 12:02:00 - user he completed a lesson and gained 10 exp.
+71,2024-11-10 07:44:00,jay,login,0,155,4,2024-11-10 07:44:00 - user jay logged in.
+72,2024-11-09 01:45:00,he,login,0,120,3,2024-11-09 01:45:00 - user he logged in.
+73,2024-11-02 05:40:00,leo,create_study_plan,0,110,3,2024-11-02 05:40:00 - user leo created a new study plan.
+74,2024-11-03 07:29:00,leo,create_study_plan,0,110,3,2024-11-03 07:29:00 - user leo created a new study plan.
+75,2024-11-10 06:16:00,leo,complete_lesson,5,115,3,2024-11-10 06:16:00 - user leo completed a lesson and gained 5 exp.
+76,2024-11-10 16:19:00,jay,complete_lesson,10,165,4,2024-11-10 16:19:00 - user jay completed a lesson and gained 10 exp.
+77,2024-11-10 04:24:00,he,gain_exp,30,150,4,2024-11-10 04:24:00 - user he gained 30 exp from activities.
+78,2024-11-02 06:05:00,he,create_study_plan,0,150,4,2024-11-02 06:05:00 - user he created a new study plan.
+79,2024-11-05 15:42:00,he,create_study_plan,0,150,4,2024-11-05 15:42:00 - user he created a new study plan.
+80,2024-11-03 03:54:00,he,logout,0,150,4,2024-11-03 03:54:00 - user he logged out.
+81,2024-11-10 02:17:00,he,logout,0,150,4,2024-11-10 02:17:00 - user he logged out.
+82,2024-11-01 22:27:00,leo,create_study_plan,0,115,3,2024-11-01 22:27:00 - user leo created a new study plan.
+83,2024-11-06 14:37:00,leo,logout,0,115,3,2024-11-06 14:37:00 - user leo logged out.
+84,2024-11-05 05:47:00,jay,login,0,165,4,2024-11-05 05:47:00 - user jay logged in.
+85,2024-11-06 08:13:00,leo,logout,0,115,3,2024-11-06 08:13:00 - user leo logged out.
+86,2024-11-07 11:11:00,jay,logout,0,165,4,2024-11-07 11:11:00 - user jay logged out.
+87,2024-11-07 07:27:00,leo,gain_exp,10,125,3,2024-11-07 07:27:00 - user leo gained 10 exp from activities.
+88,2024-11-09 22:40:00,jay,gain_exp,20,185,4,2024-11-09 22:40:00 - user jay gained 20 exp from activities.
+89,2024-11-07 02:46:00,leo,update_profile,0,125,3,2024-11-07 02:46:00 - user leo updated profile information.
+90,2024-11-06 04:31:00,he,complete_lesson,15,165,4,2024-11-06 04:31:00 - user he completed a lesson and gained 15 exp.
+91,2024-11-05 18:45:00,he,gain_exp,30,195,4,2024-11-05 18:45:00 - user he gained 30 exp from activities.
+92,2024-11-09 15:48:00,jay,complete_lesson,10,195,4,2024-11-09 15:48:00 - user jay completed a lesson and gained 10 exp.
+93,2024-11-08 14:48:00,jay,update_profile,0,195,4,2024-11-08 14:48:00 - user jay updated profile information.
+94,2024-11-04 20:19:00,leo,login,0,125,3,2024-11-04 20:19:00 - user leo logged in.
+95,2024-11-07 19:06:00,leo,update_profile,0,125,3,2024-11-07 19:06:00 - user leo updated profile information.
+96,2024-11-07 07:06:00,jay,update_profile,0,195,4,2024-11-07 07:06:00 - user jay updated profile information.
+97,2024-11-02 14:18:00,jay,update_profile,0,195,4,2024-11-02 14:18:00 - user jay updated profile information.
+98,2024-11-06 13:06:00,leo,create_study_plan,0,125,3,2024-11-06 13:06:00 - user leo created a new study plan.
+99,2024-11-01 14:36:00,jay,gain_exp,30,225,5,2024-11-01 14:36:00 - user jay gained 30 exp from activities.
+100,2024-11-09 09:46:00,leo,gain_exp,30,155,4,2024-11-09 09:46:00 - user leo gained 30 exp from activities.
+101,2024-11-04 18:15:00,leo,gain_exp,20,175,4,2024-11-04 18:15:00 - user leo gained 20 exp from activities.
+102,2024-11-06 17:57:00,he,complete_lesson,15,210,5,2024-11-06 17:57:00 - user he completed a lesson and gained 15 exp.
+103,2024-11-04 13:45:00,he,update_profile,0,210,5,2024-11-04 13:45:00 - user he updated profile information.
+104,2024-11-06 10:26:00,he,gain_exp,30,240,5,2024-11-06 10:26:00 - user he gained 30 exp from activities.
+105,2024-11-09 10:03:00,leo,update_profile,0,175,4,2024-11-09 10:03:00 - user leo updated profile information.
+106,2024-11-07 05:31:00,leo,update_profile,0,175,4,2024-11-07 05:31:00 - user leo updated profile information.
+107,2024-11-09 04:15:00,leo,complete_lesson,15,190,4,2024-11-09 04:15:00 - user leo completed a lesson and gained 15 exp.
+108,2024-11-08 11:52:00,leo,create_study_plan,0,190,4,2024-11-08 11:52:00 - user leo created a new study plan.
+109,2024-11-09 20:31:00,he,complete_lesson,10,250,6,2024-11-09 20:31:00 - user he completed a lesson and gained 10 exp.
+110,2024-11-01 08:40:00,leo,create_study_plan,0,190,4,2024-11-01 08:40:00 - user leo created a new study plan.
+111,2024-11-01 04:14:00,jay,login,0,225,5,2024-11-01 04:14:00 - user jay logged in.
+112,2024-11-07 10:59:00,jay,complete_lesson,15,240,5,2024-11-07 10:59:00 - user jay completed a lesson and gained 15 exp.
+113,2024-11-05 16:28:00,he,login,0,250,6,2024-11-05 16:28:00 - user he logged in.
+114,2024-11-04 03:37:00,leo,logout,0,190,4,2024-11-04 03:37:00 - user leo logged out.
+115,2024-11-06 00:52:00,he,gain_exp,10,260,6,2024-11-06 00:52:00 - user he gained 10 exp from activities.
+116,2024-11-10 06:15:00,he,login,0,260,6,2024-11-10 06:15:00 - user he logged in.
+117,2024-11-08 22:33:00,leo,gain_exp,30,220,5,2024-11-08 22:33:00 - user leo gained 30 exp from activities.
+118,2024-11-10 13:00:00,leo,login,0,220,5,2024-11-10 13:00:00 - user leo logged in.
+119,2024-11-08 08:49:00,he,create_study_plan,0,260,6,2024-11-08 08:49:00 - user he created a new study plan.
+120,2024-11-06 02:32:00,leo,update_profile,0,220,5,2024-11-06 02:32:00 - user leo updated profile information.
+121,2024-11-02 01:38:00,he,logout,0,260,6,2024-11-02 01:38:00 - user he logged out.
+122,2024-11-07 04:41:00,he,login,0,260,6,2024-11-07 04:41:00 - user he logged in.
+123,2024-11-07 18:34:00,leo,complete_lesson,15,235,5,2024-11-07 18:34:00 - user leo completed a lesson and gained 15 exp.
+124,2024-11-06 05:40:00,leo,login,0,235,5,2024-11-06 05:40:00 - user leo logged in.
+125,2024-11-07 20:37:00,leo,update_profile,0,235,5,2024-11-07 20:37:00 - user leo updated profile information.
+126,2024-11-08 00:41:00,he,create_study_plan,0,260,6,2024-11-08 00:41:00 - user he created a new study plan.
+127,2024-11-10 21:46:00,he,complete_lesson,10,270,6,2024-11-10 21:46:00 - user he completed a lesson and gained 10 exp.
+128,2024-11-04 16:00:00,jay,gain_exp,10,250,6,2024-11-04 16:00:00 - user jay gained 10 exp from activities.
+129,2024-11-02 17:26:00,he,logout,0,270,6,2024-11-02 17:26:00 - user he logged out.
+130,2024-11-04 17:53:00,he,logout,0,270,6,2024-11-04 17:53:00 - user he logged out.
+131,2024-11-01 16:45:00,he,create_study_plan,0,270,6,2024-11-01 16:45:00 - user he created a new study plan.
+132,2024-11-07 15:01:00,leo,login,0,235,5,2024-11-07 15:01:00 - user leo logged in.
+133,2024-11-02 08:24:00,leo,update_profile,0,235,5,2024-11-02 08:24:00 - user leo updated profile information.
+134,2024-11-07 16:51:00,he,complete_lesson,10,280,6,2024-11-07 16:51:00 - user he completed a lesson and gained 10 exp.
+135,2024-11-09 01:24:00,he,logout,0,280,6,2024-11-09 01:24:00 - user he logged out.
+136,2024-11-08 03:31:00,jay,login,0,250,6,2024-11-08 03:31:00 - user jay logged in.
+137,2024-11-09 15:58:00,jay,logout,0,250,6,2024-11-09 15:58:00 - user jay logged out.
+138,2024-11-10 04:18:00,leo,gain_exp,20,255,6,2024-11-10 04:18:00 - user leo gained 20 exp from activities.
+139,2024-11-01 19:43:00,jay,gain_exp,10,260,6,2024-11-01 19:43:00 - user jay gained 10 exp from activities.
+140,2024-11-05 04:37:00,jay,complete_lesson,5,265,6,2024-11-05 04:37:00 - user jay completed a lesson and gained 5 exp.
+141,2024-11-05 15:19:00,jay,logout,0,265,6,2024-11-05 15:19:00 - user jay logged out.
+142,2024-11-09 14:02:00,he,create_study_plan,0,280,6,2024-11-09 14:02:00 - user he created a new study plan.
+143,2024-11-06 16:51:00,he,login,0,280,6,2024-11-06 16:51:00 - user he logged in.
+144,2024-11-06 07:03:00,he,login,0,280,6,2024-11-06 07:03:00 - user he logged in.
+145,2024-11-01 01:30:00,jay,complete_lesson,15,280,6,2024-11-01 01:30:00 - user jay completed a lesson and gained 15 exp.
+146,2024-11-10 03:25:00,he,gain_exp,20,300,7,2024-11-10 03:25:00 - user he gained 20 exp from activities.
+147,2024-11-04 07:09:00,leo,complete_lesson,5,260,6,2024-11-04 07:09:00 - user leo completed a lesson and gained 5 exp.
+148,2024-11-03 09:48:00,jay,logout,0,280,6,2024-11-03 09:48:00 - user jay logged out.
+149,2024-11-03 19:57:00,he,update_profile,0,300,7,2024-11-03 19:57:00 - user he updated profile information.
+150,2024-11-10 09:25:00,jay,login,0,280,6,2024-11-10 09:25:00 - user jay logged in.
+151,2024-11-02 16:17:00,jay,gain_exp,10,290,6,2024-11-02 16:17:00 - user jay gained 10 exp from activities.
+152,2024-11-08 13:45:00,leo,update_profile,0,260,6,2024-11-08 13:45:00 - user leo updated profile information.
+153,2024-11-06 11:08:00,jay,complete_lesson,15,305,7,2024-11-06 11:08:00 - user jay completed a lesson and gained 15 exp.
+154,2024-11-03 06:59:00,he,logout,0,300,7,2024-11-03 06:59:00 - user he logged out.
+155,2024-11-01 09:04:00,jay,logout,0,305,7,2024-11-01 09:04:00 - user jay logged out.
+156,2024-11-08 07:42:00,leo,update_profile,0,260,6,2024-11-08 07:42:00 - user leo updated profile information.
+157,2024-11-08 09:49:00,he,logout,0,300,7,2024-11-08 09:49:00 - user he logged out.
+158,2024-11-01 10:36:00,jay,gain_exp,10,315,7,2024-11-01 10:36:00 - user jay gained 10 exp from activities.
+159,2024-11-01 03:06:00,leo,login,0,260,6,2024-11-01 03:06:00 - user leo logged in.
+160,2024-11-05 22:02:00,leo,create_study_plan,0,260,6,2024-11-05 22:02:00 - user leo created a new study plan.
+161,2024-11-01 07:27:00,leo,complete_lesson,15,275,6,2024-11-01 07:27:00 - user leo completed a lesson and gained 15 exp.
+162,2024-11-06 14:10:00,he,logout,0,300,7,2024-11-06 14:10:00 - user he logged out.
+163,2024-11-04 01:51:00,leo,create_study_plan,0,275,6,2024-11-04 01:51:00 - user leo created a new study plan.
+164,2024-11-10 01:25:00,leo,login,0,275,6,2024-11-10 01:25:00 - user leo logged in.
+165,2024-11-06 11:29:00,leo,update_profile,0,275,6,2024-11-06 11:29:00 - user leo updated profile information.
+166,2024-11-07 11:01:00,leo,gain_exp,10,285,6,2024-11-07 11:01:00 - user leo gained 10 exp from activities.
+167,2024-11-03 10:45:00,leo,complete_lesson,10,295,6,2024-11-03 10:45:00 - user leo completed a lesson and gained 10 exp.
+168,2024-11-01 07:28:00,he,login,0,300,7,2024-11-01 07:28:00 - user he logged in.
+169,2024-11-02 16:19:00,leo,login,0,295,6,2024-11-02 16:19:00 - user leo logged in.
+170,2024-11-02 07:56:00,he,logout,0,300,7,2024-11-02 07:56:00 - user he logged out.
+171,2024-11-10 01:44:00,he,login,0,300,7,2024-11-10 01:44:00 - user he logged in.
+172,2024-11-09 15:21:00,he,logout,0,300,7,2024-11-09 15:21:00 - user he logged out.
+173,2024-11-03 12:25:00,jay,update_profile,0,315,7,2024-11-03 12:25:00 - user jay updated profile information.
+174,2024-11-02 14:30:00,leo,update_profile,0,295,6,2024-11-02 14:30:00 - user leo updated profile information.
+175,2024-11-07 08:52:00,jay,update_profile,0,315,7,2024-11-07 08:52:00 - user jay updated profile information.
+176,2024-11-09 14:51:00,jay,update_profile,0,315,7,2024-11-09 14:51:00 - user jay updated profile information.
+177,2024-11-10 17:29:00,he,gain_exp,20,320,7,2024-11-10 17:29:00 - user he gained 20 exp from activities.
+178,2024-11-06 01:29:00,jay,complete_lesson,15,330,7,2024-11-06 01:29:00 - user jay completed a lesson and gained 15 exp.
+179,2024-11-07 19:25:00,leo,update_profile,0,295,6,2024-11-07 19:25:00 - user leo updated profile information.
+180,2024-11-07 20:29:00,jay,login,0,330,7,2024-11-07 20:29:00 - user jay logged in.
+181,2024-11-02 04:44:00,he,create_study_plan,0,320,7,2024-11-02 04:44:00 - user he created a new study plan.
+182,2024-11-06 10:11:00,he,login,0,320,7,2024-11-06 10:11:00 - user he logged in.
+183,2024-11-03 14:23:00,leo,update_profile,0,295,6,2024-11-03 14:23:00 - user leo updated profile information.
+184,2024-11-04 05:50:00,he,complete_lesson,15,335,7,2024-11-04 05:50:00 - user he completed a lesson and gained 15 exp.
+185,2024-11-04 15:24:00,he,gain_exp,30,365,8,2024-11-04 15:24:00 - user he gained 30 exp from activities.
+186,2024-11-03 05:05:00,jay,update_profile,0,330,7,2024-11-03 05:05:00 - user jay updated profile information.
+187,2024-11-10 01:41:00,jay,create_study_plan,0,330,7,2024-11-10 01:41:00 - user jay created a new study plan.
+188,2024-11-03 19:22:00,he,login,0,365,8,2024-11-03 19:22:00 - user he logged in.
+189,2024-11-04 03:04:00,leo,update_profile,0,295,6,2024-11-04 03:04:00 - user leo updated profile information.
+190,2024-11-05 20:08:00,leo,complete_lesson,15,310,7,2024-11-05 20:08:00 - user leo completed a lesson and gained 15 exp.
+191,2024-11-01 21:02:00,jay,complete_lesson,5,335,7,2024-11-01 21:02:00 - user jay completed a lesson and gained 5 exp.
+192,2024-11-04 14:27:00,he,complete_lesson,10,375,8,2024-11-04 14:27:00 - user he completed a lesson and gained 10 exp.
+193,2024-11-03 21:23:00,he,gain_exp,10,385,8,2024-11-03 21:23:00 - user he gained 10 exp from activities.
+194,2024-11-07 21:05:00,he,gain_exp,10,395,8,2024-11-07 21:05:00 - user he gained 10 exp from activities.
+195,2024-11-07 12:27:00,jay,complete_lesson,15,350,8,2024-11-07 12:27:00 - user jay completed a lesson and gained 15 exp.
+196,2024-11-08 21:56:00,leo,logout,0,310,7,2024-11-08 21:56:00 - user leo logged out.
+197,2024-11-01 07:14:00,jay,update_profile,0,350,8,2024-11-01 07:14:00 - user jay updated profile information.
+198,2024-11-09 23:09:00,he,complete_lesson,15,410,9,2024-11-09 23:09:00 - user he completed a lesson and gained 15 exp.
+199,2024-11-03 02:27:00,jay,complete_lesson,5,355,8,2024-11-03 02:27:00 - user jay completed a lesson and gained 5 exp.
+200,2024-11-02 07:14:00,jay,logout,0,355,8,2024-11-02 07:14:00 - user jay logged out.

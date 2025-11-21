@@ -1,0 +1,201 @@
+task_id,user_id,request,task_label,task_summary
+1,sara,user sara: Please update my goal role from data analyst to data scientist.,change_target_role,update the user's target role
+2,jay,user jay: Can you reactivate my learning schedule?,resume_plan,resume the user's study plan
+3,sara,user sara: Can you put my study plan on hold?,pause_plan,pause the user's current study plan
+4,mike,user mike: Please restart my paused study plan.,resume_plan,resume the user's study plan
+5,jay,user jay: Please update my goal role from data analyst to data scientist.,change_target_role,update the user's target role
+6,sara,user sara: Please adjust my study plan to be more focused on data engineering.,adjust_study_plan,adjust the user's study plan
+7,mike,user mike: Can you reactivate my learning schedule?,resume_plan,resume the user's study plan
+8,mike,user mike: I decided to aim for a backend developer role instead.,change_target_role,update the user's target role
+9,mike,user mike: Please shift my study plan focus to interview preparation.,change_focus_area,change the main focus area of the study plan
+10,leo,user leo: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+11,mike,user mike: Please shift my study plan focus to interview preparation.,change_focus_area,change the main focus area of the study plan
+12,mike,user mike: Can you put my study plan on hold?,pause_plan,pause the user's current study plan
+13,jay,user jay: I want to resume my study plan now.,resume_plan,resume the user's study plan
+14,mike,user mike: I want to clear my current progress and restart the plan.,reset_progress,reset the user's progress tracking
+15,jay,user jay: I want to change my target role to machine learning engineer.,change_target_role,update the user's target role
+16,mike,user mike: Can you update my schedule so I study fewer hours each week?,change_weekly_hours,update the user's weekly study hours
+17,leo,user leo: Please restart my paused study plan.,resume_plan,resume the user's study plan
+18,leo,user leo: I want to clear my current progress and restart the plan.,reset_progress,reset the user's progress tracking
+19,leo,user leo: Can you update my schedule so I study fewer hours each week?,change_weekly_hours,update the user's weekly study hours
+20,mike,user mike: I want new course recommendations based on my profile.,ask_for_recommendations,provide new learning recommendations for the user
+21,leo,user leo: I want to adjust my study plan to include more hands-on projects.,adjust_study_plan,adjust the user's study plan
+22,mike,user mike: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+23,mike,user mike: Please update my goal role from data analyst to data scientist.,change_target_role,update the user's target role
+24,mike,user mike: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+25,leo,user leo: I need to pause my study plan for a few weeks.,pause_plan,pause the user's current study plan
+26,he,user he: Please restart my paused study plan.,resume_plan,resume the user's study plan
+27,leo,user leo: I want to change my target role to machine learning engineer.,change_target_role,update the user's target role
+28,sara,user sara: Can you wipe my progress and begin from the first module again?,reset_progress,reset the user's progress tracking
+29,jay,user jay: Can you reactivate my learning schedule?,resume_plan,resume the user's study plan
+30,sara,user sara: I want to change my target role to machine learning engineer.,change_target_role,update the user's target role
+31,jay,user jay: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+32,leo,user leo: I want to change my main focus to system design.,change_focus_area,change the main focus area of the study plan
+33,he,user he: Can you put my study plan on hold?,pause_plan,pause the user's current study plan
+34,sara,user sara: I need to change my weekly study hours from 5 to 10.,change_weekly_hours,update the user's weekly study hours
+35,jay,user jay: I want to resume my study plan now.,resume_plan,resume the user's study plan
+36,leo,user leo: I want to resume my study plan now.,resume_plan,resume the user's study plan
+37,mike,user mike: Can you put my study plan on hold?,pause_plan,pause the user's current study plan
+38,leo,user leo: Can you tweak my study plan? I feel like I'm learning too many topics at once.,adjust_study_plan,adjust the user's study plan
+39,mike,user mike: I need to pause my study plan for a few weeks.,pause_plan,pause the user's current study plan
+40,mike,user mike: Please restart my paused study plan.,resume_plan,resume the user's study plan
+41,sara,user sara: Please reset all my progress and let me start over.,reset_progress,reset the user's progress tracking
+42,mike,user mike: Please adjust my study plan to be more focused on data engineering.,adjust_study_plan,adjust the user's study plan
+43,jay,user jay: I want to adjust my study plan to include more hands-on projects.,adjust_study_plan,adjust the user's study plan
+44,mike,user mike: I want to change my main focus to system design.,change_focus_area,change the main focus area of the study plan
+45,jay,user jay: I need to change my weekly study hours from 5 to 10.,change_weekly_hours,update the user's weekly study hours
+46,sara,user sara: I need to change my weekly study hours from 5 to 10.,change_weekly_hours,update the user's weekly study hours
+47,jay,user jay: I need to pause my study plan for a few weeks.,pause_plan,pause the user's current study plan
+48,mike,user mike: I want to adjust my study plan to include more hands-on projects.,adjust_study_plan,adjust the user's study plan
+49,sara,user sara: Can you recommend what I should learn next?,ask_for_recommendations,provide new learning recommendations for the user
+50,jay,user jay: Please temporarily stop my current study plan.,pause_plan,pause the user's current study plan
+51,sara,user sara: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+52,leo,user leo: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+53,mike,user mike: I want to adjust my study plan to include more hands-on projects.,adjust_study_plan,adjust the user's study plan
+54,jay,user jay: I want to change my target role to machine learning engineer.,change_target_role,update the user's target role
+55,jay,user jay: I want to resume my study plan now.,resume_plan,resume the user's study plan
+56,mike,user mike: Please reduce my weekly learning time because I'm too busy.,change_weekly_hours,update the user's weekly study hours
+57,mike,user mike: Can you tweak my study plan? I feel like I'm learning too many topics at once.,adjust_study_plan,adjust the user's study plan
+58,jay,user jay: I decided to aim for a backend developer role instead.,change_target_role,update the user's target role
+59,leo,user leo: I want to change my main focus to system design.,change_focus_area,change the main focus area of the study plan
+60,he,user he: I want to clear my current progress and restart the plan.,reset_progress,reset the user's progress tracking
+61,sara,user sara: Can you reactivate my learning schedule?,resume_plan,resume the user's study plan
+62,he,user he: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+63,mike,user mike: Can you wipe my progress and begin from the first module again?,reset_progress,reset the user's progress tracking
+64,leo,user leo: I decided to aim for a backend developer role instead.,change_target_role,update the user's target role
+65,leo,user leo: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+66,sara,user sara: I decided to aim for a backend developer role instead.,change_target_role,update the user's target role
+67,he,user he: I want to resume my study plan now.,resume_plan,resume the user's study plan
+68,jay,user jay: I want to change my target role to machine learning engineer.,change_target_role,update the user's target role
+69,leo,user leo: I want new course recommendations based on my profile.,ask_for_recommendations,provide new learning recommendations for the user
+70,sara,user sara: Can you put my study plan on hold?,pause_plan,pause the user's current study plan
+71,he,user he: I need to change my weekly study hours from 5 to 10.,change_weekly_hours,update the user's weekly study hours
+72,mike,user mike: Please suggest some new topics or skills I should work on.,ask_for_recommendations,provide new learning recommendations for the user
+73,sara,user sara: Please adjust my study plan to be more focused on data engineering.,adjust_study_plan,adjust the user's study plan
+74,mike,user mike: Please adjust my study plan to be more focused on data engineering.,adjust_study_plan,adjust the user's study plan
+75,sara,user sara: Please update my goal role from data analyst to data scientist.,change_target_role,update the user's target role
+76,mike,user mike: I need to pause my study plan for a few weeks.,pause_plan,pause the user's current study plan
+77,leo,user leo: Please update my goal role from data analyst to data scientist.,change_target_role,update the user's target role
+78,he,user he: Please reduce my weekly learning time because I'm too busy.,change_weekly_hours,update the user's weekly study hours
+79,sara,user sara: Please suggest some new topics or skills I should work on.,ask_for_recommendations,provide new learning recommendations for the user
+80,he,user he: Can you recommend what I should learn next?,ask_for_recommendations,provide new learning recommendations for the user
+81,sara,user sara: Can you tweak my study plan? I feel like I'm learning too many topics at once.,adjust_study_plan,adjust the user's study plan
+82,jay,user jay: I decided to aim for a backend developer role instead.,change_target_role,update the user's target role
+83,jay,user jay: Can you tweak my study plan? I feel like I'm learning too many topics at once.,adjust_study_plan,adjust the user's study plan
+84,leo,user leo: Please reset all my progress and let me start over.,reset_progress,reset the user's progress tracking
+85,he,user he: Please reduce my weekly learning time because I'm too busy.,change_weekly_hours,update the user's weekly study hours
+86,mike,user mike: I need to change my weekly study hours from 5 to 10.,change_weekly_hours,update the user's weekly study hours
+87,sara,user sara: Please suggest some new topics or skills I should work on.,ask_for_recommendations,provide new learning recommendations for the user
+88,sara,user sara: Can you update my schedule so I study fewer hours each week?,change_weekly_hours,update the user's weekly study hours
+89,he,user he: Can you tweak my study plan? I feel like I'm learning too many topics at once.,adjust_study_plan,adjust the user's study plan
+90,he,user he: I want to change my target role to machine learning engineer.,change_target_role,update the user's target role
+91,sara,user sara: Please reduce my weekly learning time because I'm too busy.,change_weekly_hours,update the user's weekly study hours
+92,leo,user leo: Please reset all my progress and let me start over.,reset_progress,reset the user's progress tracking
+93,he,user he: I want to clear my current progress and restart the plan.,reset_progress,reset the user's progress tracking
+94,sara,user sara: I want to adjust my study plan to include more hands-on projects.,adjust_study_plan,adjust the user's study plan
+95,he,user he: Can you wipe my progress and begin from the first module again?,reset_progress,reset the user's progress tracking
+96,leo,user leo: Please restart my paused study plan.,resume_plan,resume the user's study plan
+97,jay,user jay: Please adjust my study plan to be more focused on data engineering.,adjust_study_plan,adjust the user's study plan
+98,jay,user jay: I want to change my main focus to system design.,change_focus_area,change the main focus area of the study plan
+99,jay,user jay: Can you put my study plan on hold?,pause_plan,pause the user's current study plan
+100,mike,user mike: Please update my goal role from data analyst to data scientist.,change_target_role,update the user's target role
+101,jay,user jay: I want to change my main focus to system design.,change_focus_area,change the main focus area of the study plan
+102,sara,user sara: I want to clear my current progress and restart the plan.,reset_progress,reset the user's progress tracking
+103,mike,user mike: I want to resume my study plan now.,resume_plan,resume the user's study plan
+104,sara,user sara: Please restart my paused study plan.,resume_plan,resume the user's study plan
+105,mike,user mike: Can you recommend what I should learn next?,ask_for_recommendations,provide new learning recommendations for the user
+106,sara,user sara: Can you update my schedule so I study fewer hours each week?,change_weekly_hours,update the user's weekly study hours
+107,leo,user leo: Please suggest some new topics or skills I should work on.,ask_for_recommendations,provide new learning recommendations for the user
+108,mike,user mike: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+109,leo,user leo: Please suggest some new topics or skills I should work on.,ask_for_recommendations,provide new learning recommendations for the user
+110,leo,user leo: I need to change my weekly study hours from 5 to 10.,change_weekly_hours,update the user's weekly study hours
+111,leo,user leo: Please temporarily stop my current study plan.,pause_plan,pause the user's current study plan
+112,jay,user jay: Please reset all my progress and let me start over.,reset_progress,reset the user's progress tracking
+113,leo,user leo: I want new course recommendations based on my profile.,ask_for_recommendations,provide new learning recommendations for the user
+114,sara,user sara: I want to change my main focus to system design.,change_focus_area,change the main focus area of the study plan
+115,sara,user sara: I need to pause my study plan for a few weeks.,pause_plan,pause the user's current study plan
+116,he,user he: Can you wipe my progress and begin from the first module again?,reset_progress,reset the user's progress tracking
+117,he,user he: Can you update my schedule so I study fewer hours each week?,change_weekly_hours,update the user's weekly study hours
+118,mike,user mike: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+119,jay,user jay: I decided to aim for a backend developer role instead.,change_target_role,update the user's target role
+120,he,user he: I want to clear my current progress and restart the plan.,reset_progress,reset the user's progress tracking
+121,sara,user sara: Can you recommend what I should learn next?,ask_for_recommendations,provide new learning recommendations for the user
+122,sara,user sara: Please update my goal role from data analyst to data scientist.,change_target_role,update the user's target role
+123,he,user he: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+124,he,user he: I want to change my main focus to system design.,change_focus_area,change the main focus area of the study plan
+125,mike,user mike: I want to resume my study plan now.,resume_plan,resume the user's study plan
+126,he,user he: Please reduce my weekly learning time because I'm too busy.,change_weekly_hours,update the user's weekly study hours
+127,sara,user sara: Can you put my study plan on hold?,pause_plan,pause the user's current study plan
+128,he,user he: Please reduce my weekly learning time because I'm too busy.,change_weekly_hours,update the user's weekly study hours
+129,jay,user jay: Can you reactivate my learning schedule?,resume_plan,resume the user's study plan
+130,sara,user sara: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+131,sara,user sara: I want to resume my study plan now.,resume_plan,resume the user's study plan
+132,jay,user jay: Can you wipe my progress and begin from the first module again?,reset_progress,reset the user's progress tracking
+133,sara,user sara: I want to change my main focus to system design.,change_focus_area,change the main focus area of the study plan
+134,leo,user leo: I want to adjust my study plan to include more hands-on projects.,adjust_study_plan,adjust the user's study plan
+135,leo,user leo: Can you update my schedule so I study fewer hours each week?,change_weekly_hours,update the user's weekly study hours
+136,he,user he: Please shift my study plan focus to interview preparation.,change_focus_area,change the main focus area of the study plan
+137,mike,user mike: I need to pause my study plan for a few weeks.,pause_plan,pause the user's current study plan
+138,he,user he: I want to clear my current progress and restart the plan.,reset_progress,reset the user's progress tracking
+139,sara,user sara: Please suggest some new topics or skills I should work on.,ask_for_recommendations,provide new learning recommendations for the user
+140,leo,user leo: Please update my goal role from data analyst to data scientist.,change_target_role,update the user's target role
+141,he,user he: Please reduce my weekly learning time because I'm too busy.,change_weekly_hours,update the user's weekly study hours
+142,mike,user mike: I want to adjust my study plan to include more hands-on projects.,adjust_study_plan,adjust the user's study plan
+143,mike,user mike: Please reduce my weekly learning time because I'm too busy.,change_weekly_hours,update the user's weekly study hours
+144,he,user he: Can you wipe my progress and begin from the first module again?,reset_progress,reset the user's progress tracking
+145,leo,user leo: Please restart my paused study plan.,resume_plan,resume the user's study plan
+146,leo,user leo: I want to change my main focus to system design.,change_focus_area,change the main focus area of the study plan
+147,sara,user sara: Please restart my paused study plan.,resume_plan,resume the user's study plan
+148,sara,user sara: Can you update my schedule so I study fewer hours each week?,change_weekly_hours,update the user's weekly study hours
+149,mike,user mike: Please temporarily stop my current study plan.,pause_plan,pause the user's current study plan
+150,leo,user leo: I need to change my weekly study hours from 5 to 10.,change_weekly_hours,update the user's weekly study hours
+151,leo,user leo: I want new course recommendations based on my profile.,ask_for_recommendations,provide new learning recommendations for the user
+152,he,user he: Please adjust my study plan to be more focused on data engineering.,adjust_study_plan,adjust the user's study plan
+153,leo,user leo: Please temporarily stop my current study plan.,pause_plan,pause the user's current study plan
+154,mike,user mike: Please shift my study plan focus to interview preparation.,change_focus_area,change the main focus area of the study plan
+155,leo,user leo: I want to adjust my study plan to include more hands-on projects.,adjust_study_plan,adjust the user's study plan
+156,he,user he: Can you put my study plan on hold?,pause_plan,pause the user's current study plan
+157,he,user he: I want to resume my study plan now.,resume_plan,resume the user's study plan
+158,mike,user mike: Can you recommend what I should learn next?,ask_for_recommendations,provide new learning recommendations for the user
+159,mike,user mike: I want to adjust my study plan to include more hands-on projects.,adjust_study_plan,adjust the user's study plan
+160,he,user he: Can you wipe my progress and begin from the first module again?,reset_progress,reset the user's progress tracking
+161,sara,user sara: Please temporarily stop my current study plan.,pause_plan,pause the user's current study plan
+162,mike,user mike: Can you tweak my study plan? I feel like I'm learning too many topics at once.,adjust_study_plan,adjust the user's study plan
+163,jay,user jay: Please restart my paused study plan.,resume_plan,resume the user's study plan
+164,mike,user mike: I decided to aim for a backend developer role instead.,change_target_role,update the user's target role
+165,he,user he: I need to change my weekly study hours from 5 to 10.,change_weekly_hours,update the user's weekly study hours
+166,leo,user leo: Can you tweak my study plan? I feel like I'm learning too many topics at once.,adjust_study_plan,adjust the user's study plan
+167,sara,user sara: Can you put my study plan on hold?,pause_plan,pause the user's current study plan
+168,leo,user leo: Please suggest some new topics or skills I should work on.,ask_for_recommendations,provide new learning recommendations for the user
+169,jay,user jay: Can you recommend what I should learn next?,ask_for_recommendations,provide new learning recommendations for the user
+170,mike,user mike: I decided to aim for a backend developer role instead.,change_target_role,update the user's target role
+171,sara,user sara: Please suggest some new topics or skills I should work on.,ask_for_recommendations,provide new learning recommendations for the user
+172,mike,user mike: Can you recommend what I should learn next?,ask_for_recommendations,provide new learning recommendations for the user
+173,mike,user mike: Can you put my study plan on hold?,pause_plan,pause the user's current study plan
+174,jay,user jay: Can you recommend what I should learn next?,ask_for_recommendations,provide new learning recommendations for the user
+175,sara,user sara: I need to pause my study plan for a few weeks.,pause_plan,pause the user's current study plan
+176,sara,user sara: Can you recommend what I should learn next?,ask_for_recommendations,provide new learning recommendations for the user
+177,jay,user jay: Please update my goal role from data analyst to data scientist.,change_target_role,update the user's target role
+178,mike,user mike: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+179,jay,user jay: I want new course recommendations based on my profile.,ask_for_recommendations,provide new learning recommendations for the user
+180,sara,user sara: I want to clear my current progress and restart the plan.,reset_progress,reset the user's progress tracking
+181,leo,user leo: I want new course recommendations based on my profile.,ask_for_recommendations,provide new learning recommendations for the user
+182,mike,user mike: I want to resume my study plan now.,resume_plan,resume the user's study plan
+183,he,user he: Can you make my plan focus more on statistics and less on coding?,change_focus_area,change the main focus area of the study plan
+184,sara,user sara: Please reduce my weekly learning time because I'm too busy.,change_weekly_hours,update the user's weekly study hours
+185,jay,user jay: Can you wipe my progress and begin from the first module again?,reset_progress,reset the user's progress tracking
+186,mike,user mike: I need to change my weekly study hours from 5 to 10.,change_weekly_hours,update the user's weekly study hours
+187,leo,user leo: Please shift my study plan focus to interview preparation.,change_focus_area,change the main focus area of the study plan
+188,leo,user leo: Please reduce my weekly learning time because I'm too busy.,change_weekly_hours,update the user's weekly study hours
+189,he,user he: Can you update my schedule so I study fewer hours each week?,change_weekly_hours,update the user's weekly study hours
+190,he,user he: Please restart my paused study plan.,resume_plan,resume the user's study plan
+191,sara,user sara: I want to resume my study plan now.,resume_plan,resume the user's study plan
+192,leo,user leo: Please suggest some new topics or skills I should work on.,ask_for_recommendations,provide new learning recommendations for the user
+193,sara,user sara: Please restart my paused study plan.,resume_plan,resume the user's study plan
+194,he,user he: Can you put my study plan on hold?,pause_plan,pause the user's current study plan
+195,sara,user sara: I need to change my weekly study hours from 5 to 10.,change_weekly_hours,update the user's weekly study hours
+196,jay,user jay: Can you tweak my study plan? I feel like I'm learning too many topics at once.,adjust_study_plan,adjust the user's study plan
+197,mike,user mike: Please suggest some new topics or skills I should work on.,ask_for_recommendations,provide new learning recommendations for the user
+198,leo,user leo: Please reduce my weekly learning time because I'm too busy.,change_weekly_hours,update the user's weekly study hours
+199,jay,user jay: I want to resume my study plan now.,resume_plan,resume the user's study plan
+200,mike,user mike: Please update my goal role from data analyst to data scientist.,change_target_role,update the user's target role
