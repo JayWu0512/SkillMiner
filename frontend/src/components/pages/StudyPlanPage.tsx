@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Download, RefreshCw, ChevronLeft, ChevronRight, Target, Clock, Trophy, Loader2, AlertCircle } from 'lucide-react';
-import { Card } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { Card } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 // import { Header } from '../Header';
 import { getStudyPlan, updateTaskCompletion, type StudyPlan, type DailyTask as StudyPlanDailyTask } from '../../services/studyPlan';
 import { createClient } from '../../utils/supabase/client';
