@@ -1,7 +1,9 @@
 # models/research/model_1_summarization.py
 from typing import List
-from .base_lstm_model import BaseMemoryLSTM
-from .memory_features import SummarizationFeature
+
+# Import as local modules so this file can be run directly from the research folder
+from base_lstm_model import BaseMemoryLSTM
+from memory_features import SummarizationFeature
 
 
 class SummarizationOnlyLSTM(BaseMemoryLSTM):

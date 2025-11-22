@@ -1,0 +1,777 @@
+"""
+Train and evaluate LSTM memory model on SkillMiner QA synthetic dataset.
+
+Training approach:
+- Process rows sequentially (row-by-row training)
+- Each row is a training step: feed (question, answer) to the model
+- Build history from previous Q&A pairs
+
+Testing approach:
+- STM test every 5 rows: test question from 2 rows before (row 3, 8, 13, ...)
+- LTM test every 10 rows: test question from 9 rows before (row 1, 11, 21, ...)
+- Compare model output to ground truth using similarity scoring
+
+Usage:
+    cd backend/src/models/research
+    python train_qa_memory.py --epochs 5 --model_type full_memory
+"""
+
+import argparse
+import os
+import csv
+import difflib
+from typing import List, Tuple, Optional, Dict
+import json
+
+import torch
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
+
+from base_lstm_model import BaseMemoryLSTM
+from model_4_full_memory import FullMemoryLSTM
+
+
+# ==== Character-level tokenizer ====
+_PAD_CHAR = "<pad>"
+_ALL_CHARS = [chr(i) for i in range(32, 127)]  # printable ASCII
+_ITOS: List[str] = [_PAD_CHAR] + _ALL_CHARS
+_STOI: Dict[str, int] = {ch: idx for idx, ch in enumerate(_ITOS)}
+_VOCAB_SIZE = len(_ITOS)
+_MAX_SEQ_LEN = 512  # Increased for longer answers
+
+
+def encode_text(text: str) -> torch.Tensor:
+    """Encode text into token ids."""
+    text = text or ""
+    text = text[:_MAX_SEQ_LEN]
+    ids: List[int] = []
+    for ch in text:
+        ids.append(_STOI.get(ch, _STOI[" "]))
+    if not ids:
+        ids = [_STOI[" "]]
+    return torch.tensor(ids, dtype=torch.long)  # (seq_len,)
+
+
+def decode_ids(ids: List[int]) -> str:
+    """Decode token ids back to text."""
+    chars: List[str] = []
+    for idx in ids:
+        if 0 <= idx < len(_ITOS):
+            ch = _ITOS[idx]
+            if ch != _PAD_CHAR:
+                chars.append(ch)
+    return "".join(chars)
+
+
+def normalize_text(text: str) -> str:
+    """Normalize text for similarity comparison."""
+    if not text:
+        return ""
+    return " ".join(text.strip().lower().split())
+
+
+def text_similarity(a: str, b: str) -> float:
+    """Compute similarity score using difflib (0-1 range)."""
+    return difflib.SequenceMatcher(None, normalize_text(a), normalize_text(b)).ratio()
+
+
+# ==== Dataset ====
+
+
+class QADataset(Dataset):
+    """Dataset for QA pairs with history."""
+
+    def __init__(
+        self,
+        rows: List[Tuple[int, str, str]],
+        history_size: int = 20,
+        cache_path: Optional[str] = None,
+        model: Optional[BaseMemoryLSTM] = None,
+    ):
+        self.rows = rows
+        self.history_size = history_size
+        self.cache_path = cache_path
+        self.model = model
+
+        # Build history for each row
+        self._histories: List[List[str]] = []
+        history: List[str] = []
+        for qa_id, q, a in rows:
+            self._histories.append(history[-history_size:].copy())
+            # Format as "Q: ...\nA: ..." for history
+            history.append(f"Q: {q}\nA: {a}")
+
+        # Optionally cache input texts
+        self._cached_input_texts: Optional[List[str]] = None
+        if cache_path and os.path.exists(cache_path):
+            print(f"Loading cached input texts from {cache_path}...")
+            with open(cache_path, "r", encoding="utf-8") as f:
+                self._cached_input_texts = json.load(f)
+            print(f"Loaded {len(self._cached_input_texts)} cached inputs.")
+        elif model is not None:
+            print("Pre-computing input texts (this happens once)...")
+            self._cached_input_texts = []
+            for i in range(len(self.rows)):
+                if i % 20 == 0:
+                    print(f"  Pre-computing {i}/{len(self.rows)}...")
+                _, q, _ = self.rows[i]
+                input_text = model.prepare_input_text(self._histories[i], q)
+                self._cached_input_texts.append(input_text)
+
+            if cache_path:
+                os.makedirs(
+                    os.path.dirname(cache_path) if os.path.dirname(cache_path) else ".",
+                    exist_ok=True,
+                )
+                with open(cache_path, "w", encoding="utf-8") as f:
+                    json.dump(self._cached_input_texts, f)
+                print(f"Saved cached input texts to {cache_path}")
+
+    def __len__(self) -> int:
+        return len(self.rows)
+
+    def __getitem__(self, idx: int) -> Tuple[List[str], str, str, Optional[str]]:
+        """Returns (history, question, answer, cached_input_text)."""
+        _, q, a = self.rows[idx]
+        history = self._histories[idx]
+        cached_text = (
+            self._cached_input_texts[idx] if self._cached_input_texts else None
+        )
+        return history, q, a, cached_text
+
+
+def load_qa_csv(path: str) -> List[Tuple[int, str, str]]:
+    """Load QA dataset from CSV."""
+    rows: List[Tuple[int, str, str]] = []
+    with open(path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for r in reader:
+            qa_id = int(r["qa_id"])
+            q = r["question"]
+            a = r["answer"]
+            rows.append((qa_id, q, a))
+    return rows
+
+
+# ==== Training functions ====
+
+
+def train_on_batch(
+    model: BaseMemoryLSTM,
+    history: List[str],
+    question: str,
+    target_answer: str,
+    device: torch.device,
+    optimizer: torch.optim.Optimizer,
+    criterion: nn.Module,
+    cached_input: Optional[str] = None,
+) -> float:
+    """
+    Train on a single QA pair using teacher forcing.
+    
+    Training approach:
+    - Concatenate input (history + question) and target (answer) into one sequence
+    - Feed the full sequence to the LSTM
+    - Compute loss only on the target portion (answer)
+    - This allows the model to learn to generate answers given questions
+    
+    Note: During inference, we only feed the input and generate the answer
+    token by token, which is different from training. This is a common
+    approach in sequence-to-sequence learning.
+    """
+    model.train()
+
+    # Prepare input
+    if cached_input is not None:
+        input_text = cached_input
+    else:
+        input_text = model.prepare_input_text(history, question)
+
+    # Encode input
+    input_ids = encode_text(input_text).to(device)  # (input_len,)
+
+    # Encode target answer
+    target_ids = encode_text(target_answer).to(device)  # (target_len,)
+
+    # Create full sequence: input + target (for teacher forcing)
+    # We'll train the model to predict the next token at each position
+    # This means: at position i, predict what comes at position i+1
+    full_seq = torch.cat([input_ids, target_ids], dim=0)  # (input_len + target_len,)
+    
+    # For next-token prediction, we need to shift targets by 1
+    # Input sequence: [x0, x1, ..., xN, t0, t1, ..., tM]
+    # We want to predict: [x1, ..., xN, t0, t1, ..., tM] from [x0, ..., xN, t0, ..., tM-1]
+    # But we only care about predicting the target part, so:
+    # - Use logits at positions [input_len, input_len+1, ..., input_len+target_len-1]
+    # - Predict tokens at positions [input_len+1, ..., input_len+target_len]
+    # - Actually, we want to predict target_ids, so we use logits at input_len onwards
+    #   to predict target_ids (which is what comes after input)
+    
+    # Create batch dimension
+    batch_ids = full_seq.unsqueeze(0)  # (1, seq_len)
+
+    optimizer.zero_grad()
+
+    # Forward pass
+    logits = model(batch_ids)  # (1, seq_len, vocab_size)
+
+    # We want to predict target_ids given input_ids
+    # In standard language modeling: logits[i] predicts sequence[i+1]
+    # Full sequence: [x0, x1, ..., xN, t0, t1, ..., tM]
+    # To predict t0 (at position input_len), we use logits[input_len-1] (which predicts what's at input_len)
+    # To predict t1 (at position input_len+1), we use logits[input_len]
+    # In general: to predict target[i], we use logits[input_len-1+i]
+    
+    input_len = input_ids.size(0)
+    target_len = target_ids.size(0)
+    
+    # Standard approach: use logits to predict next tokens
+    # We want to predict target tokens, which start at position input_len in the full sequence
+    # So we use logits starting from input_len-1 (which predicts token at input_len, i.e., target[0])
+    if input_len > 0:
+        start_idx = input_len - 1
+        end_idx = min(logits.size(1), input_len - 1 + target_len)
+        
+        if end_idx > start_idx:
+            pred_logits = logits[0, start_idx:end_idx, :]  # (end_idx-start_idx, vocab_size)
+            
+            # Ensure we have the right number of logits
+            if pred_logits.size(0) < target_len:
+                # Pad with the last logit if needed
+                padding = pred_logits[-1:, :].repeat(target_len - pred_logits.size(0), 1)
+                pred_logits = torch.cat([pred_logits, padding], dim=0)
+            elif pred_logits.size(0) > target_len:
+                # Truncate if needed
+                pred_logits = pred_logits[:target_len, :]
+        else:
+            # Fallback: use last logit repeated
+            pred_logits = logits[0, -1:, :].repeat(target_len, 1)
+    else:
+        # Edge case: empty input, use first target_len logits
+        pred_logits = logits[0, :min(target_len, logits.size(1)), :]
+        if pred_logits.size(0) < target_len:
+            padding = pred_logits[-1:, :].repeat(target_len - pred_logits.size(0), 1)
+            pred_logits = torch.cat([pred_logits, padding], dim=0)
+
+    # Targets are the answer characters (what we want to predict)
+    targets = target_ids[:pred_logits.size(0)]  # Ensure same length
+
+    # Compute loss
+    loss = criterion(pred_logits, targets)
+
+    # Backward pass
+    loss.backward()
+    
+    # Gradient clipping to prevent exploding gradients
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+    
+    optimizer.step()
+
+    return loss.item()
+
+
+@torch.no_grad()
+def generate_answer(
+    model: BaseMemoryLSTM,
+    history: List[str],
+    question: str,
+    device: torch.device,
+    max_length: int = 200,
+    cached_input: Optional[str] = None,
+) -> str:
+    """
+    Generate answer given history and question.
+    
+    Note: The model was trained to predict answer characters given input.
+    During generation, we feed the input and then generate tokens one by one.
+    """
+    model.eval()
+
+    # Prepare input
+    if cached_input is not None:
+        input_text = cached_input
+    else:
+        input_text = model.prepare_input_text(history, question)
+
+    # Encode input (truncate if too long to avoid issues)
+    input_ids = encode_text(input_text).to(device)  # (seq_len,)
+    input_len = input_ids.size(0)
+    
+    # Truncate input if it's too long (to avoid memory issues)
+    max_input_len = 400
+    if input_len > max_input_len:
+        input_ids = input_ids[:max_input_len]
+        input_len = max_input_len
+
+    # Start with input
+    current_ids = input_ids.unsqueeze(0)  # (1, input_len)
+
+    # Generate tokens
+    generated = []
+    consecutive_spaces = 0
+    max_consecutive_spaces = 10  # Increased: allow more spaces (sentences have spaces)
+    last_token = None
+    repetition_count = 0
+    max_repetition = 30  # Increased: allow more repetition before stopping
+    last_3_tokens = []  # Track last 3 tokens for better repetition detection
+    
+    for step in range(max_length):
+        # Truncate sequence if it gets too long (to avoid memory issues)
+        if current_ids.size(1) > 600:
+            # Keep only the last 400 tokens
+            current_ids = current_ids[:, -400:]
+        
+        logits = model(current_ids)  # (1, seq_len, vocab_size)
+        last_logit = logits[0, -1, :]  # (vocab_size,)
+
+        # Apply temperature or use softmax for more stable generation
+        # For now, use greedy but add some randomness to break loops
+        probs = torch.softmax(last_logit / 1.0, dim=-1)  # Temperature = 1.0
+        
+        # If we're stuck repeating, try sampling from top-k instead
+        if repetition_count > 5:
+            # Sample from top 5 tokens to break the loop
+            top_k = 5
+            top_probs, top_indices = torch.topk(probs, top_k)
+            # Normalize
+            top_probs = top_probs / top_probs.sum()
+            next_id = int(torch.multinomial(top_probs, 1).item())
+            next_id = int(top_indices[next_id].item())
+        else:
+            # Greedy selection
+            next_id = torch.argmax(last_logit).item()
+
+        # Stop if we hit padding
+        if next_id == _STOI[_PAD_CHAR]:
+            break
+
+        # Check for repetition (to avoid getting stuck)
+        # Check if we're repeating the same 3-token pattern
+        if len(last_3_tokens) >= 3:
+            if generated[-2:] == last_3_tokens[-2:] and next_id == last_3_tokens[0]:
+                repetition_count += 1
+                if repetition_count >= max_repetition:
+                    # Stop if we're stuck in a loop
+                    break
+            elif next_id == last_token:
+                repetition_count += 1
+                if repetition_count >= max_repetition:
+                    break
+            else:
+                repetition_count = 0
+        elif next_id == last_token:
+            repetition_count += 1
+            if repetition_count >= max_repetition:
+                break
+        else:
+            repetition_count = 0
+        
+        last_token = next_id
+        last_3_tokens.append(next_id)
+        if len(last_3_tokens) > 3:
+            last_3_tokens.pop(0)
+
+        generated.append(next_id)
+        
+        # Check for stopping conditions - be more lenient with spaces
+        next_char = _ITOS[next_id] if 0 <= next_id < len(_ITOS) else " "
+        if next_char == " ":
+            consecutive_spaces += 1
+            # Only stop on excessive spaces if we have a reasonable amount of text
+            if consecutive_spaces >= max_consecutive_spaces and len(generated) > 50:
+                # Remove trailing spaces
+                while generated and _ITOS[generated[-1]] == " ":
+                    generated.pop()
+                break
+        else:
+            consecutive_spaces = 0
+
+        # Append to sequence
+        next_tensor = torch.tensor([[next_id]], dtype=torch.long, device=device)
+        current_ids = torch.cat([current_ids, next_tensor], dim=1)
+
+    # Decode generated tokens
+    answer = decode_ids(generated)
+    return answer.strip()
+
+
+def test_memory(
+    model: BaseMemoryLSTM,
+    dataset: QADataset,
+    test_indices: List[int],
+    device: torch.device,
+    sim_threshold: float = 0.6,
+    debug: bool = False,
+    max_gen_length: int = 300,
+    return_similarities: bool = False,
+) -> Tuple[int, int, Optional[List[float]]]:
+    """
+    Test memory recall. Returns (correct, total, similarities).
+    
+    If return_similarities=True, also returns list of similarity scores.
+    
+    Accuracy calculation (if threshold is used):
+    - For each test, compare generated answer to ground truth using similarity
+    - If similarity >= threshold, count as success (1), otherwise failure (0)
+    - Accuracy = sum of successes / total number of valid tests
+    
+    Similarity scores provide a more granular view of model performance.
+    """
+    correct = 0
+    total = 0
+    similarities = [] if return_similarities else None
+
+    for idx in test_indices:
+        if idx < 0 or idx >= len(dataset):
+            continue
+        
+        total += 1  # Only count valid indices
+
+        history, question, true_answer, cached_input = dataset[idx]
+
+        # Generate prediction
+        pred_answer = generate_answer(
+            model, history, question, device, cached_input=cached_input, max_length=max_gen_length
+        )
+
+        # Compare similarity
+        sim = text_similarity(pred_answer, true_answer)
+        
+        if return_similarities:
+            similarities.append(sim)
+        
+        # Debug output for first few tests
+        if debug:
+            print(f"\n  [DEBUG] Test idx={idx}")
+            print(f"    Question: {question[:100]}...")
+            print(f"    True answer: {true_answer[:100]}...")
+            print(f"    Pred answer: {pred_answer[:200] if pred_answer else '(empty)'}")
+            print(f"    Similarity: {sim:.4f} (threshold: {sim_threshold})")
+            print(f"    Success: {sim >= sim_threshold}")
+        
+        if sim >= sim_threshold:
+            correct += 1
+
+    if return_similarities:
+        return correct, total, similarities
+    return correct, total
+
+
+# ==== Main training loop ====
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Train QA memory LSTM")
+    parser.add_argument(
+        "--model_type",
+        type=str,
+        default="full_memory",
+        choices=["full_memory"],
+        help="Model type to train",
+    )
+    parser.add_argument("--epochs", type=int, default=5, help="Number of epochs")
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=1,
+        help="Batch size (1 for sequential training)",
+    )
+    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
+    parser.add_argument(
+        "--history_size",
+        type=int,
+        default=20,
+        help="Number of previous Q&A pairs to keep in history",
+    )
+    parser.add_argument(
+        "--checkpoint_dir",
+        type=str,
+        default="checkpoints_qa",
+        help="Directory to save checkpoints",
+    )
+    parser.add_argument(
+        "--cache_dir",
+        type=str,
+        default="cache_qa",
+        help="Directory to cache pre-computed inputs",
+    )
+    parser.add_argument(
+        "--stm_threshold",
+        type=float,
+        default=0.6,
+        help="Similarity threshold for STM tests",
+    )
+    parser.add_argument(
+        "--ltm_threshold",
+        type=float,
+        default=0.6,
+        help="Similarity threshold for LTM tests",
+    )
+    parser.add_argument(
+        "--disable_summarization",
+        action="store_true",
+        help="Disable HF summarization for faster training",
+    )
+    parser.add_argument(
+        "--keep_cache",
+        action="store_true",
+        help="Keep existing cache instead of regenerating it",
+    )
+    parser.add_argument(
+        "--emb_dim",
+        type=int,
+        default=256,
+        help="Embedding dimension (default: 256, increased from 128)",
+    )
+    parser.add_argument(
+        "--hidden_dim",
+        type=int,
+        default=256,
+        help="Hidden dimension (default: 256, increased from 128)",
+    )
+    parser.add_argument(
+        "--max_gen_length",
+        type=int,
+        default=300,
+        help="Maximum generation length (default: 300, increased from 200)",
+    )
+
+    args = parser.parse_args()
+
+    # Patch summarization if disabled
+    if args.disable_summarization:
+        import memory_features
+
+        original_init = memory_features.SummarizationLayer.__init__
+
+        def patched_init(self, model_name=None):
+            original_init(self, model_name=None)
+
+        memory_features.SummarizationLayer.__init__ = patched_init
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    os.makedirs(args.checkpoint_dir, exist_ok=True)
+    os.makedirs(args.cache_dir, exist_ok=True)
+
+    # Load dataset
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_path = os.path.join(current_dir, "data", "skillminer_qa_synthetic.csv")
+    print(f"Loading dataset from: {csv_path}")
+    rows = load_qa_csv(csv_path)
+    print(f"Loaded {len(rows)} QA pairs")
+
+    # Build model
+    vocab_size = _VOCAB_SIZE
+    emb_dim = args.emb_dim
+    hidden_dim = args.hidden_dim
+
+    if args.model_type == "full_memory":
+        model = FullMemoryLSTM(
+            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim
+        )
+    else:
+        raise ValueError(f"Unknown model_type: {args.model_type}")
+
+    model.to(device)
+
+    # Pre-ingest history for semantic memory (if using FullMemoryLSTM)
+    if isinstance(model, FullMemoryLSTM):
+        print("Pre-ingesting history into semantic memory...")
+        history_texts = []
+        for _, q, a in rows:
+            history_texts.append(f"Q: {q}\nA: {a}")
+        model.ingest_history(history_texts)
+        print("Done pre-ingesting history")
+
+    # Create dataset
+    # Option to force cache regeneration
+    cache_path = os.path.join(args.cache_dir, f"{args.model_type}_inputs.json")
+    
+    # Delete cache if it exists to force regeneration with current model
+    # (unless user explicitly wants to keep it)
+    if not args.keep_cache and os.path.exists(cache_path):
+        print(f"Deleting old cache at {cache_path} to regenerate with current model...")
+        os.remove(cache_path)
+    
+    dataset = QADataset(
+        rows,
+        history_size=args.history_size,
+        cache_path=cache_path,
+        model=model,
+    )
+
+    # Setup training
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+
+    print(f"\nTraining {args.model_type} on device={device}")
+    print(f"  Epochs: {args.epochs}")
+    print(f"  History size: {args.history_size}")
+    print(f"  STM threshold: {args.stm_threshold}")
+    print(f"  LTM threshold: {args.ltm_threshold}")
+    print()
+
+    best_score = 0.0
+
+    # Training loop
+    for epoch in range(1, args.epochs + 1):
+        print(f"\n{'='*60}")
+        print(f"Epoch {epoch}/{args.epochs}")
+        print(f"{'='*60}")
+
+        total_loss = 0.0
+        num_steps = 0
+
+        # STM and LTM test tracking
+        stm_test_indices = []  # Collect indices for STM tests
+        ltm_test_indices = []  # Collect indices for LTM tests
+        stm_correct = 0
+        stm_total = 0
+        ltm_correct = 0
+        ltm_total = 0
+        stm_similarities = []  # Track all similarity scores for STM
+        ltm_similarities = []  # Track all similarity scores for LTM
+
+        # Process rows sequentially
+        for i in range(len(dataset)):
+            history, question, answer, cached_input = dataset[i]
+
+            # Train on this row
+            loss = train_on_batch(
+                model,
+                history,
+                question,
+                answer,
+                device,
+                optimizer,
+                criterion,
+                cached_input=cached_input,
+            )
+            total_loss += loss
+            num_steps += 1
+
+            # STM test every 5 rows (starting from row 5, test question from 2 rows before)
+            # Row 5 -> test row 3, Row 10 -> test row 8, etc.
+            if (i + 1) % 5 == 0 and i >= 2:
+                test_idx = i - 2  # 2 rows before
+                stm_test_indices.append(test_idx)
+
+            # LTM test every 10 rows (starting from row 10, test question from 9 rows before)
+            # Row 10 -> test row 1, Row 20 -> test row 11, etc.
+            if (i + 1) % 10 == 0 and i >= 9:
+                test_idx = i - 9  # 9 rows before
+                ltm_test_indices.append(test_idx)
+
+            # Run tests periodically (every 10 training steps to avoid too frequent testing)
+            if (i + 1) % 10 == 0:
+                # Run STM tests
+                if stm_test_indices:
+                    result = test_memory(
+                        model,
+                        dataset,
+                        stm_test_indices,
+                        device,
+                        sim_threshold=args.stm_threshold,
+                        debug=(i + 1) == 10,  # Debug on first test
+                        max_gen_length=args.max_gen_length,
+                        return_similarities=True,
+                    )
+                    if len(result) == 3:
+                        stm_c, stm_t, stm_sims = result
+                        stm_similarities.extend(stm_sims)
+                    else:
+                        stm_c, stm_t = result
+                    stm_correct += stm_c
+                    stm_total += stm_t
+                    stm_test_indices = []  # Clear after testing
+
+                # Run LTM tests
+                if ltm_test_indices:
+                    result = test_memory(
+                        model,
+                        dataset,
+                        ltm_test_indices,
+                        device,
+                        sim_threshold=args.ltm_threshold,
+                        debug=(i + 1) == 10,  # Debug on first test
+                        max_gen_length=args.max_gen_length,
+                        return_similarities=True,
+                    )
+                    if len(result) == 3:
+                        ltm_c, ltm_t, ltm_sims = result
+                        ltm_similarities.extend(ltm_sims)
+                    else:
+                        ltm_c, ltm_t = result
+                    ltm_correct += ltm_c
+                    ltm_total += ltm_t
+                    ltm_test_indices = []  # Clear after testing
+
+                # Print progress
+                avg_loss = total_loss / num_steps if num_steps > 0 else 0.0
+                stm_acc = stm_correct / stm_total if stm_total > 0 else 0.0
+                ltm_acc = ltm_correct / ltm_total if ltm_total > 0 else 0.0
+                stm_avg_sim = sum(stm_similarities) / len(stm_similarities) if stm_similarities else 0.0
+                ltm_avg_sim = sum(ltm_similarities) / len(ltm_similarities) if ltm_similarities else 0.0
+                
+                # Show a sample prediction every 50 steps to see if model is learning
+                if (i + 1) % 50 == 0:
+                    # Test on current row to see what model predicts
+                    test_history, test_q, test_a, test_cached = dataset[i]
+                    test_pred = generate_answer(
+                        model, test_history, test_q, device, cached_input=test_cached, max_length=args.max_gen_length
+                    )
+                    print(
+                        f"  Step {i+1}/{len(dataset)}: "
+                        f"loss={avg_loss:.4f}, "
+                        f"STM_acc={stm_acc:.3f} ({stm_correct}/{stm_total}) sim_avg={stm_avg_sim:.3f}, "
+                        f"LTM_acc={ltm_acc:.3f} ({ltm_correct}/{ltm_total}) sim_avg={ltm_avg_sim:.3f}"
+                    )
+                    print(f"    Sample pred: {test_pred[:100]}...")
+                else:
+                    print(
+                        f"  Step {i+1}/{len(dataset)}: "
+                        f"loss={avg_loss:.4f}, "
+                        f"STM_acc={stm_acc:.3f} ({stm_correct}/{stm_total}) sim_avg={stm_avg_sim:.3f}, "
+                        f"LTM_acc={ltm_acc:.3f} ({ltm_correct}/{ltm_total}) sim_avg={ltm_avg_sim:.3f}"
+                    )
+
+        # Final epoch summary
+        avg_loss = total_loss / num_steps if num_steps > 0 else 0.0
+        stm_acc = stm_correct / stm_total if stm_total > 0 else 0.0
+        ltm_acc = ltm_correct / ltm_total if ltm_total > 0 else 0.0
+        stm_avg_sim = sum(stm_similarities) / len(stm_similarities) if stm_similarities else 0.0
+        ltm_avg_sim = sum(ltm_similarities) / len(ltm_similarities) if ltm_similarities else 0.0
+        stm_min_sim = min(stm_similarities) if stm_similarities else 0.0
+        stm_max_sim = max(stm_similarities) if stm_similarities else 0.0
+        ltm_min_sim = min(ltm_similarities) if ltm_similarities else 0.0
+        ltm_max_sim = max(ltm_similarities) if ltm_similarities else 0.0
+
+        print(f"\nEpoch {epoch} Summary:")
+        print(f"  Average loss: {avg_loss:.4f}")
+        print(f"  STM accuracy: {stm_acc:.3f} ({stm_correct}/{stm_total}) [threshold: {args.stm_threshold}]")
+        print(f"    STM similarity: avg={stm_avg_sim:.3f}, min={stm_min_sim:.3f}, max={stm_max_sim:.3f}")
+        print(f"  LTM accuracy: {ltm_acc:.3f} ({ltm_correct}/{ltm_total}) [threshold: {args.ltm_threshold}]")
+        print(f"    LTM similarity: avg={ltm_avg_sim:.3f}, min={ltm_min_sim:.3f}, max={ltm_max_sim:.3f}")
+
+        # Save checkpoint
+        ckpt_path = os.path.join(
+            args.checkpoint_dir, f"{args.model_type}_epoch_{epoch}.pt"
+        )
+        torch.save(model.state_dict(), ckpt_path)
+        print(f"  Saved checkpoint to {ckpt_path}")
+
+        # Save best model
+        best_ckpt_path = os.path.join(
+            args.checkpoint_dir, f"{args.model_type}_best.pt"
+        )
+        if epoch == 1 or (stm_acc + ltm_acc) > best_score:
+            best_score = stm_acc + ltm_acc
+            torch.save(model.state_dict(), best_ckpt_path)
+            print(f"  Saved best model to {best_ckpt_path}")
+
+    print("\nTraining complete!")
+
+
+if __name__ == "__main__":
+    main()
+

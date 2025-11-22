@@ -1,13 +1,16 @@
 # models/research/model_4_full_memory.py
 from typing import List
-from .base_lstm_model import BaseMemoryLSTM
-from .memory_features import (
+
+from base_lstm_model import BaseMemoryLSTM
+from memory_features import (
     SummarizationFeature,
     TokenLimitFeature,
     NERFeature,
     LocalSemanticMemory,
 )
-from src.core.config import STM_MAX_TOKENS
+
+# Local default to keep this module self‑contained for research
+STM_MAX_TOKENS = 256
 
 
 class FullMemoryLSTM(BaseMemoryLSTM):
