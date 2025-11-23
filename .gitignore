@@ -214,8 +214,6 @@ __marimo__/
 # Ignore Chroma vector database
 chroma/
 
-# Ignore GitHub workflow/config folder
-.github/
 
 # Local vector DB & logs
 chroma/
