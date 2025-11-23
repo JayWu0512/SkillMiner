@@ -21,6 +21,20 @@ try:
 except ImportError:
     BaseMemoryLSTM = None  # type: ignore
 
+import torch
+
+try:
+    # Use the research LSTM variants as concrete BaseMemoryLSTM implementations
+    from model_1_summarization import SummarizationOnlyLSTM
+    from model_2_sum_toklimit import SumTokenLimitLSTM
+    from model_3_sum_tok_ner import SumTokNerLSTM
+    from model_4_full_memory import FullMemoryLSTM
+except ImportError:
+    SummarizationOnlyLSTM = None  # type: ignore
+    SumTokenLimitLSTM = None  # type: ignore
+    SumTokNerLSTM = None  # type: ignore
+    FullMemoryLSTM = None  # type: ignore
+
 
 # ============== utils ==============
 
@@ -122,33 +136,142 @@ def evaluate_level_prediction(
     return acc
 
 
-# ============== Base LSTM slot (KEY) ==============
+# ============== Base LSTM slots (KEY) ==============
 
-_base_lstm_instance: Optional["BaseMemoryLSTM"] = None  # type: ignore
+_base_lstm_instance: Optional["BaseMemoryLSTM"] = None  # type: ignore  # SummarizationOnly
+_sumtok_lstm_instance: Optional["BaseMemoryLSTM"] = None  # type: ignore  # SumTokenLimit
+_sumtokner_lstm_instance: Optional["BaseMemoryLSTM"] = None  # type: ignore  # SumTokNER
+_fullmem_lstm_instance: Optional["BaseMemoryLSTM"] = None  # type: ignore  # FullMemory
+_device: Optional[torch.device] = None
+
+# ---- Simple character-level tokenizer/decoder (self-contained) ----
+_PAD_CHAR = "<pad>"
+_ALL_CHARS = [chr(i) for i in range(32, 127)]  # printable ASCII
+_ITOS: List[str] = [_PAD_CHAR] + _ALL_CHARS
+_STOI: Dict[str, int] = {ch: idx for idx, ch in enumerate(_ITOS)}
+_VOCAB_SIZE = len(_ITOS)
+_MAX_SEQ_LEN = 256
+
+# Where training script saves checkpoints (see train_logs_lstm.py)
+CHECKPOINT_DIR = "checkpoints_logs"
+
+
+def encode_text(text: str) -> torch.Tensor:
+    """
+    Convert arbitrary text into a 1D tensor of token ids (length <= _MAX_SEQ_LEN).
+    This is deliberately simple and deterministic so we can plug in the LSTM
+    before we have a real tokenizer or training.
+    """
+    text = text or ""
+    text = text[:_MAX_SEQ_LEN]  # Truncate to avoid very long sequences
+    ids: List[int] = []
+    for ch in text:
+        ids.append(_STOI.get(ch, _STOI[" "]))  # unknown chars → space
+    if not ids:
+        ids = [_STOI[" "]]
+    return torch.tensor([ids], dtype=torch.long)  # (batch=1, seq_len)
+
+
+def decode_ids(ids: List[int]) -> str:
+    """Turn a list of token ids back into a text string."""
+    chars: List[str] = []
+    for idx in ids:
+        if 0 <= idx < len(_ITOS):
+            ch = _ITOS[idx]
+            if ch != _PAD_CHAR:
+                chars.append(ch)
+    return "".join(chars)
 
 
 def init_base_lstm() -> None:
     """
-    Initialize the Base LSTM model instance.
-
-    Later, you can replace this with:
-        from my_log_lstm import LogBaseLSTM
-        global _base_lstm_instance
-        _base_lstm_instance = LogBaseLSTM(vocab_size=..., emb_dim=..., hidden_dim=...)
-        _base_lstm_instance.load_state_dict(torch.load("..."))
-
-    Currently a stub to allow eval file to run without blocker.
+    Initialize all four research LSTM variants (untrained).
     """
-    global _base_lstm_instance
-    if _base_lstm_instance is not None:
-        return
+    global _base_lstm_instance, _sumtok_lstm_instance, _sumtokner_lstm_instance, _fullmem_lstm_instance, _device
 
-    if BaseMemoryLSTM is None:
-        # Not implemented/import failed yet, skip
-        return
+    if _device is None:
+        _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # TODO: Replace with your Log-based BaseMemoryLSTM subclass here
-    return
+    vocab_size = _VOCAB_SIZE
+    emb_dim = 128
+    hidden_dim = 128
+
+    # 1) Summarization-only
+    if _base_lstm_instance is None and SummarizationOnlyLSTM is not None and BaseMemoryLSTM is not None:
+        m = SummarizationOnlyLSTM(vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim)
+        ckpt_path = os.path.join(CHECKPOINT_DIR, "summarization_only_best.pt")
+        if os.path.exists(ckpt_path):
+            m.load_state_dict(torch.load(ckpt_path, map_location=_device))
+            print(f"[eval_logs] Loaded checkpoint: {ckpt_path}")
+        m.to(_device)
+        m.eval()
+        _base_lstm_instance = m  # type: ignore
+
+    # 2) Summarization + token limit
+    if _sumtok_lstm_instance is None and SumTokenLimitLSTM is not None and BaseMemoryLSTM is not None:
+        m = SumTokenLimitLSTM(vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim)
+        ckpt_path = os.path.join(CHECKPOINT_DIR, "sum_token_limit_best.pt")
+        if os.path.exists(ckpt_path):
+            m.load_state_dict(torch.load(ckpt_path, map_location=_device))
+            print(f"[eval_logs] Loaded checkpoint: {ckpt_path}")
+        m.to(_device)
+        m.eval()
+        _sumtok_lstm_instance = m  # type: ignore
+
+    # 3) Summarization + token limit + NER
+    if _sumtokner_lstm_instance is None and SumTokNerLSTM is not None and BaseMemoryLSTM is not None:
+        m = SumTokNerLSTM(vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim)
+        ckpt_path = os.path.join(CHECKPOINT_DIR, "sum_tok_ner_best.pt")
+        if os.path.exists(ckpt_path):
+            m.load_state_dict(torch.load(ckpt_path, map_location=_device))
+            print(f"[eval_logs] Loaded checkpoint: {ckpt_path}")
+        m.to(_device)
+        m.eval()
+        _sumtokner_lstm_instance = m  # type: ignore
+
+    # 4) Full memory (STM + NER + local semantic memory)
+    if _fullmem_lstm_instance is None and FullMemoryLSTM is not None and BaseMemoryLSTM is not None:
+        m = FullMemoryLSTM(vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim)
+        ckpt_path = os.path.join(CHECKPOINT_DIR, "full_memory_best.pt")
+        if os.path.exists(ckpt_path):
+            m.load_state_dict(torch.load(ckpt_path, map_location=_device))
+            print(f"[eval_logs] Loaded checkpoint: {ckpt_path}")
+        m.to(_device)
+        m.eval()
+        _fullmem_lstm_instance = m  # type: ignore
+
+
+def _predict_with_lstm(
+    model: "BaseMemoryLSTM",  # type: ignore[name-defined]
+    history: List[str],
+    question: str,
+) -> str:
+    """
+    Shared helper: run a given BaseMemoryLSTM and decode a level string.
+    """
+    assert _device is not None
+
+    # 1) Let the model construct its memory-augmented input text
+    input_text = model.prepare_input_text(history, question)
+
+    # 2) Encode text → token ids
+    token_ids = encode_text(input_text).to(_device)  # (1, seq_len)
+
+    # 3) Run through LSTM
+    with torch.no_grad():
+        logits = model(token_ids)  # type: ignore[call-arg]
+        # logits: (batch=1, seq_len, vocab)
+
+    # 4) Greedy decode characters from the last time step
+    last_step_logits = logits[0, -1]  # (vocab,)
+    pred_id = int(torch.argmax(last_step_logits).item())
+    pred_text = decode_ids([pred_id]).strip()
+
+    if pred_text and pred_text[0].isdigit():
+        return f"The current level is {pred_text[0]}."
+
+    # Fallback if decoding didn't yield a digit
+    return "The current level is 1."
 
 
 def model0_base_lstm_predict(history: List[str], question: str) -> str:
@@ -165,64 +288,35 @@ def model0_base_lstm_predict(history: List[str], question: str) -> str:
     """
     init_base_lstm()
 
-    if _base_lstm_instance is None:
-        # Temporary stub: replace once you train the real LogBaseLSTM
+    if _base_lstm_instance is None or _device is None:
+        # If something went wrong with initialization, fall back to old stub
         return "The current level is 1."
 
-    # When actually integrated with LSTM, it would look like this:
-    # input_text = _base_lstm_instance.prepare_input_text(history, question)
-    # ids = tokenizer.encode(input_text)
-    # logits = _base_lstm_instance(torch.tensor([ids]))
-    # pred_ids = decode_greedy(logits)
-    # return tokenizer.decode(pred_ids)
-
-    # For now, return same stub to avoid crashes before tokenizer integration
-    return "The current level is 1."
+    return _predict_with_lstm(_base_lstm_instance, history, question)  # type: ignore[arg-type]
 
 
-# ============== Four stub models (baseline heuristic) ==============
+def model1_sumtok_predict(history: List[str], question: str) -> str:
+    """SumTokenLimitLSTM: summarization + token-limit memory."""
+    init_base_lstm()
+    if _sumtok_lstm_instance is None or _device is None:
+        return "The current level is 1."
+    return _predict_with_lstm(_sumtok_lstm_instance, history, question)  # type: ignore[arg-type]
 
 
-def model1_predict(history: List[str], question: str) -> str:
-    """
-    Model 1 stub: ignores history completely, returns fixed level.
-    Baseline: predicts level = 1
-    """
-    return "The current level is 1."
+def model2_sumtokner_predict(history: List[str], question: str) -> str:
+    """SumTokNerLSTM: summarization + token-limit + NER memory."""
+    init_base_lstm()
+    if _sumtokner_lstm_instance is None or _device is None:
+        return "The current level is 1."
+    return _predict_with_lstm(_sumtokner_lstm_instance, history, question)  # type: ignore[arg-type]
 
 
-def model2_predict(history: List[str], question: str) -> str:
-    """
-    Model 2 stub: estimates level based on history length.
-    Shows a more "dynamic" baseline approach.
-    """
-    # Heuristic: level increases by 1 per 5 logs
-    approx_level = max(1, len(history) // 5)
-    return f"The current level is {approx_level}."
-
-
-def model3_predict(history: List[str], question: str) -> str:
-    """
-    Model 3 stub: searches history for last mention of 'level' or 'gained X exp',
-    then uses simple heuristic to infer level.
-    Currently weak baseline since synthetic messages don't directly mention level.
-    """
-    # Find last record related to exp (currently just for demonstration)
-    for msg in reversed(history):
-        if "gained" in msg or "completed a lesson" in msg:
-            break
-    # Placeholder guess
-    return "The current level is 2."
-
-
-def model4_predict(history: List[str], question: str) -> str:
-    """
-    Model 4 stub: simulates 'FullMemory' version.
-    Demonstrates: uses history length for more sophisticated heuristic.
-    """
-    # Slightly more aggressive than model2
-    approx_level = max(1, len(history) // 4)
-    return f"The current level is {approx_level}."
+def model3_fullmem_predict(history: List[str], question: str) -> str:
+    """FullMemoryLSTM: STM + NER + local semantic memory."""
+    init_base_lstm()
+    if _fullmem_lstm_instance is None or _device is None:
+        return "The current level is 1."
+    return _predict_with_lstm(_fullmem_lstm_instance, history, question)  # type: ignore[arg-type]
 
 
 # ============== main ==============
@@ -236,11 +330,10 @@ def main():
     logs = load_logs_csv(csv_path)
 
     models = [
-        LogModelWrapper("BaseLSTM_NoMemory", model0_base_lstm_predict),
-        LogModelWrapper("LogModel_1_BaselineConstant", model1_predict),
-        LogModelWrapper("LogModel_2_BaselineHistoryLen", model2_predict),
-        LogModelWrapper("LogModel_3_ExpHeuristic", model3_predict),
-        LogModelWrapper("LogModel_4_FullMemoryHeuristic", model4_predict),
+        LogModelWrapper("LSTM_1_SummarizationOnly", model0_base_lstm_predict),
+        LogModelWrapper("LSTM_2_SumTokenLimit", model1_sumtok_predict),
+        LogModelWrapper("LSTM_3_SumTokNER", model2_sumtokner_predict),
+        LogModelWrapper("LSTM_4_FullMemory", model3_fullmem_predict),
     ]
 
     print("=== Exact match accuracy (no off-by-one) ===")

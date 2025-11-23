@@ -13,13 +13,26 @@ import csv
 import os
 import difflib
 from dataclasses import dataclass
-from typing import List, Tuple, Callable, Optional
+from typing import List, Tuple, Callable, Optional, Dict
 
 # ===== Import BaseMemoryLSTM here =====
 try:
     from base_lstm_model import BaseMemoryLSTM
 except ImportError:
     BaseMemoryLSTM = None  # type: ignore
+
+import torch
+
+try:
+    from model_1_summarization import SummarizationOnlyLSTM
+    from model_2_sum_toklimit import SumTokenLimitLSTM
+    from model_3_sum_tok_ner import SumTokNerLSTM
+    from model_4_full_memory import FullMemoryLSTM
+except ImportError:  # pragma: no cover
+    SummarizationOnlyLSTM = None  # type: ignore
+    SumTokenLimitLSTM = None  # type: ignore
+    SumTokNerLSTM = None  # type: ignore
+    FullMemoryLSTM = None  # type: ignore
 
 
 # ============== Basic utilities ==============
@@ -108,40 +121,119 @@ def evaluate_task_model(
     return acc
 
 
-# ============== Base LSTM slot (key part) ==============
+# ============== Base LSTM slots (key part) ==============
 
-_base_lstm_instance: Optional["BaseMemoryLSTM"] = None  # type: ignore
+_base_lstm_instance: Optional["BaseMemoryLSTM"] = None  # type: ignore  # SummarizationOnly
+_sumtok_lstm_instance: Optional["BaseMemoryLSTM"] = None  # type: ignore
+_sumtokner_lstm_instance: Optional["BaseMemoryLSTM"] = None  # type: ignore
+_fullmem_lstm_instance: Optional["BaseMemoryLSTM"] = None  # type: ignore
+_device: Optional[torch.device] = None
+
+# Reuse the same simple char-level tokenizer as other evals
+_PAD_CHAR = "<pad>"
+_ALL_CHARS = [chr(i) for i in range(32, 127)]
+_ITOS: List[str] = [_PAD_CHAR] + _ALL_CHARS
+_STOI: Dict[str, int] = {ch: idx for idx, ch in enumerate(_ITOS)}
+_VOCAB_SIZE = len(_ITOS)
+_MAX_SEQ_LEN = 256
+
+
+def encode_text(text: str) -> torch.Tensor:
+    text = text or ""
+    text = text[:_MAX_SEQ_LEN]
+    ids: List[int] = []
+    for ch in text:
+        ids.append(_STOI.get(ch, _STOI[" "]))
+    if not ids:
+        ids = [_STOI[" "]]
+    return torch.tensor([ids], dtype=torch.long)
+
+
+def decode_ids(ids: List[int]) -> str:
+    chars: List[str] = []
+    for idx in ids:
+        if 0 <= idx < len(_ITOS):
+            ch = _ITOS[idx]
+            if ch != _PAD_CHAR:
+                chars.append(ch)
+    return "".join(chars)
 
 
 def init_base_lstm() -> None:
     """
-    Initialize your Base LSTM model here (you can modify this later):
+    Initialize your Base LSTM model here.
 
-    Example:
-        from my_tokenizer import tokenizer
-        from my_model_impl import MyBaseTaskLSTM
-
-        global _base_lstm_instance
-        _base_lstm_instance = MyBaseTaskLSTM(...)
-        _base_lstm_instance.load_state_dict(torch.load("..."))
-
-    Currently left empty to allow the code to run; wire it up when ready.
+    Currently uses the research LSTM variants as concrete implementations,
+    untrained, just to exercise the full path.
     """
-    global _base_lstm_instance
-    if _base_lstm_instance is not None:
-        return
+    global _base_lstm_instance, _sumtok_lstm_instance, _sumtokner_lstm_instance, _fullmem_lstm_instance, _device
+    if _device is None:
+        _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if BaseMemoryLSTM is None:
-        # Import failed, skip (will use fallback)
         return
 
-    # TODO: Replace with your actual subclass & weight loading
-    # Example:
-    # from my_task_lstm import TaskBaseLSTM
-    # _base_lstm_instance = TaskBaseLSTM(vocab_size=..., emb_dim=..., hidden_dim=...)
-    #
-    # Not initializing the actual model yet to avoid errors before it's ready.
-    return
+    vocab_size = _VOCAB_SIZE
+    emb_dim = 128
+    hidden_dim = 128
+
+    # 1) Summarization-only
+    if _base_lstm_instance is None and SummarizationOnlyLSTM is not None:
+        m = SummarizationOnlyLSTM(
+            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim
+        )
+        m.to(_device)
+        m.eval()
+        _base_lstm_instance = m  # type: ignore
+
+    # 2) SumTokenLimit
+    if _sumtok_lstm_instance is None and SumTokenLimitLSTM is not None:
+        m = SumTokenLimitLSTM(
+            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim
+        )
+        m.to(_device)
+        m.eval()
+        _sumtok_lstm_instance = m  # type: ignore
+
+    # 3) SumTokNER
+    if _sumtokner_lstm_instance is None and SumTokNerLSTM is not None:
+        m = SumTokNerLSTM(
+            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim
+        )
+        m.to(_device)
+        m.eval()
+        _sumtokner_lstm_instance = m  # type: ignore
+
+    # 4) FullMemory
+    if _fullmem_lstm_instance is None and FullMemoryLSTM is not None:
+        m = FullMemoryLSTM(
+            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim
+        )
+        m.to(_device)
+        m.eval()
+        _fullmem_lstm_instance = m  # type: ignore
+
+
+def _task_predict_with_model(
+    model: "BaseMemoryLSTM",  # type: ignore[name-defined]
+    history: List[str],
+    question: str,
+) -> str:
+    assert _device is not None
+
+    input_text = model.prepare_input_text(history, question)
+    token_ids = encode_text(input_text).to(_device)
+    with torch.no_grad():
+        logits = model(token_ids)  # type: ignore[call-arg]
+
+    last_logits = logits[0, -1]
+    pred_id = int(torch.argmax(last_logits).item())
+    pred_char = decode_ids([pred_id]).strip()
+
+    if pred_char:
+        return f"{pred_char} the user's study plan"
+
+    return "adjust the user's study plan"
 
 
 def model0_base_lstm_predict(history: List[str], question: str) -> str:
@@ -151,115 +243,39 @@ def model0_base_lstm_predict(history: List[str], question: str) -> str:
     Key point: use BaseMemoryLSTM.prepare_input_text(history, question)
                to align history into a single input string, then decode with LSTM.
 
-    Currently a safe stub:
-      - If you haven't connected the actual LSTM yet, return a fixed sentence
-      - Later replace the TODO section with real decoding
+    Currently uses SummarizationOnlyLSTM.
     """
     init_base_lstm()
 
-    if _base_lstm_instance is None:
-        # No actual model yet → use as baseline stub
+    if _base_lstm_instance is None or _device is None:
+        # No actual model yet → use baseline stub
         return "adjust the user's study plan"
 
-    # Example call to BaseMemoryLSTM's prepare_input_text
-    input_text = _base_lstm_instance.prepare_input_text(history, question)
-
-    # TODO: Convert input_text to token_ids → feed into LSTM → decode back to string
-    # Example:
-    #   ids = tokenizer.encode(input_text)
-    #   logits = _base_lstm_instance(torch.tensor([ids]))
-    #   pred_ids = decode_greedy(logits)
-    #   return tokenizer.decode(pred_ids)
-    #
-    # Using placeholder for now to avoid breaking before model training:
-    return "adjust the user's study plan"
+    return _task_predict_with_model(_base_lstm_instance, history, question)  # type: ignore[arg-type]
 
 
-# ============== Four memory-augmented stub models ==============
+def model1_sumtok_predict(history: List[str], question: str) -> str:
+    """SumTokenLimitLSTM."""
+    init_base_lstm()
+    if _sumtok_lstm_instance is None or _device is None:
+        return "adjust the user's study plan"
+    return _task_predict_with_model(_sumtok_lstm_instance, history, question)  # type: ignore[arg-type]
 
 
-def model1_predict(history: List[str], question: str) -> str:
-    """
-    Model 1 stub: ignores history and doesn't understand question.
-    Baseline: always return 'adjust the user's study plan'
-    (later replace with Summarization-only LSTM)
-    """
-    return "adjust the user's study plan"
+def model2_sumtokner_predict(history: List[str], question: str) -> str:
+    """SumTokNerLSTM."""
+    init_base_lstm()
+    if _sumtokner_lstm_instance is None or _device is None:
+        return "adjust the user's study plan"
+    return _task_predict_with_model(_sumtokner_lstm_instance, history, question)  # type: ignore[arg-type]
 
 
-def model2_predict(history: List[str], question: str) -> str:
-    """
-    Model 2 stub: simple keyword-based.
-    Future: replace with summarization + token limit LSTM.
-    """
-    q = normalize_text(question)
-
-    if "target role" in q or "change my target role" in q or "aim for a" in q:
-        return "update the user's target role"
-    if "weekly" in q or "hours" in q or "schedule" in q:
-        return "update the user's weekly study hours"
-    if "pause" in q or "stop my study plan" in q or "on hold" in q:
-        return "pause the user's current study plan"
-    if "resume" in q or "restart" in q or "reactivate" in q:
-        return "resume the user's study plan"
-    if "reset" in q or "wipe my progress" in q or "clear my current progress" in q:
-        return "reset the user's progress tracking"
-    if "focus" in q or "change my main focus" in q:
-        return "change the main focus area of the study plan"
-    if "recommend" in q or "suggest" in q or "what i should learn next" in q:
-        return "provide new learning recommendations for the user"
-
-    # Default fallback
-    return "adjust the user's study plan"
-
-
-def model3_predict(history: List[str], question: str) -> str:
-    """
-    Model 3 stub: uses history:
-      - If history contains a very similar question, return that task_summary.
-    Simulates simple baseline with "some memory".
-    Future: replace with Sum + token + NER LSTM.
-    """
-    q_norm = normalize_text(question)
-
-    for ctx in reversed(history):
-        # ctx: "user X: request => task_summary"
-        if "=>" in ctx:
-            req_part, summary_part = ctx.split("=>", 1)
-            req_norm = normalize_text(req_part)
-            if text_similarity(q_norm, req_norm) >= 0.9:
-                return summary_part.strip()
-
-    # No similar match found, fall back to keyword heuristic
-    return model2_predict(history, question)
-
-
-def model4_predict(history: List[str], question: str) -> str:
-    """
-    Model 4 stub: stronger "full memory" baseline.
-    Future: replace with Full (semantic memory + NER + STM/LTM) LSTM.
-
-    - Search history for similar requests; if similarity >= 0.8, use its summary.
-    - Otherwise fall back to keyword heuristic.
-    """
-    q_norm = normalize_text(question)
-
-    best_sim = 0.0
-    best_summary = None
-
-    for ctx in history:
-        if "=>" in ctx:
-            req_part, summary_part = ctx.split("=>", 1)
-            req_norm = normalize_text(req_part)
-            sim = text_similarity(q_norm, req_norm)
-            if sim > best_sim:
-                best_sim = sim
-                best_summary = summary_part.strip()
-
-    if best_summary is not None and best_sim >= 0.8:
-        return best_summary
-
-    return model2_predict(history, question)
+def model3_fullmem_predict(history: List[str], question: str) -> str:
+    """FullMemoryLSTM."""
+    init_base_lstm()
+    if _fullmem_lstm_instance is None or _device is None:
+        return "adjust the user's study plan"
+    return _task_predict_with_model(_fullmem_lstm_instance, history, question)  # type: ignore[arg-type]
 
 
 # ============== main ==============
@@ -275,11 +291,10 @@ def main():
     data = load_task_csv(csv_path)
 
     models = [
-        TaskModelWrapper("BaseLSTM_NoMemory", model0_base_lstm_predict),
-        TaskModelWrapper("TaskModel_1_AlwaysAdjust", model1_predict),
-        TaskModelWrapper("TaskModel_2_KeywordHeuristic", model2_predict),
-        TaskModelWrapper("TaskModel_3_HistoryExactMatch", model3_predict),
-        TaskModelWrapper("TaskModel_4_FullMemoryHistory", model4_predict),
+        TaskModelWrapper("LSTM_1_SummarizationOnly", model0_base_lstm_predict),
+        TaskModelWrapper("LSTM_2_SumTokenLimit", model1_sumtok_predict),
+        TaskModelWrapper("LSTM_3_SumTokNER", model2_sumtokner_predict),
+        TaskModelWrapper("LSTM_4_FullMemory", model3_fullmem_predict),
     ]
 
     for m in models:

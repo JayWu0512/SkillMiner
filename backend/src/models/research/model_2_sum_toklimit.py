@@ -1,8 +1,11 @@
 # models/research/model_2_sum_toklimit.py
 from typing import List
-from .base_lstm_model import BaseMemoryLSTM
-from .memory_features import SummarizationFeature, TokenLimitFeature
-from src.core.config import STM_MAX_TOKENS
+
+from base_lstm_model import BaseMemoryLSTM
+from memory_features import SummarizationFeature, TokenLimitFeature
+
+# Local default to keep this module self‑contained for research
+STM_MAX_TOKENS = 256
 
 
 class SumTokenLimitLSTM(BaseMemoryLSTM):
