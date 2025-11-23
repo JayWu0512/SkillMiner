@@ -16,28 +16,70 @@ import re
 import numpy as np
 
 try:
-    import spacy  # Optional; used if available
+    import spacy
 except ImportError:  # pragma: no cover - optional dependency
     spacy = None
 
 try:
-    from transformers import pipeline  # Optional; used if available
+    from transformers import pipeline, AutoTokenizer
 except ImportError:  # pragma: no cover - optional dependency
     pipeline = None  # type: ignore
+    AutoTokenizer = None  # type: ignore
 
 
 # ===== Basic STM-style helpers (local copy, no backend config) =====
 
 
 class TokenLimitController:
-    """Rough token limit controller using a simple char→token heuristic."""
+    """
+    Token limit controller.
 
-    def __init__(self, max_tokens: int = 256):
+    - If `transformers` + AutoTokenizer are available, use the tokenizer of the
+      same summarization model as `SummarizationLayer` (distilbart-cnn) to count
+      real tokens and truncate by token ids.
+    - Otherwise fall back to a simple char→token heuristic (~4 chars/token).
+    """
+
+    def __init__(self, max_tokens: int = 256, model_name: str | None = None):
         self.max_tokens = max_tokens
+        self.model_name = model_name or "sshleifer/distilbart-cnn-12-6"
+        self.tokenizer = None  # lazy init
+
+    # ---------- internal helpers ----------
+
+    def _ensure_tokenizer(self) -> None:
+        """Lazy load tokenizer. If anything fails, keep tokenizer=None."""
+        if self.tokenizer is not None:
+            return
+        if AutoTokenizer is None:
+            return
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        except Exception:
+            self.tokenizer = None
 
     def _estimate_tokens(self, text: str) -> int:
-        # ~4 characters / token heuristic (similar to `stm.py`)
+        """
+        Estimate token count.
+
+        - Use real tokenizer token count if available.
+        - Else use ~4 chars per token heuristic.
+        """
+        if not text:
+            return 0
+
+        self._ensure_tokenizer()
+        if self.tokenizer is not None:
+            try:
+                ids = self.tokenizer.encode(text, add_special_tokens=False)
+                return len(ids)
+            except Exception:
+                pass
+
+        # Fallback heuristic
         return len(text) // 4
+
+    # ---------- public API ----------
 
     def truncate(self, text: str, max_tokens: int | None = None) -> str:
         if not text:
@@ -45,7 +87,25 @@ class TokenLimitController:
         if max_tokens is None:
             max_tokens = self.max_tokens
 
-        estimated = self._estimate_tokens(text)
+        self._ensure_tokenizer()
+        if self.tokenizer is not None:
+            try:
+                ids = self.tokenizer.encode(text, add_special_tokens=False)
+                if len(ids) <= max_tokens:
+                    return text
+
+                truncated_ids = ids[:max_tokens]
+                truncated_text = self.tokenizer.decode(
+                    truncated_ids,
+                    skip_special_tokens=True,
+                    clean_up_tokenization_spaces=True,
+                )
+                return truncated_text.strip() + "..."
+            except Exception:
+                pass
+
+        # Fallback：char-based heuristic (~4 chars/token)
+        estimated = len(text) // 4
         if estimated <= max_tokens:
             return text
 
@@ -83,7 +143,9 @@ class SummarizationLayer:
             return
         try:
             self._summarizer = pipeline(
-                "summarization", model=self.model_name, device=-1  # keep on CPU for stability
+                "summarization",
+                model=self.model_name,
+                device=-1,  # keep on CPU for stability
             )
         except Exception:
             # If model download fails, keep fallback behaviour
@@ -135,7 +197,7 @@ class SummarizationLayer:
             return self._extractive_summarize(text)
 
 
-# ===== NER / semantic helpers (local + in‑memory only) =====
+# ===== NER / semantic helpers (local + in-memory only) =====
 
 
 class NERExtractor:
@@ -216,7 +278,7 @@ class NERExtractor:
             else:
                 entities["other"].append(ent.text)
 
-        # De‑duplicate
+        # De-duplicate
         for k in entities:
             entities[k] = sorted(set(entities[k]))
         return entities
@@ -226,9 +288,9 @@ class SemanticEmbedder:
     """
     Very small **local** semantic embedder.
 
-    To keep research experiments self‑contained and offline, this does NOT call
-    OpenAI or Supabase. Instead it maps text deterministically to a fixed‑size
-    pseudo‑random vector using a hash seed.
+    To keep research experiments self-contained and offline, this does NOT call
+    OpenAI or Supabase. Instead it maps text deterministically to a fixed-size
+    pseudo-random vector using a hash seed.
     """
 
     def __init__(self, dim: int = 256):
@@ -252,9 +314,12 @@ class SemanticEmbedder:
 
 
 class SummarizationFeature:
-    def __init__(self, max_tokens: int = 256):
-        self.summarizer = SummarizationLayer()
-        self.token_controller = TokenLimitController(max_tokens=max_tokens)
+    def __init__(self, max_tokens: int = 256, model_name: str | None = None):
+        self.summarizer = SummarizationLayer(model_name=model_name)
+        self.token_controller = TokenLimitController(
+            max_tokens=max_tokens,
+            model_name=model_name or "sshleifer/distilbart-cnn-12-6",
+        )
 
     def summarize(self, text: str) -> str:
         raw = self.summarizer.summarize(
@@ -264,8 +329,11 @@ class SummarizationFeature:
 
 
 class TokenLimitFeature:
-    def __init__(self, max_tokens: int):
-        self.controller = TokenLimitController(max_tokens)
+    def __init__(self, max_tokens: int, model_name: str | None = None):
+        self.controller = TokenLimitController(
+            max_tokens=max_tokens,
+            model_name=model_name or "sshleifer/distilbart-cnn-12-6",
+        )
 
     def truncate(self, text: str) -> str:
         return self.controller.truncate(text)
