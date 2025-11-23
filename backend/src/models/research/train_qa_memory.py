@@ -10,6 +10,7 @@ Testing approach:
 - STM test every 5 rows: test question from 2 rows before (row 3, 8, 13, ...)
 - LTM test every 10 rows: test question from 9 rows before (row 1, 11, 21, ...)
 - Compare model output to ground truth using similarity scoring
+  (now using LLM-as-a-judge by default)
 
 Usage:
     cd backend/src/models/research
@@ -25,9 +26,16 @@ import json
 
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
+
+from openai import OpenAI  # Make sure OPENAI_API_KEY is set in env
+from dotenv import load_dotenv
+from pathlib import Path
 
 from base_lstm_model import BaseMemoryLSTM
+from model_1_summarization import SummarizationOnlyLSTM
+from model_2_sum_toklimit import SumTokenLimitLSTM
+from model_3_sum_tok_ner import SumTokNerLSTM
 from model_4_full_memory import FullMemoryLSTM
 
 
@@ -38,6 +46,12 @@ _ITOS: List[str] = [_PAD_CHAR] + _ALL_CHARS
 _STOI: Dict[str, int] = {ch: idx for idx, ch in enumerate(_ITOS)}
 _VOCAB_SIZE = len(_ITOS)
 _MAX_SEQ_LEN = 512  # Increased for longer answers
+
+# Global OpenAI client (reads OPENAI_API_KEY from environment)
+BASE_DIR = Path(__file__).resolve().parents[3]
+env_path = BASE_DIR / ".env"
+load_dotenv(env_path)
+openai_client = OpenAI()
 
 
 def encode_text(text: str) -> torch.Tensor:
@@ -73,6 +87,68 @@ def normalize_text(text: str) -> str:
 def text_similarity(a: str, b: str) -> float:
     """Compute similarity score using difflib (0-1 range)."""
     return difflib.SequenceMatcher(None, normalize_text(a), normalize_text(b)).ratio()
+
+
+def llm_judge_score(
+    question: str,
+    true_answer: str,
+    pred_answer: str,
+    model_name: str = "gpt-4o-mini",
+) -> float:
+    """
+    Use an LLM as a judge to score how correct pred_answer is
+    compared to true_answer in the context of question.
+
+    Returns a float in [0, 1].
+    Falls back to difflib similarity if LLM call fails.
+    """
+    if not true_answer and not pred_answer:
+        return 1.0
+    if not pred_answer:
+        return 0.0
+
+    prompt = f"""
+You are grading a QA system.
+
+Question:
+{question}
+
+Ground truth answer:
+{true_answer}
+
+Model answer:
+{pred_answer}
+
+Task:
+Give a single numeric score between 0 and 1 indicating how semantically correct
+the model answer is compared to the ground truth answer, where:
+- 1 means fully correct (semantically equivalent),
+- 0 means completely incorrect or unrelated.
+
+Output ONLY the number, no explanation.
+""".strip()
+
+    try:
+        resp = openai_client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a strict but fair evaluator for QA answers.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.0,
+        )
+        text = (resp.choices[0].message.content or "").strip()
+        score = float(text)
+        # Clamp to [0, 1]
+        score = max(0.0, min(1.0, score))
+        return score
+    except Exception as e:
+        print(f"[LLM-JUDGE WARNING] Failed to score with LLM: {e}")
+        # Fallback: use difflib similarity instead
+        return text_similarity(pred_answer, true_answer)
 
 
 # ==== Dataset ====
@@ -194,18 +270,7 @@ def train_on_batch(
     target_ids = encode_text(target_answer).to(device)  # (target_len,)
 
     # Create full sequence: input + target (for teacher forcing)
-    # We'll train the model to predict the next token at each position
-    # This means: at position i, predict what comes at position i+1
     full_seq = torch.cat([input_ids, target_ids], dim=0)  # (input_len + target_len,)
-    
-    # For next-token prediction, we need to shift targets by 1
-    # Input sequence: [x0, x1, ..., xN, t0, t1, ..., tM]
-    # We want to predict: [x1, ..., xN, t0, t1, ..., tM] from [x0, ..., xN, t0, ..., tM-1]
-    # But we only care about predicting the target part, so:
-    # - Use logits at positions [input_len, input_len+1, ..., input_len+target_len-1]
-    # - Predict tokens at positions [input_len+1, ..., input_len+target_len]
-    # - Actually, we want to predict target_ids, so we use logits at input_len onwards
-    #   to predict target_ids (which is what comes after input)
     
     # Create batch dimension
     batch_ids = full_seq.unsqueeze(0)  # (1, seq_len)
@@ -215,33 +280,22 @@ def train_on_batch(
     # Forward pass
     logits = model(batch_ids)  # (1, seq_len, vocab_size)
 
-    # We want to predict target_ids given input_ids
-    # In standard language modeling: logits[i] predicts sequence[i+1]
-    # Full sequence: [x0, x1, ..., xN, t0, t1, ..., tM]
-    # To predict t0 (at position input_len), we use logits[input_len-1] (which predicts what's at input_len)
-    # To predict t1 (at position input_len+1), we use logits[input_len]
-    # In general: to predict target[i], we use logits[input_len-1+i]
-    
+    # We want to predict target_ids given input_ids (next-token prediction)
     input_len = input_ids.size(0)
     target_len = target_ids.size(0)
-    
-    # Standard approach: use logits to predict next tokens
-    # We want to predict target tokens, which start at position input_len in the full sequence
-    # So we use logits starting from input_len-1 (which predicts token at input_len, i.e., target[0])
+
     if input_len > 0:
         start_idx = input_len - 1
         end_idx = min(logits.size(1), input_len - 1 + target_len)
-        
+
         if end_idx > start_idx:
-            pred_logits = logits[0, start_idx:end_idx, :]  # (end_idx-start_idx, vocab_size)
-            
+            pred_logits = logits[0, start_idx:end_idx, :]  # (T, vocab_size)
+
             # Ensure we have the right number of logits
             if pred_logits.size(0) < target_len:
-                # Pad with the last logit if needed
                 padding = pred_logits[-1:, :].repeat(target_len - pred_logits.size(0), 1)
                 pred_logits = torch.cat([pred_logits, padding], dim=0)
             elif pred_logits.size(0) > target_len:
-                # Truncate if needed
                 pred_logits = pred_logits[:target_len, :]
         else:
             # Fallback: use last logit repeated
@@ -254,17 +308,17 @@ def train_on_batch(
             pred_logits = torch.cat([pred_logits, padding], dim=0)
 
     # Targets are the answer characters (what we want to predict)
-    targets = target_ids[:pred_logits.size(0)]  # Ensure same length
+    targets = target_ids[:pred_logits.size(0)]
 
     # Compute loss
     loss = criterion(pred_logits, targets)
 
     # Backward pass
     loss.backward()
-    
+
     # Gradient clipping to prevent exploding gradients
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-    
+
     optimizer.step()
 
     return loss.item()
@@ -296,7 +350,7 @@ def generate_answer(
     # Encode input (truncate if too long to avoid issues)
     input_ids = encode_text(input_text).to(device)  # (seq_len,)
     input_len = input_ids.size(0)
-    
+
     # Truncate input if it's too long (to avoid memory issues)
     max_input_len = 400
     if input_len > max_input_len:
@@ -307,51 +361,43 @@ def generate_answer(
     current_ids = input_ids.unsqueeze(0)  # (1, input_len)
 
     # Generate tokens
-    generated = []
+    generated: List[int] = []
     consecutive_spaces = 0
-    max_consecutive_spaces = 10  # Increased: allow more spaces (sentences have spaces)
+    max_consecutive_spaces = 10
     last_token = None
     repetition_count = 0
-    max_repetition = 30  # Increased: allow more repetition before stopping
-    last_3_tokens = []  # Track last 3 tokens for better repetition detection
-    
-    for step in range(max_length):
+    max_repetition = 30
+    last_3_tokens: List[int] = []
+
+    for _ in range(max_length):
         # Truncate sequence if it gets too long (to avoid memory issues)
         if current_ids.size(1) > 600:
-            # Keep only the last 400 tokens
             current_ids = current_ids[:, -400:]
-        
+
         logits = model(current_ids)  # (1, seq_len, vocab_size)
         last_logit = logits[0, -1, :]  # (vocab_size,)
 
-        # Apply temperature or use softmax for more stable generation
-        # For now, use greedy but add some randomness to break loops
-        probs = torch.softmax(last_logit / 1.0, dim=-1)  # Temperature = 1.0
-        
-        # If we're stuck repeating, try sampling from top-k instead
+        probs = torch.softmax(last_logit / 1.0, dim=-1)
+
+        # If we're stuck repeating, sample from top-k; otherwise greedy
         if repetition_count > 5:
-            # Sample from top 5 tokens to break the loop
             top_k = 5
             top_probs, top_indices = torch.topk(probs, top_k)
-            # Normalize
             top_probs = top_probs / top_probs.sum()
-            next_id = int(torch.multinomial(top_probs, 1).item())
-            next_id = int(top_indices[next_id].item())
+            idx_sample = int(torch.multinomial(top_probs, 1).item())
+            next_id = int(top_indices[idx_sample].item())
         else:
-            # Greedy selection
-            next_id = torch.argmax(last_logit).item()
+            next_id = int(torch.argmax(last_logit).item())
 
         # Stop if we hit padding
         if next_id == _STOI[_PAD_CHAR]:
             break
 
-        # Check for repetition (to avoid getting stuck)
-        # Check if we're repeating the same 3-token pattern
+        # Repetition detection
         if len(last_3_tokens) >= 3:
             if generated[-2:] == last_3_tokens[-2:] and next_id == last_3_tokens[0]:
                 repetition_count += 1
                 if repetition_count >= max_repetition:
-                    # Stop if we're stuck in a loop
                     break
             elif next_id == last_token:
                 repetition_count += 1
@@ -365,21 +411,19 @@ def generate_answer(
                 break
         else:
             repetition_count = 0
-        
+
         last_token = next_id
         last_3_tokens.append(next_id)
         if len(last_3_tokens) > 3:
             last_3_tokens.pop(0)
 
         generated.append(next_id)
-        
-        # Check for stopping conditions - be more lenient with spaces
+
+        # Space-based stopping (avoid infinite spaces)
         next_char = _ITOS[next_id] if 0 <= next_id < len(_ITOS) else " "
         if next_char == " ":
             consecutive_spaces += 1
-            # Only stop on excessive spaces if we have a reasonable amount of text
             if consecutive_spaces >= max_consecutive_spaces and len(generated) > 50:
-                # Remove trailing spaces
                 while generated and _ITOS[generated[-1]] == " ":
                     generated.pop()
                 break
@@ -390,7 +434,6 @@ def generate_answer(
         next_tensor = torch.tensor([[next_id]], dtype=torch.long, device=device)
         current_ids = torch.cat([current_ids, next_tensor], dim=1)
 
-    # Decode generated tokens
     answer = decode_ids(generated)
     return answer.strip()
 
@@ -404,57 +447,68 @@ def test_memory(
     debug: bool = False,
     max_gen_length: int = 300,
     return_similarities: bool = False,
+    use_llm_judge: bool = True,
 ) -> Tuple[int, int, Optional[List[float]]]:
     """
-    Test memory recall. Returns (correct, total, similarities).
-    
-    If return_similarities=True, also returns list of similarity scores.
-    
-    Accuracy calculation (if threshold is used):
-    - For each test, compare generated answer to ground truth using similarity
-    - If similarity >= threshold, count as success (1), otherwise failure (0)
-    - Accuracy = sum of successes / total number of valid tests
-    
-    Similarity scores provide a more granular view of model performance.
+    Test memory recall. Returns (correct, total, scores).
+
+    If return_similarities=True, also returns list of scores.
+
+    Accuracy calculation:
+    - If use_llm_judge=True:
+        For each test, call an LLM judge model to score semantic correctness
+        in [0, 1]. If score >= threshold, count as success.
+    - Else:
+        Fall back to difflib similarity as the score.
     """
     correct = 0
     total = 0
-    similarities = [] if return_similarities else None
+    scores: Optional[List[float]] = [] if return_similarities else None
 
     for idx in test_indices:
         if idx < 0 or idx >= len(dataset):
             continue
-        
+
         total += 1  # Only count valid indices
 
         history, question, true_answer, cached_input = dataset[idx]
 
         # Generate prediction
         pred_answer = generate_answer(
-            model, history, question, device, cached_input=cached_input, max_length=max_gen_length
+            model,
+            history,
+            question,
+            device,
+            cached_input=cached_input,
+            max_length=max_gen_length,
         )
 
-        # Compare similarity
-        sim = text_similarity(pred_answer, true_answer)
-        
-        if return_similarities:
-            similarities.append(sim)
-        
-        # Debug output for first few tests
+        # Get score: LLM-as-a-judge or difflib fallback
+        if use_llm_judge:
+            score = llm_judge_score(question, true_answer, pred_answer)
+        else:
+            score = text_similarity(pred_answer, true_answer)
+
+        if return_similarities and scores is not None:
+            scores.append(score)
+
         if debug:
             print(f"\n  [DEBUG] Test idx={idx}")
             print(f"    Question: {question[:100]}...")
             print(f"    True answer: {true_answer[:100]}...")
             print(f"    Pred answer: {pred_answer[:200] if pred_answer else '(empty)'}")
-            print(f"    Similarity: {sim:.4f} (threshold: {sim_threshold})")
-            print(f"    Success: {sim >= sim_threshold}")
-        
-        if sim >= sim_threshold:
+            print(
+                f"    Score ({'LLM-judge' if use_llm_judge else 'difflib'}): "
+                f"{score:.4f} (threshold: {sim_threshold})"
+            )
+            print(f"    Success: {score >= sim_threshold}")
+
+        if score >= sim_threshold:
             correct += 1
 
     if return_similarities:
-        return correct, total, similarities
-    return correct, total
+        return correct, total, scores
+    return correct, total, None
 
 
 # ==== Main training loop ====
@@ -466,7 +520,7 @@ def main():
         "--model_type",
         type=str,
         default="full_memory",
-        choices=["full_memory"],
+        choices=["summarization_only", "sum_token_limit", "sum_tok_ner", "full_memory"],
         help="Model type to train",
     )
     parser.add_argument("--epochs", type=int, default=5, help="Number of epochs")
@@ -499,13 +553,13 @@ def main():
         "--stm_threshold",
         type=float,
         default=0.6,
-        help="Similarity threshold for STM tests",
+        help="Score threshold for STM tests (0–1).",
     )
     parser.add_argument(
         "--ltm_threshold",
         type=float,
         default=0.6,
-        help="Similarity threshold for LTM tests",
+        help="Score threshold for LTM tests (0–1).",
     )
     parser.add_argument(
         "--disable_summarization",
@@ -534,6 +588,11 @@ def main():
         type=int,
         default=300,
         help="Maximum generation length (default: 300, increased from 200)",
+    )
+    parser.add_argument(
+        "--no_llm_judge",
+        action="store_true",
+        help="If set, disable LLM-as-a-judge and use difflib similarity instead.",
     )
 
     args = parser.parse_args()
@@ -565,7 +624,19 @@ def main():
     emb_dim = args.emb_dim
     hidden_dim = args.hidden_dim
 
-    if args.model_type == "full_memory":
+    if args.model_type == "summarization_only":
+        model = SummarizationOnlyLSTM(
+            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim
+        )
+    elif args.model_type == "sum_token_limit":
+        model = SumTokenLimitLSTM(
+            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim
+        )
+    elif args.model_type == "sum_tok_ner":
+        model = SumTokNerLSTM(
+            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim
+        )
+    elif args.model_type == "full_memory":
         model = FullMemoryLSTM(
             vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim
         )
@@ -584,15 +655,14 @@ def main():
         print("Done pre-ingesting history")
 
     # Create dataset
-    # Option to force cache regeneration
     cache_path = os.path.join(args.cache_dir, f"{args.model_type}_inputs.json")
-    
-    # Delete cache if it exists to force regeneration with current model
-    # (unless user explicitly wants to keep it)
+
     if not args.keep_cache and os.path.exists(cache_path):
-        print(f"Deleting old cache at {cache_path} to regenerate with current model...")
+        print(
+            f"Deleting old cache at {cache_path} to regenerate with current model..."
+        )
         os.remove(cache_path)
-    
+
     dataset = QADataset(
         rows,
         history_size=args.history_size,
@@ -604,33 +674,35 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
+    use_llm_judge = not args.no_llm_judge
     print(f"\nTraining {args.model_type} on device={device}")
     print(f"  Epochs: {args.epochs}")
     print(f"  History size: {args.history_size}")
     print(f"  STM threshold: {args.stm_threshold}")
     print(f"  LTM threshold: {args.ltm_threshold}")
+    print(f"  Using LLM-as-a-judge: {use_llm_judge}")
     print()
 
     best_score = 0.0
 
     # Training loop
     for epoch in range(1, args.epochs + 1):
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Epoch {epoch}/{args.epochs}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         total_loss = 0.0
         num_steps = 0
 
         # STM and LTM test tracking
-        stm_test_indices = []  # Collect indices for STM tests
-        ltm_test_indices = []  # Collect indices for LTM tests
+        stm_test_indices: List[int] = []
+        ltm_test_indices: List[int] = []
         stm_correct = 0
         stm_total = 0
         ltm_correct = 0
         ltm_total = 0
-        stm_similarities = []  # Track all similarity scores for STM
-        ltm_similarities = []  # Track all similarity scores for LTM
+        stm_scores: List[float] = []
+        ltm_scores: List[float] = []
 
         # Process rows sequentially
         for i in range(len(dataset)):
@@ -651,107 +723,118 @@ def main():
             num_steps += 1
 
             # STM test every 5 rows (starting from row 5, test question from 2 rows before)
-            # Row 5 -> test row 3, Row 10 -> test row 8, etc.
             if (i + 1) % 5 == 0 and i >= 2:
                 test_idx = i - 2  # 2 rows before
                 stm_test_indices.append(test_idx)
 
             # LTM test every 10 rows (starting from row 10, test question from 9 rows before)
-            # Row 10 -> test row 1, Row 20 -> test row 11, etc.
             if (i + 1) % 10 == 0 and i >= 9:
                 test_idx = i - 9  # 9 rows before
                 ltm_test_indices.append(test_idx)
 
-            # Run tests periodically (every 10 training steps to avoid too frequent testing)
+            # Run tests periodically (every 10 training steps)
             if (i + 1) % 10 == 0:
                 # Run STM tests
                 if stm_test_indices:
-                    result = test_memory(
+                    stm_c, stm_t, stm_sims = test_memory(
                         model,
                         dataset,
                         stm_test_indices,
                         device,
                         sim_threshold=args.stm_threshold,
-                        debug=(i + 1) == 10,  # Debug on first test
+                        debug=(i + 1) == 10,
                         max_gen_length=args.max_gen_length,
                         return_similarities=True,
+                        use_llm_judge=use_llm_judge,
                     )
-                    if len(result) == 3:
-                        stm_c, stm_t, stm_sims = result
-                        stm_similarities.extend(stm_sims)
-                    else:
-                        stm_c, stm_t = result
                     stm_correct += stm_c
                     stm_total += stm_t
-                    stm_test_indices = []  # Clear after testing
+                    stm_scores.extend(stm_sims or [])
+                    stm_test_indices = []
 
                 # Run LTM tests
                 if ltm_test_indices:
-                    result = test_memory(
+                    ltm_c, ltm_t, ltm_sims = test_memory(
                         model,
                         dataset,
                         ltm_test_indices,
                         device,
                         sim_threshold=args.ltm_threshold,
-                        debug=(i + 1) == 10,  # Debug on first test
+                        debug=(i + 1) == 10,
                         max_gen_length=args.max_gen_length,
                         return_similarities=True,
+                        use_llm_judge=use_llm_judge,
                     )
-                    if len(result) == 3:
-                        ltm_c, ltm_t, ltm_sims = result
-                        ltm_similarities.extend(ltm_sims)
-                    else:
-                        ltm_c, ltm_t = result
                     ltm_correct += ltm_c
                     ltm_total += ltm_t
-                    ltm_test_indices = []  # Clear after testing
+                    ltm_scores.extend(ltm_sims or [])
+                    ltm_test_indices = []
 
                 # Print progress
                 avg_loss = total_loss / num_steps if num_steps > 0 else 0.0
                 stm_acc = stm_correct / stm_total if stm_total > 0 else 0.0
                 ltm_acc = ltm_correct / ltm_total if ltm_total > 0 else 0.0
-                stm_avg_sim = sum(stm_similarities) / len(stm_similarities) if stm_similarities else 0.0
-                ltm_avg_sim = sum(ltm_similarities) / len(ltm_similarities) if ltm_similarities else 0.0
-                
-                # Show a sample prediction every 50 steps to see if model is learning
+                stm_avg_score = (
+                    sum(stm_scores) / len(stm_scores) if stm_scores else 0.0
+                )
+                ltm_avg_score = (
+                    sum(ltm_scores) / len(ltm_scores) if ltm_scores else 0.0
+                )
+
                 if (i + 1) % 50 == 0:
-                    # Test on current row to see what model predicts
                     test_history, test_q, test_a, test_cached = dataset[i]
                     test_pred = generate_answer(
-                        model, test_history, test_q, device, cached_input=test_cached, max_length=args.max_gen_length
+                        model,
+                        test_history,
+                        test_q,
+                        device,
+                        cached_input=test_cached,
+                        max_length=args.max_gen_length,
                     )
                     print(
                         f"  Step {i+1}/{len(dataset)}: "
                         f"loss={avg_loss:.4f}, "
-                        f"STM_acc={stm_acc:.3f} ({stm_correct}/{stm_total}) sim_avg={stm_avg_sim:.3f}, "
-                        f"LTM_acc={ltm_acc:.3f} ({ltm_correct}/{ltm_total}) sim_avg={ltm_avg_sim:.3f}"
+                        f"STM_acc={stm_acc:.3f} ({stm_correct}/{stm_total}) score_avg={stm_avg_score:.3f}, "
+                        f"LTM_acc={ltm_acc:.3f} ({ltm_correct}/{ltm_total}) score_avg={ltm_avg_score:.3f}"
                     )
                     print(f"    Sample pred: {test_pred[:100]}...")
                 else:
                     print(
                         f"  Step {i+1}/{len(dataset)}: "
                         f"loss={avg_loss:.4f}, "
-                        f"STM_acc={stm_acc:.3f} ({stm_correct}/{stm_total}) sim_avg={stm_avg_sim:.3f}, "
-                        f"LTM_acc={ltm_acc:.3f} ({ltm_correct}/{ltm_total}) sim_avg={ltm_avg_sim:.3f}"
+                        f"STM_acc={stm_acc:.3f} ({stm_correct}/{stm_total}) score_avg={stm_avg_score:.3f}, "
+                        f"LTM_acc={ltm_acc:.3f} ({ltm_correct}/{ltm_total}) score_avg={ltm_avg_score:.3f}"
                     )
 
         # Final epoch summary
         avg_loss = total_loss / num_steps if num_steps > 0 else 0.0
         stm_acc = stm_correct / stm_total if stm_total > 0 else 0.0
         ltm_acc = ltm_correct / ltm_total if ltm_total > 0 else 0.0
-        stm_avg_sim = sum(stm_similarities) / len(stm_similarities) if stm_similarities else 0.0
-        ltm_avg_sim = sum(ltm_similarities) / len(ltm_similarities) if ltm_similarities else 0.0
-        stm_min_sim = min(stm_similarities) if stm_similarities else 0.0
-        stm_max_sim = max(stm_similarities) if stm_similarities else 0.0
-        ltm_min_sim = min(ltm_similarities) if ltm_similarities else 0.0
-        ltm_max_sim = max(ltm_similarities) if ltm_similarities else 0.0
+        stm_avg_score = sum(stm_scores) / len(stm_scores) if stm_scores else 0.0
+        ltm_avg_score = sum(ltm_scores) / len(ltm_scores) if ltm_scores else 0.0
+        stm_min_score = min(stm_scores) if stm_scores else 0.0
+        stm_max_score = max(stm_scores) if stm_scores else 0.0
+        ltm_min_score = min(ltm_scores) if ltm_scores else 0.0
+        ltm_max_score = max(ltm_scores) if ltm_scores else 0.0
 
         print(f"\nEpoch {epoch} Summary:")
         print(f"  Average loss: {avg_loss:.4f}")
-        print(f"  STM accuracy: {stm_acc:.3f} ({stm_correct}/{stm_total}) [threshold: {args.stm_threshold}]")
-        print(f"    STM similarity: avg={stm_avg_sim:.3f}, min={stm_min_sim:.3f}, max={stm_max_sim:.3f}")
-        print(f"  LTM accuracy: {ltm_acc:.3f} ({ltm_correct}/{ltm_total}) [threshold: {args.ltm_threshold}]")
-        print(f"    LTM similarity: avg={ltm_avg_sim:.3f}, min={ltm_min_sim:.3f}, max={ltm_max_sim:.3f}")
+        print(
+            f"  STM accuracy: {stm_acc:.3f} ({stm_correct}/{stm_total}) "
+            f"[threshold: {args.stm_threshold}]"
+        )
+        print(
+            f"    STM score: avg={stm_avg_score:.3f}, "
+            f"min={stm_min_score:.3f}, max={stm_max_score:.3f}"
+        )
+        print(
+            f"  LTM accuracy: {ltm_acc:.3f} ({ltm_correct}/{ltm_total}) "
+            f"[threshold: {args.ltm_threshold}]"
+        )
+        print(
+            f"    LTM score: avg={ltm_avg_score:.3f}, "
+            f"min={ltm_min_score:.3f}, max={ltm_max_score:.3f}"
+        )
 
         # Save checkpoint
         ckpt_path = os.path.join(
@@ -760,7 +843,7 @@ def main():
         torch.save(model.state_dict(), ckpt_path)
         print(f"  Saved checkpoint to {ckpt_path}")
 
-        # Save best model
+        # Save best model (based on STM + LTM accuracy)
         best_ckpt_path = os.path.join(
             args.checkpoint_dir, f"{args.model_type}_best.pt"
         )
@@ -774,4 +857,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
