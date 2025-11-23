@@ -130,26 +130,53 @@ class SummarizationLayer:
     - Otherwise fall back to a simple extractive summarizer (first N sentences).
     """
 
-    def __init__(self, model_name: str | None = None):
+    def __init__(self, model_name: str | None = None, use_gpu: bool | None = None):
         # Use a much smaller model for faster training:
         # - distilbart-cnn-12-6 is ~60% smaller than bart-large
         # - Set to None to disable HF summarization entirely (uses extractive fallback)
         self.model_name = model_name or "sshleifer/distilbart-cnn-12-6"
         self._summarizer = None
+        # Auto-detect GPU if use_gpu is None, otherwise use provided value
+        if use_gpu is None:
+            try:
+                import torch
+                self.use_gpu = torch.cuda.is_available()
+            except ImportError:
+                self.use_gpu = False
+        else:
+            self.use_gpu = use_gpu
         self._init_model()
 
     def _init_model(self) -> None:
         if pipeline is None:
             return
         try:
+            # Use GPU if available and requested, otherwise CPU
+            device = 0 if self.use_gpu else -1
+            device_name = "GPU" if self.use_gpu else "CPU"
             self._summarizer = pipeline(
                 "summarization",
                 model=self.model_name,
-                device=-1,  # keep on CPU for stability
+                device=device,
+                batch_size=8 if self.use_gpu else 1,  # Batch processing on GPU for efficiency
             )
-        except Exception:
-            # If model download fails, keep fallback behaviour
-            self._summarizer = None
+            print(f"HuggingFace summarization pipeline initialized on {device_name}")
+        except Exception as e:
+            # If GPU fails, try falling back to CPU
+            if self.use_gpu:
+                try:
+                    print(f"GPU initialization failed ({e}), falling back to CPU...")
+                    self._summarizer = pipeline(
+                        "summarization",
+                        model=self.model_name,
+                        device=-1,
+                    )
+                    print("HuggingFace summarization pipeline initialized on CPU (fallback)")
+                except Exception:
+                    self._summarizer = None
+            else:
+                # If model download fails, keep fallback behaviour
+                self._summarizer = None
 
     def _extractive_summarize(self, text: str, max_sentences: int = 5) -> str:
         sentences = re.split(r"[.!?]+", text)
@@ -166,10 +193,19 @@ class SummarizationLayer:
         if self._summarizer is None:
             return self._extractive_summarize(text)
 
-        # Keep input size reasonable
-        words = text.split()
-        if len(words) > 1024:
-            text = " ".join(words[:1024])
+        # Keep input size reasonable - truncate based on actual tokens to avoid HF warnings
+        # The model has a max input length of 1024 tokens, so we'll truncate at ~1000 to be safe
+        try:
+            # Try to use the tokenizer if available to do proper token-based truncation
+            from transformers import AutoTokenizer
+            tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            tokens = tokenizer.encode(text, add_special_tokens=False, max_length=1000, truncation=True)
+            text = tokenizer.decode(tokens, skip_special_tokens=True)
+        except Exception:
+            # Fallback to word-based truncation (less precise but works)
+            words = text.split()
+            if len(words) > 800:  # ~800 words ≈ 1000 tokens (conservative estimate)
+                text = " ".join(words[:800])
 
         # Choose a smaller max_length to keep inference fast and avoid HF warnings
         # about max_length >> input_length. Aim for ~80% of input length but also
@@ -184,6 +220,9 @@ class SummarizationLayer:
         min_len = max(8, max_len // 4)
 
         try:
+            # Pipeline automatically batches when batch_size > 1, but for single calls
+            # we still call it normally - the batching happens internally when processing
+            # multiple items through the pipeline
             result = self._summarizer(
                 text,
                 max_length=max_len,
@@ -195,6 +234,61 @@ class SummarizationLayer:
             return text
         except Exception:
             return self._extractive_summarize(text)
+    
+    def summarize_batch(self, texts: List[str], max_tokens: int = 256) -> List[str]:
+        """
+        Summarize a batch of texts more efficiently on GPU.
+        This is useful when processing multiple texts at once.
+        """
+        if not texts:
+            return []
+        
+        # Fallback: simple extractive summary
+        if self._summarizer is None:
+            return [self._extractive_summarize(text) for text in texts]
+        
+        # Process texts in batches
+        results = []
+        for text in texts:
+            if not text or not text.strip():
+                results.append("")
+                continue
+            
+            # Truncate input (same logic as single summarize)
+            try:
+                from transformers import AutoTokenizer
+                tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+                tokens = tokenizer.encode(text, add_special_tokens=False, max_length=1000, truncation=True)
+                text = tokenizer.decode(tokens, skip_special_tokens=True)
+            except Exception:
+                words = text.split()
+                if len(words) > 800:
+                    text = " ".join(words[:800])
+            
+            input_len = len(text.split())
+            if input_len <= 0:
+                results.append(text)
+                continue
+            
+            rough_cap = min(max_tokens // 2, int(input_len * 0.8))
+            max_len = max(32, rough_cap)
+            min_len = max(8, max_len // 4)
+            
+            try:
+                result = self._summarizer(
+                    text,
+                    max_length=max_len,
+                    min_length=min_len,
+                    do_sample=False,
+                )
+                if isinstance(result, list) and result:
+                    results.append(result[0].get("summary_text", text))
+                else:
+                    results.append(text)
+            except Exception:
+                results.append(self._extractive_summarize(text))
+        
+        return results
 
 
 # ===== NER / semantic helpers (local + in-memory only) =====
@@ -270,11 +364,39 @@ class NERExtractor:
             "other": [],
         }
 
+        # Financial/technical keywords for finance domain
+        finance_keywords = {
+            "skills": [  # Products/Technologies
+                "gpu", "cpu", "dpu", "soc", "rtx", "cuda", "tensor", "dlss",
+                "h100", "a100", "geforce", "quadro", "tesla", "dgx", "bluefield",
+                "infiniBand", "ethernet", "fpga", "asic", "ai", "ml", "deep learning"
+            ],
+            "roles": [  # Financial terms
+                "fiscal year", "revenue", "acquisition", "merger", "ipo", "dividend",
+                "earnings", "profit", "loss", "margin", "ebitda", "cash flow",
+                "balance sheet", "income statement", "10-k", "10-q", "sec filing"
+            ]
+        }
+
+        text_lower = text.lower()
+        
+        # Extract finance keywords
+        for keyword in finance_keywords["skills"]:
+            if keyword in text_lower:
+                entities["skills"].append(keyword.title())
+        for keyword in finance_keywords["roles"]:
+            if keyword in text_lower:
+                entities["roles"].append(keyword.title())
+
         for ent in doc.ents:
             if ent.label_ in ("ORG",):
                 entities["companies"].append(ent.text)
             elif ent.label_ in ("GPE", "LOC"):
                 entities["locations"].append(ent.text)
+            elif ent.label_ in ("MONEY", "PERCENT", "DATE"):
+                # Financial entities
+                if any(term in text_lower for term in ["fiscal", "quarter", "year", "$", "billion", "million"]):
+                    entities["roles"].append(ent.text)
             else:
                 entities["other"].append(ent.text)
 
@@ -340,11 +462,36 @@ class TokenLimitFeature:
 
 
 class NERFeature:
-    def __init__(self):
+    def __init__(self, domain: str = "general"):
+        """
+        Initialize NER feature extractor.
+        
+        Args:
+            domain: "general" for skills/roles/companies (default),
+                   "finance" for products/financial_terms/companies
+        """
         self.ner = NERExtractor()
+        self.domain = domain
 
     def extract(self, text: str) -> Dict[str, List[str]]:
-        return self.ner.extract_entities(text)
+        entities = self.ner.extract_entities(text)
+        
+        # Map entities based on domain
+        if self.domain == "finance":
+            # For finance: map to products, financial_terms, companies
+            mapped = {
+                "products": entities.get("skills", []),  # Technologies/products
+                "financial_terms": entities.get("roles", []),  # Financial concepts
+                "companies": entities.get("companies", []),
+            }
+            return mapped
+        else:
+            # For general: keep skills, roles, companies
+            return {
+                "skills": entities.get("skills", []),
+                "roles": entities.get("roles", []),
+                "companies": entities.get("companies", []),
+            }
 
 
 class LocalSemanticMemory:
@@ -362,7 +509,15 @@ class LocalSemanticMemory:
             {"text": text, "embedding": np.asarray(emb, dtype=np.float32)}
         )
 
-    def search(self, query: str, top_k: int = 5) -> List[str]:
+    def search(self, query: str, top_k: int = 5, min_similarity: float = -1.0) -> List[str]:
+        """
+        Search for similar entries.
+        
+        Args:
+            query: Query text
+            top_k: Maximum number of results to return
+            min_similarity: Minimum similarity score to include (default: -1.0, no filtering)
+        """
         emb = self.embedder.get_embedding(query)
         if not emb or not self.entries:
             return []
@@ -379,7 +534,8 @@ class LocalSemanticMemory:
             if vn == 0:
                 continue
             sim = float(np.dot(q, v) / (qn * vn))
-            scored.append((sim, e["text"]))
+            if sim >= min_similarity:
+                scored.append((sim, e["text"]))
 
         scored.sort(key=lambda x: x[0], reverse=True)
         return [t for _, t in scored[:top_k]]

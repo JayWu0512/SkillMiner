@@ -221,10 +221,12 @@ chroma/
 chroma/
 chroma.sqlite3
 chat_logs.json
-backend/src/models/research/cache_qa
-backend/src/models/research/cache_logs
-backend/src/models/research/checkpoints_logs
-backend/src/models/research/checkpoints_qa
+backend/src/models/research/cache_qa/
+backend/src/models/research/cache_logs/
+backend/src/models/research/checkpoints_logs/
+backend/src/models/research/checkpoints_qa/
+backend/src/models/research/cache_qa_finance/
+backend/src/models/research/checkpoints_qa_finance/
 
 # Node.js
 node_modules/

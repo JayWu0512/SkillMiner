@@ -9,11 +9,11 @@ STM_MAX_TOKENS = 256
 
 
 class SumTokNerLSTM(BaseMemoryLSTM):
-    def __init__(self, vocab_size: int, emb_dim: int, hidden_dim: int):
+    def __init__(self, vocab_size: int, emb_dim: int, hidden_dim: int, domain: str = "general"):
         super().__init__(vocab_size, emb_dim, hidden_dim)
         self.sum_feat = SummarizationFeature()
         self.tok_feat = TokenLimitFeature(STM_MAX_TOKENS)
-        self.ner_feat = NERFeature()
+        self.ner_feat = NERFeature(domain=domain)
 
     def build_memory_context(self, history: List[str], current: str) -> str:
         if not history:
@@ -24,10 +24,15 @@ class SumTokNerLSTM(BaseMemoryLSTM):
 
         entities = self.ner_feat.extract(summary)
         entity_str_parts = []
+        # Support both general and finance domains
         if entities.get("skills"):
             entity_str_parts.append("Skills: " + ", ".join(entities["skills"]))
+        if entities.get("products"):  # Finance domain
+            entity_str_parts.append("Products: " + ", ".join(entities["products"]))
         if entities.get("roles"):
             entity_str_parts.append("Roles: " + ", ".join(entities["roles"]))
+        if entities.get("financial_terms"):  # Finance domain
+            entity_str_parts.append("Financial Terms: " + ", ".join(entities["financial_terms"]))
         if entities.get("companies"):
             entity_str_parts.append("Companies: " + ", ".join(entities["companies"]))
 

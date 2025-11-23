@@ -1,26 +1,23 @@
 """
-Train and evaluate LSTM memory model on SkillMiner QA synthetic dataset.
+Train and evaluate LSTM memory model on Finance QA dataset.
 
-Training approach:
-- Process rows sequentially (row-by-row training)
-- Each row is a training step: feed (question, answer) to the model
-- Build history from previous Q&A pairs
-
-Testing approach:
-- STM test every 5 rows: test question from 2 rows before (row 3, 8, 13, ...)
-- LTM test every 10 rows: test question from 9 rows before (row 1, 11, 21, ...)
-- Compare model output to ground truth using similarity scoring
-  (now using LLM-as-a-judge by default)
+This script is adapted from train_qa_memory.py to handle the finance.csv dataset.
+Key differences:
+- Uses "question" and "answer" columns from finance.csv
+- Uses finance-specific NER (products, financial_terms, companies)
+- Handles larger dataset (6k+ rows) with sampling per epoch
+- Same training and testing approach as synthetic dataset
 
 Usage:
     cd backend/src/models/research
-    python train_qa_memory.py --epochs 5 --model_type full_memory
+    python train_qa_finance.py --epochs 5 --model_type full_memory --samples_per_epoch 200
 """
 
 import argparse
 import os
 import csv
 import difflib
+import random
 from typing import List, Tuple, Optional, Dict
 import json
 
@@ -39,16 +36,15 @@ from model_2_sum_toklimit import SumTokenLimitLSTM
 from model_3_sum_tok_ner import SumTokNerLSTM
 from model_4_full_memory import FullMemoryLSTM
 
-
-# ==== Character-level tokenizer ====
+# Character-level tokenizer (same as train_qa_memory)
 _PAD_CHAR = "<pad>"
 _ALL_CHARS = [chr(i) for i in range(32, 127)]  # printable ASCII
 _ITOS: List[str] = [_PAD_CHAR] + _ALL_CHARS
 _STOI: Dict[str, int] = {ch: idx for idx, ch in enumerate(_ITOS)}
 _VOCAB_SIZE = len(_ITOS)
-_MAX_SEQ_LEN = 512  # Increased for longer answers
+_MAX_SEQ_LEN = 512
 
-# Global OpenAI client (reads OPENAI_API_KEY from environment)
+# Global OpenAI client
 BASE_DIR = Path(__file__).resolve().parents[3]
 env_path = BASE_DIR / ".env"
 load_dotenv(env_path)
@@ -88,68 +84,6 @@ def normalize_text(text: str) -> str:
 def text_similarity(a: str, b: str) -> float:
     """Compute similarity score using difflib (0-1 range)."""
     return difflib.SequenceMatcher(None, normalize_text(a), normalize_text(b)).ratio()
-
-
-def llm_judge_score(
-    question: str,
-    true_answer: str,
-    pred_answer: str,
-    model_name: str = "gpt-4o-mini",
-) -> float:
-    """
-    Use an LLM as a judge to score how correct pred_answer is
-    compared to true_answer in the context of question.
-
-    Returns a float in [0, 1].
-    Falls back to difflib similarity if LLM call fails.
-    """
-    if not true_answer and not pred_answer:
-        return 1.0
-    if not pred_answer:
-        return 0.0
-
-    prompt = f"""
-You are grading a QA system.
-
-Question:
-{question}
-
-Ground truth answer:
-{true_answer}
-
-Model answer:
-{pred_answer}
-
-Task:
-Give a single numeric score between 0 and 1 indicating how semantically correct
-the model answer is compared to the ground truth answer, where:
-- 1 means fully correct (semantically equivalent),
-- 0 means completely incorrect or unrelated.
-
-Output ONLY the number, no explanation.
-""".strip()
-
-    try:
-        resp = openai_client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a strict but fair evaluator for QA answers.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.0,
-        )
-        text = (resp.choices[0].message.content or "").strip()
-        score = float(text)
-        # Clamp to [0, 1]
-        score = max(0.0, min(1.0, score))
-        return score
-    except Exception as e:
-        print(f"[LLM-JUDGE WARNING] Failed to score with LLM: {e}")
-        # Fallback: use difflib similarity instead
-        return text_similarity(pred_answer, true_answer)
 
 
 # ==== Dataset ====
@@ -217,20 +151,66 @@ class QADataset(Dataset):
         return history, q, a, cached_text
 
 
-def load_qa_csv(path: str) -> List[Tuple[int, str, str]]:
-    """Load QA dataset from CSV."""
-    rows: List[Tuple[int, str, str]] = []
-    with open(path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for r in reader:
-            qa_id = int(r["qa_id"])
-            q = r["question"]
-            a = r["answer"]
-            rows.append((qa_id, q, a))
-    return rows
+def llm_judge_score(
+    question: str,
+    true_answer: str,
+    pred_answer: str,
+    model_name: str = "gpt-4o-mini",
+) -> float:
+    """
+    Use an LLM as a judge to score how correct pred_answer is
+    compared to true_answer in the context of question.
 
+    Returns a float in [0, 1].
+    Falls back to difflib similarity if LLM call fails.
+    """
+    if not true_answer and not pred_answer:
+        return 1.0
+    if not pred_answer:
+        return 0.0
 
-# ==== Training functions ====
+    prompt = f"""
+You are grading a QA system.
+
+Question:
+{question}
+
+Ground truth answer:
+{true_answer}
+
+Model answer:
+{pred_answer}
+
+Task:
+Give a single numeric score between 0 and 1 indicating how semantically correct
+the model answer is compared to the ground truth answer, where:
+- 1 means fully correct (semantically equivalent),
+- 0 means completely incorrect or unrelated.
+
+Output ONLY the number, no explanation.
+""".strip()
+
+    try:
+        resp = openai_client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a strict but fair evaluator for QA answers.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.0,
+        )
+        text = (resp.choices[0].message.content or "").strip()
+        score = float(text)
+        # Clamp to [0, 1]
+        score = max(0.0, min(1.0, score))
+        return score
+    except Exception as e:
+        print(f"[LLM-JUDGE WARNING] Failed to score with LLM: {e}")
+        # Fallback: use difflib similarity instead
+        return text_similarity(pred_answer, true_answer)
 
 
 def train_on_batch(
@@ -243,19 +223,7 @@ def train_on_batch(
     criterion: nn.Module,
     cached_input: Optional[str] = None,
 ) -> float:
-    """
-    Train on a single QA pair using teacher forcing.
-    
-    Training approach:
-    - Concatenate input (history + question) and target (answer) into one sequence
-    - Feed the full sequence to the LSTM
-    - Compute loss only on the target portion (answer)
-    - This allows the model to learn to generate answers given questions
-    
-    Note: During inference, we only feed the input and generate the answer
-    token by token, which is different from training. This is a common
-    approach in sequence-to-sequence learning.
-    """
+    """Train on a single QA pair using teacher forcing."""
     model.train()
 
     # Prepare input
@@ -265,21 +233,17 @@ def train_on_batch(
         input_text = model.prepare_input_text(history, question)
 
     # Encode input
-    input_ids = encode_text(input_text).to(device)  # (input_len,)
-
-    # Encode target answer
-    target_ids = encode_text(target_answer).to(device)  # (target_len,)
+    input_ids = encode_text(input_text).to(device)
+    target_ids = encode_text(target_answer).to(device)
 
     # Create full sequence: input + target (for teacher forcing)
-    full_seq = torch.cat([input_ids, target_ids], dim=0)  # (input_len + target_len,)
-    
-    # Create batch dimension
-    batch_ids = full_seq.unsqueeze(0)  # (1, seq_len)
+    full_seq = torch.cat([input_ids, target_ids], dim=0)
+    batch_ids = full_seq.unsqueeze(0)
 
     optimizer.zero_grad()
 
     # Forward pass
-    logits = model(batch_ids)  # (1, seq_len, vocab_size)
+    logits = model(batch_ids)
 
     # We want to predict target_ids given input_ids (next-token prediction)
     input_len = input_ids.size(0)
@@ -290,7 +254,7 @@ def train_on_batch(
         end_idx = min(logits.size(1), input_len - 1 + target_len)
 
         if end_idx > start_idx:
-            pred_logits = logits[0, start_idx:end_idx, :]  # (T, vocab_size)
+            pred_logits = logits[0, start_idx:end_idx, :]
 
             # Ensure we have the right number of logits
             if pred_logits.size(0) < target_len:
@@ -299,27 +263,17 @@ def train_on_batch(
             elif pred_logits.size(0) > target_len:
                 pred_logits = pred_logits[:target_len, :]
         else:
-            # Fallback: use last logit repeated
             pred_logits = logits[0, -1:, :].repeat(target_len, 1)
     else:
-        # Edge case: empty input, use first target_len logits
         pred_logits = logits[0, :min(target_len, logits.size(1)), :]
         if pred_logits.size(0) < target_len:
             padding = pred_logits[-1:, :].repeat(target_len - pred_logits.size(0), 1)
             pred_logits = torch.cat([pred_logits, padding], dim=0)
 
-    # Targets are the answer characters (what we want to predict)
     targets = target_ids[:pred_logits.size(0)]
-
-    # Compute loss
     loss = criterion(pred_logits, targets)
-
-    # Backward pass
     loss.backward()
-
-    # Gradient clipping to prevent exploding gradients
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-
     optimizer.step()
 
     return loss.item()
@@ -334,34 +288,23 @@ def generate_answer(
     max_length: int = 200,
     cached_input: Optional[str] = None,
 ) -> str:
-    """
-    Generate answer given history and question.
-    
-    Note: The model was trained to predict answer characters given input.
-    During generation, we feed the input and then generate tokens one by one.
-    """
+    """Generate answer given history and question."""
     model.eval()
 
-    # Prepare input
     if cached_input is not None:
         input_text = cached_input
     else:
         input_text = model.prepare_input_text(history, question)
 
-    # Encode input (truncate if too long to avoid issues)
-    input_ids = encode_text(input_text).to(device)  # (seq_len,)
+    input_ids = encode_text(input_text).to(device)
     input_len = input_ids.size(0)
 
-    # Truncate input if it's too long (to avoid memory issues)
     max_input_len = 400
     if input_len > max_input_len:
         input_ids = input_ids[:max_input_len]
         input_len = max_input_len
 
-    # Start with input
-    current_ids = input_ids.unsqueeze(0)  # (1, input_len)
-
-    # Generate tokens
+    current_ids = input_ids.unsqueeze(0)
     generated: List[int] = []
     consecutive_spaces = 0
     max_consecutive_spaces = 10
@@ -371,16 +314,13 @@ def generate_answer(
     last_3_tokens: List[int] = []
 
     for _ in range(max_length):
-        # Truncate sequence if it gets too long (to avoid memory issues)
         if current_ids.size(1) > 600:
             current_ids = current_ids[:, -400:]
 
-        logits = model(current_ids)  # (1, seq_len, vocab_size)
-        last_logit = logits[0, -1, :]  # (vocab_size,)
-
+        logits = model(current_ids)
+        last_logit = logits[0, -1, :]
         probs = torch.softmax(last_logit / 1.0, dim=-1)
 
-        # If we're stuck repeating, sample from top-k; otherwise greedy
         if repetition_count > 5:
             top_k = 5
             top_probs, top_indices = torch.topk(probs, top_k)
@@ -390,11 +330,9 @@ def generate_answer(
         else:
             next_id = int(torch.argmax(last_logit).item())
 
-        # Stop if we hit padding
         if next_id == _STOI[_PAD_CHAR]:
             break
 
-        # Repetition detection
         if len(last_3_tokens) >= 3:
             if generated[-2:] == last_3_tokens[-2:] and next_id == last_3_tokens[0]:
                 repetition_count += 1
@@ -420,7 +358,6 @@ def generate_answer(
 
         generated.append(next_id)
 
-        # Space-based stopping (avoid infinite spaces)
         next_char = _ITOS[next_id] if 0 <= next_id < len(_ITOS) else " "
         if next_char == " ":
             consecutive_spaces += 1
@@ -431,7 +368,6 @@ def generate_answer(
         else:
             consecutive_spaces = 0
 
-        # Append to sequence
         next_tensor = torch.tensor([[next_id]], dtype=torch.long, device=device)
         current_ids = torch.cat([current_ids, next_tensor], dim=1)
 
@@ -450,21 +386,7 @@ def test_memory(
     return_similarities: bool = False,
     use_llm_judge: bool = True,
 ) -> Tuple[int, int, Optional[List[Tuple[float, float]]]]:
-    """
-    Test memory recall. Returns (correct, total, scores).
-
-    If return_similarities=True, also returns list of (llm_score, difflib_score) tuples.
-
-    Accuracy calculation:
-    - If use_llm_judge=True:
-        For each test, call an LLM judge model to score semantic correctness
-        in [0, 1]. If score >= threshold, count as success.
-    - Else:
-        Fall back to difflib similarity as the score.
-    
-    Note: Both LLM and difflib scores are always calculated for comparison,
-    but only the selected one (based on use_llm_judge) is used for threshold comparison.
-    """
+    """Test memory recall. Returns (correct, total, scores)."""
     correct = 0
     total = 0
     scores: Optional[List[Tuple[float, float]]] = [] if return_similarities else None
@@ -473,11 +395,9 @@ def test_memory(
         if idx < 0 or idx >= len(dataset):
             continue
 
-        total += 1  # Only count valid indices
-
+        total += 1
         history, question, true_answer, cached_input = dataset[idx]
 
-        # Generate prediction
         pred_answer = generate_answer(
             model,
             history,
@@ -487,11 +407,8 @@ def test_memory(
             max_length=max_gen_length,
         )
 
-        # Always calculate both scores for comparison
         llm_score = llm_judge_score(question, true_answer, pred_answer)
         difflib_score = text_similarity(pred_answer, true_answer)
-        
-        # Use the selected score for threshold comparison
         score = llm_score if use_llm_judge else difflib_score
 
         if return_similarities and scores is not None:
@@ -517,11 +434,21 @@ def test_memory(
     return correct, total, None
 
 
-# ==== Main training loop ====
+def load_finance_csv(path: str) -> List[Tuple[int, str, str]]:
+    """Load Finance QA dataset from CSV."""
+    rows: List[Tuple[int, str, str]] = []
+    with open(path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for idx, r in enumerate(reader):
+            qa_id = idx  # Use index as ID
+            q = r["question"]
+            a = r["answer"]
+            rows.append((qa_id, q, a))
+    return rows
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train QA memory LSTM")
+    parser = argparse.ArgumentParser(description="Train QA memory LSTM on Finance dataset")
     parser.add_argument(
         "--model_type",
         type=str,
@@ -530,12 +457,6 @@ def main():
         help="Model type to train",
     )
     parser.add_argument("--epochs", type=int, default=5, help="Number of epochs")
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=1,
-        help="Batch size (1 for sequential training)",
-    )
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument(
         "--history_size",
@@ -546,13 +467,13 @@ def main():
     parser.add_argument(
         "--checkpoint_dir",
         type=str,
-        default="checkpoints_qa",
+        default="checkpoints_qa_finance",
         help="Directory to save checkpoints",
     )
     parser.add_argument(
         "--cache_dir",
         type=str,
-        default="cache_qa",
+        default="cache_qa_finance",
         help="Directory to cache pre-computed inputs",
     )
     parser.add_argument(
@@ -568,9 +489,10 @@ def main():
         help="Score threshold for LTM tests (0–1).",
     )
     parser.add_argument(
-        "--disable_summarization",
-        action="store_true",
-        help="Disable HF summarization for faster training",
+        "--samples_per_epoch",
+        type=int,
+        default=200,
+        help="Number of samples to use per epoch (for large datasets)",
     )
     parser.add_argument(
         "--keep_cache",
@@ -581,19 +503,19 @@ def main():
         "--emb_dim",
         type=int,
         default=256,
-        help="Embedding dimension (default: 256, increased from 128)",
+        help="Embedding dimension",
     )
     parser.add_argument(
         "--hidden_dim",
         type=int,
         default=256,
-        help="Hidden dimension (default: 256, increased from 128)",
+        help="Hidden dimension",
     )
     parser.add_argument(
         "--max_gen_length",
         type=int,
         default=300,
-        help="Maximum generation length (default: 300, increased from 200)",
+        help="Maximum generation length",
     )
     parser.add_argument(
         "--no_llm_judge",
@@ -605,35 +527,48 @@ def main():
         action="store_true",
         help="If set, suppress intermediate progress logs and only show epoch summaries.",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for sampling",
+    )
 
     args = parser.parse_args()
-
-    # Patch summarization if disabled
-    if args.disable_summarization:
-        import memory_features
-
-        original_init = memory_features.SummarizationLayer.__init__
-
-        def patched_init(self, model_name=None):
-            original_init(self, model_name=None)
-
-        memory_features.SummarizationLayer.__init__ = patched_init
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     os.makedirs(args.checkpoint_dir, exist_ok=True)
     os.makedirs(args.cache_dir, exist_ok=True)
 
+    # Set random seed
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
+
     # Load dataset
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_path = os.path.join(current_dir, "data", "skillminer_qa_synthetic.csv")
+    csv_path = os.path.join(current_dir, "data", "finance.csv")
+    
+    # Verify file exists
+    if not os.path.exists(csv_path):
+        raise FileNotFoundError(
+            f"Finance CSV file not found at: {csv_path}\n"
+            f"Please ensure finance.csv exists in the data/ directory."
+        )
+    
     print(f"Loading dataset from: {csv_path}")
-    rows = load_qa_csv(csv_path)
-    print(f"Loaded {len(rows)} QA pairs")
+    all_rows = load_finance_csv(csv_path)
+    print(f"Loaded {len(all_rows)} QA pairs")
+    
+    if len(all_rows) == 0:
+        raise ValueError("No data loaded from CSV. Please check the file format.")
 
     # Build model
     vocab_size = _VOCAB_SIZE
     emb_dim = args.emb_dim
     hidden_dim = args.hidden_dim
+
+    # Use finance domain for NER
+    domain = "finance"
 
     if args.model_type == "base":
         model = BaseLSTM(
@@ -649,11 +584,11 @@ def main():
         )
     elif args.model_type == "sum_tok_ner":
         model = SumTokNerLSTM(
-            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim
+            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim, domain=domain
         )
     elif args.model_type == "full_memory":
         model = FullMemoryLSTM(
-            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim
+            vocab_size=vocab_size, emb_dim=emb_dim, hidden_dim=hidden_dim, domain=domain
         )
     else:
         raise ValueError(f"Unknown model_type: {args.model_type}")
@@ -664,38 +599,24 @@ def main():
     if isinstance(model, FullMemoryLSTM):
         print("Pre-ingesting history into semantic memory...")
         history_texts = []
-        for _, q, a in rows:
+        for _, q, a in all_rows:
             history_texts.append(f"Q: {q}\nA: {a}")
         model.ingest_history(history_texts)
         print("Done pre-ingesting history")
-
-    # Create dataset
-    cache_path = os.path.join(args.cache_dir, f"{args.model_type}_inputs.json")
-
-    if not args.keep_cache and os.path.exists(cache_path):
-        print(
-            f"Deleting old cache at {cache_path} to regenerate with current model..."
-        )
-        os.remove(cache_path)
-
-    dataset = QADataset(
-        rows,
-        history_size=args.history_size,
-        cache_path=cache_path,
-        model=model,
-    )
 
     # Setup training
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     use_llm_judge = not args.no_llm_judge
-    print(f"\nTraining {args.model_type} on device={device}")
+    print(f"\nTraining {args.model_type} on Finance dataset (device={device})")
     print(f"  Epochs: {args.epochs}")
+    print(f"  Samples per epoch: {args.samples_per_epoch}")
     print(f"  History size: {args.history_size}")
     print(f"  STM threshold: {args.stm_threshold}")
     print(f"  LTM threshold: {args.ltm_threshold}")
     print(f"  Using LLM-as-a-judge: {use_llm_judge}")
+    print(f"  Domain: {domain}")
     print()
 
     best_score = 0.0
@@ -705,6 +626,27 @@ def main():
         print(f"\n{'=' * 60}")
         print(f"Epoch {epoch}/{args.epochs}")
         print(f"{'=' * 60}")
+
+        # Sample rows for this epoch
+        if len(all_rows) > args.samples_per_epoch:
+            rows = random.sample(all_rows, args.samples_per_epoch)
+            print(f"Using {len(rows)} sampled rows (from {len(all_rows)} total)")
+        else:
+            rows = all_rows
+
+        # Create dataset for this epoch
+        cache_path = os.path.join(args.cache_dir, f"{args.model_type}_epoch_{epoch}_inputs.json")
+
+        if not args.keep_cache and os.path.exists(cache_path):
+            print(f"Deleting old cache at {cache_path} to regenerate...")
+            os.remove(cache_path)
+
+        dataset = QADataset(
+            rows,
+            history_size=args.history_size,
+            cache_path=cache_path,
+            model=model,
+        )
 
         total_loss = 0.0
         num_steps = 0
@@ -716,8 +658,8 @@ def main():
         stm_total = 0
         ltm_correct = 0
         ltm_total = 0
-        stm_scores: List[Tuple[float, float]] = []  # (llm_score, difflib_score)
-        ltm_scores: List[Tuple[float, float]] = []  # (llm_score, difflib_score)
+        stm_scores: List[Tuple[float, float]] = []
+        ltm_scores: List[Tuple[float, float]] = []
 
         # Process rows sequentially
         for i in range(len(dataset)):
@@ -737,14 +679,14 @@ def main():
             total_loss += loss
             num_steps += 1
 
-            # STM test every 5 rows (starting from row 5, test question from 2 rows before)
+            # STM test every 5 rows
             if (i + 1) % 5 == 0 and i >= 2:
-                test_idx = i - 2  # 2 rows before
+                test_idx = i - 2
                 stm_test_indices.append(test_idx)
 
-            # LTM test every 10 rows (starting from row 10, test question from 9 rows before)
+            # LTM test every 10 rows
             if (i + 1) % 10 == 0 and i >= 9:
-                test_idx = i - 9  # 9 rows before
+                test_idx = i - 9
                 ltm_test_indices.append(test_idx)
 
             # Run tests periodically (every 10 training steps)
@@ -790,11 +732,10 @@ def main():
                 stm_acc = stm_correct / stm_total if stm_total > 0 else 0.0
                 ltm_acc = ltm_correct / ltm_total if ltm_total > 0 else 0.0
                 
-                # Calculate average scores for both LLM and difflib
+                # Calculate average scores
                 if stm_scores:
                     stm_avg_llm = sum(s[0] for s in stm_scores) / len(stm_scores)
                     stm_avg_difflib = sum(s[1] for s in stm_scores) / len(stm_scores)
-                    # Primary score is the one used for threshold comparison
                     stm_avg_score = stm_avg_llm if use_llm_judge else stm_avg_difflib
                 else:
                     stm_avg_llm = 0.0
@@ -804,7 +745,6 @@ def main():
                 if ltm_scores:
                     ltm_avg_llm = sum(s[0] for s in ltm_scores) / len(ltm_scores)
                     ltm_avg_difflib = sum(s[1] for s in ltm_scores) / len(ltm_scores)
-                    # Primary score is the one used for threshold comparison
                     ltm_avg_score = ltm_avg_llm if use_llm_judge else ltm_avg_difflib
                 else:
                     ltm_avg_llm = 0.0
@@ -846,7 +786,7 @@ def main():
         stm_acc = stm_correct / stm_total if stm_total > 0 else 0.0
         ltm_acc = ltm_correct / ltm_total if ltm_total > 0 else 0.0
         
-        # Calculate statistics for both LLM and difflib scores
+        # Calculate statistics
         if stm_scores:
             stm_llm_scores = [s[0] for s in stm_scores]
             stm_difflib_scores = [s[1] for s in stm_scores]
@@ -905,7 +845,7 @@ def main():
         torch.save(model.state_dict(), ckpt_path)
         print(f"  Saved checkpoint to {ckpt_path}")
 
-        # Save best model (based on STM + LTM accuracy)
+        # Save best model
         best_ckpt_path = os.path.join(
             args.checkpoint_dir, f"{args.model_type}_best.pt"
         )
@@ -919,3 +859,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
