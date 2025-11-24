@@ -1,0 +1,354 @@
+----------------------------------------
+Synthetic Data - SkillMiner
+----------------------------------------
+0 base model
+----------------------------------------
+Epoch 1
+Loss: 1.9220
+STM — acc=0.000, LLM=0.000, difflib=0.013
+LTM — acc=0.000, LLM=0.000, difflib=0.011
+
+Epoch 2
+Loss: 0.6491
+STM — acc=0.025, LLM=0.123, difflib=0.059
+LTM — acc=0.050, LLM=0.090, difflib=0.042
+
+Epoch 3
+Loss: 0.2400
+STM — acc=0.100, LLM=0.353, difflib=0.165
+LTM — acc=0.550, LLM=0.415, difflib=0.113
+
+Epoch 4
+Loss: 0.1319
+STM — acc=0.325, LLM=0.485, difflib=0.174
+LTM — acc=0.500, LLM=0.460, difflib=0.175
+
+Epoch 5
+Loss: 0.0974
+STM — acc=0.275, LLM=0.470, difflib=0.121
+LTM — acc=0.600, LLM=0.490, difflib=0.170
+
+Epoch 6
+Loss: 0.0789
+STM — acc=0.375, LLM=0.520, difflib=0.153
+LTM — acc=0.600, LLM=0.465, difflib=0.187
+
+Epoch 7
+Loss: 0.0687
+STM — acc=0.300, LLM=0.485, difflib=0.199
+LTM — acc=0.550, LLM=0.445, difflib=0.155
+
+Epoch 8
+Loss: 0.0621
+STM — acc=0.300, LLM=0.490, difflib=0.149
+LTM — acc=0.600, LLM=0.480, difflib=0.154
+
+Epoch 9
+Loss: 0.0578
+STM — acc=0.325, LLM=0.493, difflib=0.184
+LTM — acc=0.700, LLM=0.480, difflib=0.224
+
+Epoch 10
+Loss: 0.0541
+STM — acc=0.475, LLM=0.570, difflib=0.202
+LTM — acc=0.650, LLM=0.495, difflib=0.200
+
+----------------------------------------
+1 summarization_only
+----------------------------------------
+
+Epoch 1
+Loss: 1.9097
+STM — acc=0.000, LLM=0.000, difflib=0.016
+LTM — acc=0.000, LLM=0.000, difflib=0.011
+
+Epoch 2
+Loss: 0.6097
+STM — acc=0.025, LLM=0.172, difflib=0.079
+LTM — acc=0.100, LLM=0.180, difflib=0.081
+
+Epoch 3
+Loss: 0.2160
+STM — acc=0.225, LLM=0.382, difflib=0.089
+LTM — acc=0.450, LLM=0.385, difflib=0.089
+
+Epoch 4
+Loss: 0.1216
+STM — acc=0.350, LLM=0.470, difflib=0.131
+LTM — acc=0.700, LLM=0.490, difflib=0.185
+
+Epoch 5
+Loss: 0.0916
+STM — acc=0.325, LLM=0.468, difflib=0.110
+LTM — acc=0.550, LLM=0.445, difflib=0.197
+
+Epoch 6
+Loss: 0.0777
+STM — acc=0.350, LLM=0.490, difflib=0.132
+LTM — acc=0.600, LLM=0.480, difflib=0.186
+
+Epoch 7
+Loss: 0.0694
+STM — acc=0.300, LLM=0.483, difflib=0.151
+LTM — acc=0.650, LLM=0.500, difflib=0.197
+
+Epoch 8
+Loss: 0.0639
+STM — acc=0.275, LLM=0.480, difflib=0.191
+LTM — acc=0.650, LLM=0.495, difflib=0.216
+
+Epoch 9
+Loss: 0.0609
+STM — acc=0.425, LLM=0.525, difflib=0.124
+LTM — acc=0.700, LLM=0.515, difflib=0.193
+
+Epoch 10
+Loss: 0.0571
+STM — acc=0.400, LLM=0.505, difflib=0.180
+LTM — acc=0.650, LLM=0.510, difflib=0.211
+
+----------------------------------------
+2 sum_token_limit
+----------------------------------------
+
+Epoch 1
+Loss: 1.8975
+STM — acc=0.000, LLM=0.000, difflib=0.014
+LTM — acc=0.000, LLM=0.000, difflib=0.013
+
+Epoch 2
+Loss: 0.6290
+STM — acc=0.000, LLM=0.158, difflib=0.074
+LTM — acc=0.150, LLM=0.145, difflib=0.070
+
+Epoch 3
+Loss: 0.2290
+STM — acc=0.150, LLM=0.330, difflib=0.099
+LTM — acc=0.300, LLM=0.350, difflib=0.100
+
+Epoch 4
+Loss: 0.1266
+STM — acc=0.300, LLM=0.480, difflib=0.196
+LTM — acc=0.550, LLM=0.475, difflib=0.178
+
+Epoch 5
+Loss: 0.0939
+STM — acc=0.375, LLM=0.482, difflib=0.165
+LTM — acc=0.550, LLM=0.500, difflib=0.146
+
+Epoch 6
+Loss: 0.0788
+STM — acc=0.350, LLM=0.480, difflib=0.181
+LTM — acc=0.650, LLM=0.500, difflib=0.152
+
+Epoch 7
+Loss: 0.0692
+STM — acc=0.400, LLM=0.527, difflib=0.216
+LTM — acc=0.650, LLM=0.495, difflib=0.228
+
+Epoch 8
+Loss: 0.0632
+STM — acc=0.425, LLM=0.518, difflib=0.198
+LTM — acc=0.650, LLM=0.475, difflib=0.263
+
+Epoch 9
+Loss: 0.0571
+STM — acc=0.375, LLM=0.517, difflib=0.164
+LTM — acc=0.750, LLM=0.555, difflib=0.205
+
+Epoch 10
+Loss: 0.0522
+STM — acc=0.350, LLM=0.505, difflib=0.221
+LTM — acc=0.650, LLM=0.515, difflib=0.236
+
+[Test-STM] Success: LLM score: 0.6000, difflib score: 0.3259 (threshold: 0.6) 
+Question: How does SkillMiner prioritize topics when I have limited time each week?...
+True answer: SkillMiner uses your resume, target role business analyst, and declared strengths in Python to gener...
+Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in data visualization to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks
+
+[Test-STM] Fail: LLM score: 0.4000, difflib score: 0.1759 (threshold: 0.6)  
+Question: How does SkillMiner use my resume to identify missing skills for a product manager?...
+True answer: SkillMiner uses your resume, target role product manager, and declared strengths in time‑series anal...
+Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in data visualization to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks
+
+[Test-LTM] Success: LLM score: 0.7000, difflib score: 0.1577 (threshold: 0.5)    
+Question: What will SkillMiner recommend if my current strength is data visualization but I want to focus more...
+True answer: SkillMiner uses your resume, target role backend developer, and declared strengths in data visualiza...
+Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in data visualization to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks  
+
+----------------------------------------
+3 sum_tok_ner
+----------------------------------------
+
+Epoch 1
+
+Epoch 2
+Loss: 0.6317
+STM — acc=0.050, LLM=0.160, difflib=0.068
+LTM — acc=0.100, LLM=0.105, difflib=0.062
+
+Epoch 3
+Loss: 0.2249
+STM — acc=0.200, LLM=0.378, difflib=0.115
+LTM — acc=0.450, LLM=0.405, difflib=0.152
+
+Epoch 4
+Loss: 0.1254
+STM — acc=0.375, LLM=0.505, difflib=0.143
+LTM — acc=0.750, LLM=0.495, difflib=0.102
+
+Epoch 5
+Loss: 0.0930
+STM — acc=0.375, LLM=0.500, difflib=0.140
+LTM — acc=0.800, LLM=0.505, difflib=0.106
+
+Epoch 6
+Loss: 0.0781
+STM — acc=0.500, LLM=0.532, difflib=0.153
+LTM — acc=0.600, LLM=0.475, difflib=0.115
+
+Epoch 7
+Loss: 0.0699
+STM — acc=0.375, LLM=0.517, difflib=0.188
+LTM — acc=0.700, LLM=0.490, difflib=0.139
+
+Epoch 8
+Loss: 0.0634
+STM — acc=0.375, LLM=0.500, difflib=0.192
+LTM — acc=0.750, LLM=0.535, difflib=0.185
+
+Epoch 9
+Loss: 0.0588
+STM — acc=0.350, LLM=0.500, difflib=0.179
+LTM — acc=0.650, LLM=0.500, difflib=0.171
+
+Epoch 10
+Loss: 0.0558
+STM — acc=0.350, LLM=0.522, difflib=0.177
+LTM — acc=0.650, LLM=0.510, difflib=0.192
+
+----------------------------------------
+4 full_memory
+----------------------------------------
+
+Epoch 1
+Loss: 1.8962
+STM — acc=0.000, LLM=0.000, difflib=0.005
+LTM — acc=0.000, LLM=0.000, difflib=0.003
+
+Epoch 2
+Loss: 0.6234
+STM — acc=0.000, LLM=0.060, difflib=0.051
+LTM — acc=0.000, LLM=0.070, difflib=0.055
+
+Epoch 3
+Loss: 0.2426
+STM — acc=0.150, LLM=0.330, difflib=0.077
+LTM — acc=0.150, LLM=0.250, difflib=0.089
+
+Epoch 4
+Loss: 0.1466
+STM — acc=0.350, LLM=0.465, difflib=0.154
+LTM — acc=0.750, LLM=0.510, difflib=0.073
+
+Epoch 5
+Loss: 0.1116
+STM — acc=0.375, LLM=0.512, difflib=0.113
+LTM — acc=0.800, LLM=0.535, difflib=0.110
+
+Epoch 6
+Loss: 0.0933
+STM — acc=0.325, LLM=0.508, difflib=0.110
+LTM — acc=0.700, LLM=0.495, difflib=0.130
+
+Epoch 7
+Loss: 0.0818
+STM — acc=0.375, LLM=0.500, difflib=0.098
+LTM — acc=0.600, LLM=0.485, difflib=0.097
+
+Epoch 8
+Loss: 0.0740
+STM — acc=0.425, LLM=0.515, difflib=0.096
+LTM — acc=0.600, LLM=0.500, difflib=0.165
+
+Epoch 9
+Loss: 0.0687
+STM — acc=0.550, LLM=0.512, difflib=0.056
+LTM — acc=0.750, LLM=0.505, difflib=0.112
+
+Epoch 10
+Loss: 0.0627
+STM — acc=0.350, LLM=0.487, difflib=0.086
+LTM — acc=0.500, LLM=0.470, difflib=0.133
+
+[Test-STM] Success:  LLM score: 0.8000, difflib score: 0.0260 (threshold: 0.6)
+Question: How does SkillMiner prioritize topics when I have limited time each week?...
+True answer: SkillMiner uses your resume, target role business analyst, and declared strengths in Python to gener...
+Pred answer: role, SkillMiner clusters your skills around themes such as deep learning and aligns them with job relevant milestones. The study plan focuses on LeetCode practice, and tracks completion so each week
+
+[Test-STM] Success:  LLM score: 0.6000, difflib score: 0.0251 (threshold: 0.6)  
+Question: How does SkillMiner use my resume to identify missing skills for a product manager?...
+True answer: SkillMiner uses your resume, target role product manager, and declared strengths in time‑series anal...
+Pred answer: t role, SkillMiner clusters your skills around themes such as deep learning and aligns them with job relevant milestones. The study plan focuses on LeetCode practice, and tracks completion so each wee
+
+[Test-LTM] Fail: LLM score: 0.2000, difflib score: 0.1580 (threshold: 0.5)    
+Question: What will SkillMiner recommend if my current strength is data visualization but I want to focus more...
+True answer: SkillMiner uses your resume, target role backend developer, and declared strengths in data visualiza...
+Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in deep learning to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks, and
+
+----------------------------------------
+Real Data - Dog cat(kaggle)
+----------------------------------------
+0 base
+----------------------------------------
+
+Epoch 1
+Loss: 2.5025
+STM — acc=0.000, LLM=0.000, difflib=0.033
+LTM — acc=0.000, LLM=0.000, difflib=0.027
+
+Epoch 2
+Loss: 2.1039
+STM — acc=0.000, LLM=0.000, difflib=0.030
+LTM — acc=0.000, LLM=0.000, difflib=0.022
+
+Epoch 3
+Loss: 1.9445
+STM — acc=0.000, LLM=0.000, difflib=0.033
+LTM — acc=0.000, LLM=0.000, difflib=0.025
+
+Epoch 4
+Loss: 1.8327
+STM — acc=0.000, LLM=0.000, difflib=0.037
+LTM — acc=0.000, LLM=0.000, difflib=0.026
+
+Epoch 5
+Loss: 1.7442
+STM — acc=0.000, LLM=0.000, difflib=0.041
+LTM — acc=0.000, LLM=0.000, difflib=0.027
+
+Epoch 6
+Loss: 1.6692
+STM — acc=0.000, LLM=0.000, difflib=0.048
+LTM — acc=0.000, LLM=0.000, difflib=0.032
+
+Epoch 7
+Loss: 1.6017
+STM — acc=0.000, LLM=0.000, difflib=0.051
+LTM — acc=0.000, LLM=0.000, difflib=0.034
+
+Epoch 8
+Loss: 1.5386
+STM — acc=0.000, LLM=0.000, difflib=0.058
+LTM — acc=0.000, LLM=0.000, difflib=0.033
+
+Epoch 9
+Loss: 1.4803
+STM — acc=0.000, LLM=0.000, difflib=0.064
+LTM — acc=0.000, LLM=0.000, difflib=0.034
+
+Epoch 10
+Loss: 1.4264
+STM — acc=0.000, LLM=0.000, difflib=0.054
+LTM — acc=0.000, LLM=0.000, difflib=0.035
+

@@ -1,0 +1,1384 @@
+synthetic
+0 base
+============================================================
+Epoch 1/10
+============================================================
+
+Epoch 1 Summary:
+  Average loss: 1.9220
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.013, min=0.000, max=0.050
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.011, min=0.000, max=0.052
+  Saved checkpoint to checkpoints_qa\base_epoch_1.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 2/10
+============================================================
+
+Epoch 2 Summary:
+  Average loss: 0.6491
+  STM accuracy: 0.025 (1/40) [threshold: 0.6]
+    STM LLM score: avg=0.123, min=0.000, max=0.600
+    STM difflib score: avg=0.059, min=0.000, max=0.266
+  LTM accuracy: 0.050 (1/20) [threshold: 0.5]
+    LTM LLM score: avg=0.090, min=0.000, max=0.500
+    LTM difflib score: avg=0.042, min=0.000, max=0.134
+  Saved checkpoint to checkpoints_qa\base_epoch_2.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 3/10
+============================================================
+
+Epoch 3 Summary:
+  Average loss: 0.2400
+  STM accuracy: 0.100 (4/40) [threshold: 0.6]
+    STM LLM score: avg=0.353, min=0.000, max=0.800
+    STM difflib score: avg=0.165, min=0.011, max=0.610
+  LTM accuracy: 0.550 (11/20) [threshold: 0.5]
+    LTM LLM score: avg=0.415, min=0.200, max=0.600
+    LTM difflib score: avg=0.113, min=0.011, max=0.463
+  Saved checkpoint to checkpoints_qa\base_epoch_3.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 4/10
+============================================================
+
+Epoch 4 Summary:
+  Average loss: 0.1319
+  STM accuracy: 0.325 (13/40) [threshold: 0.6]
+    STM LLM score: avg=0.485, min=0.200, max=0.800
+    STM difflib score: avg=0.174, min=0.014, max=0.881
+  LTM accuracy: 0.500 (10/20) [threshold: 0.5]
+    LTM LLM score: avg=0.460, min=0.200, max=0.800
+    LTM difflib score: avg=0.175, min=0.014, max=0.795
+  Saved checkpoint to checkpoints_qa\base_epoch_4.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 5/10
+============================================================
+
+Epoch 5 Summary:
+  Average loss: 0.0974
+  STM accuracy: 0.275 (11/40) [threshold: 0.6]
+    STM LLM score: avg=0.470, min=0.200, max=0.900
+    STM difflib score: avg=0.121, min=0.014, max=0.690
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.490, min=0.200, max=0.800
+    LTM difflib score: avg=0.170, min=0.014, max=0.705
+  Saved checkpoint to checkpoints_qa\base_epoch_5.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 6/10
+============================================================
+
+Epoch 6 Summary:
+  Average loss: 0.0789
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.520, min=0.200, max=1.000
+    STM difflib score: avg=0.153, min=0.014, max=0.935
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.465, min=0.200, max=0.800
+    LTM difflib score: avg=0.187, min=0.011, max=0.732
+  Saved checkpoint to checkpoints_qa\base_epoch_6.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 7/10
+============================================================
+
+Epoch 7 Summary:
+  Average loss: 0.0687
+  STM accuracy: 0.300 (12/40) [threshold: 0.6]
+    STM LLM score: avg=0.485, min=0.200, max=1.000
+    STM difflib score: avg=0.199, min=0.014, max=0.935
+  LTM accuracy: 0.550 (11/20) [threshold: 0.5]
+    LTM LLM score: avg=0.445, min=0.000, max=0.700
+    LTM difflib score: avg=0.155, min=0.011, max=0.794
+  Saved checkpoint to checkpoints_qa\base_epoch_7.pt
+
+============================================================
+Epoch 8/10
+============================================================
+
+Epoch 8 Summary:
+  Average loss: 0.0621
+  STM accuracy: 0.300 (12/40) [threshold: 0.6]
+    STM LLM score: avg=0.490, min=0.200, max=0.900
+    STM difflib score: avg=0.149, min=0.011, max=0.810
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.480, min=0.200, max=0.900
+    LTM difflib score: avg=0.154, min=0.011, max=0.870
+  Saved checkpoint to checkpoints_qa\base_epoch_8.pt
+
+============================================================
+Epoch 9/10
+============================================================
+
+Epoch 9 Summary:
+  Average loss: 0.0578
+  STM accuracy: 0.325 (13/40) [threshold: 0.6]
+    STM LLM score: avg=0.493, min=0.200, max=0.900
+    STM difflib score: avg=0.184, min=0.014, max=0.832
+  LTM accuracy: 0.700 (14/20) [threshold: 0.5]
+    LTM LLM score: avg=0.480, min=0.000, max=0.900
+    LTM difflib score: avg=0.224, min=0.011, max=0.870
+  Saved checkpoint to checkpoints_qa\base_epoch_9.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 10/10
+============================================================
+
+Epoch 10 Summary:
+  Average loss: 0.0541
+  STM accuracy: 0.475 (19/40) [threshold: 0.6]
+    STM LLM score: avg=0.570, min=0.200, max=1.000
+    STM difflib score: avg=0.202, min=0.010, max=0.911
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.495, min=0.200, max=0.900
+    LTM difflib score: avg=0.200, min=0.014, max=0.845
+
+
+1 summarization_only
+
+
+============================================================
+Epoch 1/10
+============================================================
+
+Epoch 1 Summary:
+  Average loss: 1.9097
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.016, min=0.000, max=0.090
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.011, min=0.000, max=0.067
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_1.pt
+  Saved best model to checkpoints_qa\summarization_only_best.pt
+
+============================================================
+Epoch 2/10
+============================================================
+
+Epoch 2 Summary:
+  Average loss: 0.6097
+  STM accuracy: 0.025 (1/40) [threshold: 0.6]
+    STM LLM score: avg=0.172, min=0.000, max=0.600
+    STM difflib score: avg=0.079, min=0.007, max=0.340
+  LTM accuracy: 0.100 (2/20) [threshold: 0.5]
+    LTM LLM score: avg=0.180, min=0.000, max=0.500
+    LTM difflib score: avg=0.081, min=0.014, max=0.428
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_2.pt
+  Saved best model to checkpoints_qa\summarization_only_best.pt
+
+============================================================
+Epoch 3/10
+============================================================
+
+Epoch 3 Summary:
+  Average loss: 0.2160
+  STM accuracy: 0.225 (9/40) [threshold: 0.6]
+    STM LLM score: avg=0.382, min=0.000, max=0.700
+    STM difflib score: avg=0.089, min=0.011, max=0.272
+  LTM accuracy: 0.450 (9/20) [threshold: 0.5]
+    LTM LLM score: avg=0.385, min=0.000, max=0.700
+    LTM difflib score: avg=0.089, min=0.018, max=0.508
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_3.pt
+  Saved best model to checkpoints_qa\summarization_only_best.pt
+
+============================================================
+Epoch 4/10
+============================================================
+
+Epoch 4 Summary:
+  Average loss: 0.1216
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.470, min=0.200, max=0.800
+    STM difflib score: avg=0.131, min=0.014, max=0.793
+  LTM accuracy: 0.700 (14/20) [threshold: 0.5]
+    LTM LLM score: avg=0.490, min=0.200, max=0.800
+    LTM difflib score: avg=0.185, min=0.018, max=0.848
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_4.pt
+  Saved best model to checkpoints_qa\summarization_only_best.pt
+
+============================================================
+Epoch 5/10
+============================================================
+
+Epoch 5 Summary:
+  Average loss: 0.0916
+  STM accuracy: 0.325 (13/40) [threshold: 0.6]
+    STM LLM score: avg=0.468, min=0.200, max=0.800
+    STM difflib score: avg=0.110, min=0.014, max=0.464
+  LTM accuracy: 0.550 (11/20) [threshold: 0.5]
+    LTM LLM score: avg=0.445, min=0.000, max=0.700
+    LTM difflib score: avg=0.197, min=0.018, max=0.848
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_5.pt
+
+============================================================
+Epoch 6/10
+============================================================
+
+Epoch 6 Summary:
+  Average loss: 0.0777
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.490, min=0.200, max=0.800
+    STM difflib score: avg=0.132, min=0.011, max=0.641
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.480, min=0.200, max=0.800
+    LTM difflib score: avg=0.186, min=0.011, max=0.848
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_6.pt
+
+============================================================
+Epoch 7/10
+============================================================
+
+Epoch 7 Summary:
+  Average loss: 0.0694
+  STM accuracy: 0.300 (12/40) [threshold: 0.6]
+    STM LLM score: avg=0.483, min=0.200, max=0.800
+    STM difflib score: avg=0.151, min=0.015, max=0.690
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.500, min=0.200, max=0.700
+    LTM difflib score: avg=0.197, min=0.011, max=0.800
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_7.pt
+
+============================================================
+Epoch 8/10
+============================================================
+
+Epoch 8 Summary:
+  Average loss: 0.0639
+  STM accuracy: 0.275 (11/40) [threshold: 0.6]
+    STM LLM score: avg=0.480, min=0.200, max=0.800
+    STM difflib score: avg=0.191, min=0.018, max=0.866
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.495, min=0.200, max=1.000
+    LTM difflib score: avg=0.216, min=0.011, max=0.881
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_8.pt
+
+============================================================
+Epoch 9/10
+============================================================
+
+Epoch 9 Summary:
+  Average loss: 0.0609
+  STM accuracy: 0.425 (17/40) [threshold: 0.6]
+    STM LLM score: avg=0.525, min=0.200, max=0.800
+    STM difflib score: avg=0.124, min=0.014, max=0.853
+  LTM accuracy: 0.700 (14/20) [threshold: 0.5]
+    LTM LLM score: avg=0.515, min=0.200, max=0.800
+    LTM difflib score: avg=0.193, min=0.018, max=0.800
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_9.pt
+  Saved best model to checkpoints_qa\summarization_only_best.pt
+
+============================================================
+Epoch 10/10
+============================================================
+
+Epoch 10 Summary:
+  Average loss: 0.0571
+  STM accuracy: 0.400 (16/40) [threshold: 0.6]
+    STM LLM score: avg=0.505, min=0.200, max=0.800
+    STM difflib score: avg=0.180, min=0.011, max=0.893
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.510, min=0.200, max=1.000
+    LTM difflib score: avg=0.211, min=0.014, max=0.881
+
+
+
+2 sum_token_limit
+
+============================================================
+Epoch 1/10
+============================================================
+Epoch 1 Summary:
+  Average loss: 1.8975
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.014, min=0.000, max=0.057
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.013, min=0.000, max=0.070
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_1.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 2/10
+============================================================
+Epoch 2 Summary:
+  Average loss: 0.6290
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.158, min=0.000, max=0.500
+    STM difflib score: avg=0.074, min=0.007, max=0.303
+  LTM accuracy: 0.150 (3/20) [threshold: 0.5]
+    LTM LLM score: avg=0.145, min=0.000, max=0.700
+    LTM difflib score: avg=0.070, min=0.014, max=0.278
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_2.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 3/10
+============================================================
+Epoch 3 Summary:
+  Average loss: 0.2290
+  STM accuracy: 0.150 (6/40) [threshold: 0.6]
+    STM LLM score: avg=0.330, min=0.000, max=0.700
+    STM difflib score: avg=0.099, min=0.011, max=0.354
+  LTM accuracy: 0.300 (6/20) [threshold: 0.5]
+    LTM LLM score: avg=0.350, min=0.000, max=0.700
+    LTM difflib score: avg=0.100, min=0.018, max=0.399
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_3.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 4/10
+============================================================
+
+Epoch 4 Summary:
+  Average loss: 0.1266
+  STM accuracy: 0.300 (12/40) [threshold: 0.6]
+    STM LLM score: avg=0.480, min=0.200, max=0.700
+    STM difflib score: avg=0.196, min=0.014, max=0.842
+  LTM accuracy: 0.550 (11/20) [threshold: 0.5]
+    LTM LLM score: avg=0.475, min=0.200, max=0.800
+    LTM difflib score: avg=0.178, min=0.018, max=0.799
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_4.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 5/10
+============================================================
+Epoch 5 Summary:
+  Average loss: 0.0939
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.482, min=0.200, max=0.800
+    STM difflib score: avg=0.165, min=0.011, max=0.799
+  LTM accuracy: 0.550 (11/20) [threshold: 0.5]
+    LTM LLM score: avg=0.500, min=0.200, max=0.800
+    LTM difflib score: avg=0.146, min=0.018, max=0.795
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_5.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 6/10
+============================================================
+Epoch 6 Summary:
+  Average loss: 0.0788
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.480, min=0.200, max=0.800
+    STM difflib score: avg=0.181, min=0.014, max=0.744
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.500, min=0.200, max=0.800
+    LTM difflib score: avg=0.152, min=0.018, max=0.794
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_6.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 7/10
+============================================================
+
+Epoch 7 Summary:
+  Average loss: 0.0692
+  STM accuracy: 0.400 (16/40) [threshold: 0.6]
+    STM LLM score: avg=0.527, min=0.200, max=0.900
+    STM difflib score: avg=0.216, min=0.011, max=0.873
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.495, min=0.200, max=0.900
+    LTM difflib score: avg=0.228, min=0.018, max=0.929
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_7.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 8/10
+============================================================
+
+Epoch 8 Summary:
+  Average loss: 0.0632
+  STM accuracy: 0.425 (17/40) [threshold: 0.6]
+    STM LLM score: avg=0.518, min=0.200, max=0.900
+    STM difflib score: avg=0.198, min=0.014, max=0.854
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.475, min=0.200, max=0.700
+    LTM difflib score: avg=0.263, min=0.018, max=0.800
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_8.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 9/10
+============================================================
+  [DEBUG] Test idx=2
+    Question: How does SkillMiner prioritize topics when I have limited time each week?...
+    True answer: SkillMiner uses your resume, target role business analyst, and declared strengths in Python to gener...
+    Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in data visualization to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks
+    LLM score: 0.6000, difflib score: 0.3259 (threshold: 0.6, using LLM-judge)      
+    Success: True
+
+  [DEBUG] Test idx=7
+    Question: How does SkillMiner use my resume to identify missing skills for a product manager?...
+    True answer: SkillMiner uses your resume, target role product manager, and declared strengths in time‑series anal...
+    Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in data visualization to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks
+    LLM score: 0.4000, difflib score: 0.1759 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What will SkillMiner recommend if my current strength is data visualization but I want to focus more...
+    True answer: SkillMiner uses your resume, target role backend developer, and declared strengths in data visualiza...
+    Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in data visualization to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks
+    LLM score: 0.7000, difflib score: 0.1577 (threshold: 0.5, using LLM-judge)      
+    Success: True
+
+Epoch 9 Summary:
+  Average loss: 0.0571
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.517, min=0.200, max=0.800
+    STM difflib score: avg=0.164, min=0.014, max=0.878
+  LTM accuracy: 0.750 (15/20) [threshold: 0.5]
+    LTM LLM score: avg=0.555, min=0.200, max=1.000
+    LTM difflib score: avg=0.205, min=0.011, max=0.929
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_9.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 10/10
+============================================================
+Epoch 10 Summary:
+  Average loss: 0.0522
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.505, min=0.200, max=0.900
+    STM difflib score: avg=0.221, min=0.011, max=0.878
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.515, min=0.200, max=0.900
+    LTM difflib score: avg=0.236, min=0.018, max=0.881
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_10.pt
+
+
+3 sum_tok_ner
+
+============================================================
+Epoch 2/10
+============================================================
+Epoch 2 Summary:
+  Average loss: 0.6317
+  STM accuracy: 0.050 (2/40) [threshold: 0.6]
+    STM LLM score: avg=0.160, min=0.000, max=0.600
+    STM difflib score: avg=0.068, min=0.007, max=0.282
+  LTM accuracy: 0.100 (2/20) [threshold: 0.5]
+    LTM LLM score: avg=0.105, min=0.000, max=0.600
+    LTM difflib score: avg=0.062, min=0.007, max=0.272
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_2.pt
+  Saved best model to checkpoints_qa\sum_tok_ner_best.pt
+
+============================================================
+Epoch 3/10
+============================================================
+
+Epoch 3 Summary:
+  Average loss: 0.2249
+  STM accuracy: 0.200 (8/40) [threshold: 0.6]
+    STM LLM score: avg=0.378, min=0.000, max=0.900
+    STM difflib score: avg=0.115, min=0.007, max=0.482
+  LTM accuracy: 0.450 (9/20) [threshold: 0.5]
+    LTM LLM score: avg=0.405, min=0.000, max=0.800
+    LTM difflib score: avg=0.152, min=0.018, max=0.559
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_3.pt
+  Saved best model to checkpoints_qa\sum_tok_ner_best.pt
+
+============================================================
+Epoch 4/10
+============================================================
+Epoch 4 Summary:
+  Average loss: 0.1254
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.505, min=0.000, max=0.800
+    STM difflib score: avg=0.143, min=0.014, max=0.551
+  LTM accuracy: 0.750 (15/20) [threshold: 0.5]
+    LTM LLM score: avg=0.495, min=0.200, max=0.700
+    LTM difflib score: avg=0.102, min=0.018, max=0.455
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_4.pt
+  Saved best model to checkpoints_qa\sum_tok_ner_best.pt
+
+============================================================
+Epoch 5/10
+============================================================
+
+Epoch 5 Summary:
+  Average loss: 0.0930
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.500, min=0.200, max=0.900
+    STM difflib score: avg=0.140, min=0.014, max=0.670
+  LTM accuracy: 0.800 (16/20) [threshold: 0.5]
+    LTM LLM score: avg=0.505, min=0.200, max=0.700
+    LTM difflib score: avg=0.106, min=0.018, max=0.591
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_5.pt
+  Saved best model to checkpoints_qa\sum_tok_ner_best.pt
+
+============================================================
+Epoch 6/10
+============================================================
+Epoch 6 Summary:
+  Average loss: 0.0781
+  STM accuracy: 0.500 (20/40) [threshold: 0.6]
+    STM LLM score: avg=0.532, min=0.200, max=0.900
+    STM difflib score: avg=0.153, min=0.011, max=0.788
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.475, min=0.200, max=0.700
+    LTM difflib score: avg=0.115, min=0.018, max=0.705
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_6.pt
+
+============================================================
+Epoch 7/10
+============================================================
+
+Epoch 7 Summary:
+  Average loss: 0.0699
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.517, min=0.200, max=0.900
+    STM difflib score: avg=0.188, min=0.011, max=0.856
+  LTM accuracy: 0.700 (14/20) [threshold: 0.5]
+    LTM LLM score: avg=0.490, min=0.200, max=0.800
+    LTM difflib score: avg=0.139, min=0.021, max=0.795
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_7.pt
+
+============================================================
+Epoch 8/10
+============================================================
+
+Epoch 8 Summary:
+  Average loss: 0.0634
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.500, min=0.200, max=0.900
+    STM difflib score: avg=0.192, min=0.014, max=0.873
+  LTM accuracy: 0.750 (15/20) [threshold: 0.5]
+    LTM LLM score: avg=0.535, min=0.200, max=0.800
+    LTM difflib score: avg=0.185, min=0.018, max=0.851
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_8.pt
+
+============================================================
+Epoch 9/10
+============================================================
+
+Epoch 9 Summary:
+  Average loss: 0.0588
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.500, min=0.000, max=0.900
+    STM difflib score: avg=0.179, min=0.014, max=0.873
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.500, min=0.200, max=0.800
+    LTM difflib score: avg=0.171, min=0.014, max=0.800
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_9.pt
+
+============================================================
+Epoch 10/10
+============================================================
+
+Epoch 10 Summary:
+  Average loss: 0.0558
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.522, min=0.200, max=0.800
+    STM difflib score: avg=0.177, min=0.007, max=0.866
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.510, min=0.300, max=0.800
+    LTM difflib score: avg=0.192, min=0.014, max=0.851
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_10.pt
+
+4 full_memory
+
+============================================================
+Epoch 1/10
+============================================================
+
+Epoch 1 Summary:
+  Average loss: 1.8962
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.005, min=0.000, max=0.029
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.003, min=0.000, max=0.030
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_1.pt
+  Saved best model to checkpoints_qa\full_memory_best.pt
+
+============================================================
+Epoch 2/10
+============================================================
+
+Epoch 2 Summary:
+  Average loss: 0.6234
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.060, min=0.000, max=0.300
+    STM difflib score: avg=0.051, min=0.000, max=0.277
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.070, min=0.000, max=0.200
+    LTM difflib score: avg=0.055, min=0.004, max=0.235
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_2.pt
+
+============================================================
+Epoch 3/10
+============================================================
+
+Epoch 3 Summary:
+  Average loss: 0.2426
+  STM accuracy: 0.150 (6/40) [threshold: 0.6]
+    STM LLM score: avg=0.330, min=0.000, max=0.800
+    STM difflib score: avg=0.077, min=0.000, max=0.581
+  LTM accuracy: 0.150 (3/20) [threshold: 0.5]
+    LTM LLM score: avg=0.250, min=0.000, max=0.700
+    LTM difflib score: avg=0.089, min=0.011, max=0.414
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_3.pt
+  Saved best model to checkpoints_qa\full_memory_best.pt
+
+============================================================
+Epoch 4/10
+============================================================
+Epoch 4 Summary:
+  Average loss: 0.1466
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.465, min=0.000, max=0.800
+    STM difflib score: avg=0.154, min=0.011, max=0.648
+  LTM accuracy: 0.750 (15/20) [threshold: 0.5]
+    LTM LLM score: avg=0.510, min=0.200, max=0.700
+    LTM difflib score: avg=0.073, min=0.011, max=0.407
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_4.pt
+  Saved best model to checkpoints_qa\full_memory_best.pt
+
+============================================================
+Epoch 5/10
+============================================================
+Epoch 5 Summary:
+  Average loss: 0.1116
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.512, min=0.200, max=0.800
+    STM difflib score: avg=0.113, min=0.011, max=0.690
+  LTM accuracy: 0.800 (16/20) [threshold: 0.5]
+    LTM LLM score: avg=0.535, min=0.300, max=0.800
+    LTM difflib score: avg=0.110, min=0.015, max=0.705
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_5.pt
+  Saved best model to checkpoints_qa\full_memory_best.pt
+
+============================================================
+Epoch 6/10
+============================================================
+
+Epoch 6 Summary:
+  Average loss: 0.0933
+  STM accuracy: 0.325 (13/40) [threshold: 0.6]
+    STM LLM score: avg=0.508, min=0.200, max=0.800
+    STM difflib score: avg=0.110, min=0.011, max=0.676
+  LTM accuracy: 0.700 (14/20) [threshold: 0.5]
+    LTM LLM score: avg=0.495, min=0.200, max=0.800
+    LTM difflib score: avg=0.130, min=0.015, max=0.705
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_6.pt
+
+============================================================
+Epoch 7/10
+===========================================================
+Epoch 7 Summary:
+  Average loss: 0.0818
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.500, min=0.200, max=0.900
+    STM difflib score: avg=0.098, min=0.011, max=0.407
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.485, min=0.200, max=0.700
+    LTM difflib score: avg=0.097, min=0.011, max=0.403
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_7.pt
+
+============================================================
+Epoch 8/10
+============================================================
+Epoch 8 Summary:
+  Average loss: 0.0740
+  STM accuracy: 0.425 (17/40) [threshold: 0.6]
+    STM LLM score: avg=0.515, min=0.200, max=0.800
+    STM difflib score: avg=0.096, min=0.014, max=0.724
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.500, min=0.200, max=0.800
+    LTM difflib score: avg=0.165, min=0.011, max=0.705
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_8.pt
+
+============================================================
+Epoch 9/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: How does SkillMiner prioritize topics when I have limited time each week?...
+    True answer: SkillMiner uses your resume, target role business analyst, and declared strengths in Python to gener...
+    Pred answer: role, SkillMiner clusters your skills around themes such as deep learning and aligns them with job relevant milestones. The study plan focuses on LeetCode practice, and tracks completion so each week
+    LLM score: 0.8000, difflib score: 0.0260 (threshold: 0.6, using LLM-judge)      
+    Success: True
+
+  [DEBUG] Test idx=7
+    Question: How does SkillMiner use my resume to identify missing skills for a product manager?...
+    True answer: SkillMiner uses your resume, target role product manager, and declared strengths in time‑series anal...
+    Pred answer: t role, SkillMiner clusters your skills around themes such as deep learning and aligns them with job relevant milestones. The study plan focuses on LeetCode practice, and tracks completion so each wee
+    LLM score: 0.6000, difflib score: 0.0251 (threshold: 0.6, using LLM-judge)      
+    Success: True
+
+  [DEBUG] Test idx=0
+    Question: What will SkillMiner recommend if my current strength is data visualization but I want to focus more...
+    True answer: SkillMiner uses your resume, target role backend developer, and declared strengths in data visualiza...
+    Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in deep learning to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks, and
+    LLM score: 0.2000, difflib score: 0.1580 (threshold: 0.5, using LLM-judge)      
+    Success: False
+
+Epoch 9 Summary:
+  Average loss: 0.0687
+  STM accuracy: 0.550 (22/40) [threshold: 0.6]
+    STM LLM score: avg=0.512, min=0.000, max=0.800
+    STM difflib score: avg=0.056, min=0.007, max=0.339
+  LTM accuracy: 0.750 (15/20) [threshold: 0.5]
+    LTM LLM score: avg=0.505, min=0.200, max=0.700
+    LTM difflib score: avg=0.112, min=0.014, max=0.701
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_9.pt
+  Saved best model to checkpoints_qa\full_memory_best.pt
+
+============================================================
+Epoch 10/10
+============================================================
+Epoch 10 Summary:
+  Average loss: 0.0627
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.487, min=0.200, max=0.700
+    STM difflib score: avg=0.086, min=0.011, max=0.727
+  LTM accuracy: 0.500 (10/20) [threshold: 0.5]
+    LTM LLM score: avg=0.470, min=0.200, max=0.700
+    LTM difflib score: avg=0.133, min=0.011, max=0.705
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_10.pt
+
+
+Dog cat
+Loading dataset from: C:\GitHub\SkillMiner\backend\src\models\research\data\Dog-Cat-QA.csv
+Loaded 200 QA pairs (limited to first 200 rows)
+
+Sample data (first 2 rows):
+  Row 0: Q=What are some examples of breed-typical personalities in dog... A=Breed-typical personalities in dogs are developed through ge...
+  Row 1: Q=How do working and herding dogs typically behave?... A=Working and herding dogs have business-like dispositions. Th...
+Device set to use cuda:0
+HuggingFace summarization pipeline initialized on GPU
+Pre-ingesting history into semantic memory...
+Done pre-ingesting history
+Deleting old cache at cache_qa_dog_cat\full_memory_inputs.json to regenerate with current model...
+Pre-computing input texts (this happens once)...
+  Pre-computing 0/200...
+You seem to be using the pipelines sequentially on GPU. In order to maximize efficiency please use a dataset
+  Pre-computing 20/200...
+  Pre-computing 40/200...
+  Pre-computing 60/200...
+  Pre-computing 80/200...
+  Pre-computing 100/200...
+  Pre-computing 120/200...
+  Pre-computing 140/200...
+  Pre-computing 160/200...
+  Pre-computing 180/200...
+Saved cached input texts to cache_qa_dog_cat\full_memory_inputs.json
+
+Training full_memory on device=cuda
+  Epochs: 10
+  History size: 20
+  STM threshold: 0.6
+  LTM threshold: 0.5
+  Using LLM-as-a-judge: True
+  Domain: pets
+
+
+============================================================
+Epoch 1/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: Which breed of dogs is known for strong loyalty?...
+    True answer: Collies and Akitas are known for their strong sense of loyalty.... 
+    Pred answer: o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o
+    LLM score: 0.0000, difflib score: 0.0276 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=7
+    Question: What are the risks associated with both overweight and underfed puppies during their critical growin...
+    True answer: Overweight puppies are at risk of crippling bone diseases, while underfed puppies may experience poo...
+    Pred answer: o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o
+    LLM score: 0.0000, difflib score: 0.0281 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What are some examples of breed-typical personalities in dogs?...     
+    True answer: Breed-typical personalities in dogs are developed through generations of selection for certain trait...
+    Pred answer: o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o o
+    LLM score: 0.0000, difflib score: 0.0000 (threshold: 0.5, using LLM-judge)      
+    Success: False
+  Step 10/200: loss=4.0355, STM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.028), LTM_acc=0.000 (0/1) score_avg=0.000 (LLM=0.000/difflib=0.000)
+  Step 20/200: loss=3.4817, STM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.035), LTM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.002)
+  Step 30/200: loss=3.2292, STM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.060), LTM_acc=0.000 (0/3) score_avg=0.000 (LLM=0.000/difflib=0.067)
+  Step 40/200: loss=3.0904, STM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.064), LTM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.050)
+  Step 50/200: loss=2.9910, STM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.060), LTM_acc=0.000 (0/5) score_avg=0.000 (LLM=0.000/difflib=0.059)
+    Sample pred: r and and and and and and and and and and and and and and and and and and and and and and and and an...
+  Step 60/200: loss=2.9081, STM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.050), LTM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.049)
+  Step 70/200: loss=2.8422, STM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.046), LTM_acc=0.000 (0/7) score_avg=0.000 (LLM=0.000/difflib=0.042)
+  Step 80/200: loss=2.7927, STM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.049), LTM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.046)
+  Step 90/200: loss=2.7533, STM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.053), LTM_acc=0.000 (0/9) score_avg=0.000 (LLM=0.000/difflib=0.051)
+  Step 100/200: loss=2.7293, STM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.048), LTM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.046)
+    Sample pred: cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat ...
+  Step 110/200: loss=2.6965, STM_acc=0.000 (0/22) score_avg=0.000 (LLM=0.000/difflib=0.047), LTM_acc=0.000 (0/11) score_avg=0.000 (LLM=0.000/difflib=0.042)
+  Step 120/200: loss=2.6623, STM_acc=0.000 (0/24) score_avg=0.000 (LLM=0.000/difflib=0.044), LTM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.038)
+  Step 130/200: loss=2.6376, STM_acc=0.000 (0/26) score_avg=0.000 (LLM=0.000/difflib=0.041), LTM_acc=0.000 (0/13) score_avg=0.000 (LLM=0.000/difflib=0.035)
+  Step 140/200: loss=2.6148, STM_acc=0.000 (0/28) score_avg=0.000 (LLM=0.000/difflib=0.040), LTM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.033)
+  Step 150/200: loss=2.5904, STM_acc=0.000 (0/30) score_avg=0.000 (LLM=0.000/difflib=0.037), LTM_acc=0.000 (0/15) score_avg=0.000 (LLM=0.000/difflib=0.031)
+    Sample pred: the the the the the the the the the the the the the the the the the the the the the the the the the ...
+  Step 160/200: loss=2.5662, STM_acc=0.000 (0/32) score_avg=0.000 (LLM=0.000/difflib=0.036), LTM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.029)
+  Step 170/200: loss=2.5417, STM_acc=0.000 (0/34) score_avg=0.000 (LLM=0.000/difflib=0.039), LTM_acc=0.000 (0/17) score_avg=0.000 (LLM=0.000/difflib=0.031)
+  Step 180/200: loss=2.5247, STM_acc=0.000 (0/36) score_avg=0.000 (LLM=0.000/difflib=0.037), LTM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.029)
+  Step 190/200: loss=2.5108, STM_acc=0.000 (0/38) score_avg=0.000 (LLM=0.000/difflib=0.035), LTM_acc=0.000 (0/19) score_avg=0.000 (LLM=0.000/difflib=0.028)
+  Step 200/200: loss=2.5025, STM_acc=0.000 (0/40) score_avg=0.000 (LLM=0.000/difflib=0.033), LTM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.027)
+    Sample pred: ng and and and and and and and and and and and and and and and and and and and and and and and and a...
+
+Epoch 1 Summary:
+  Average loss: 2.5025
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.033, min=0.000, max=0.145
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.027, min=0.000, max=0.198
+  Saved checkpoint to checkpoints_qa_dog_cat\full_memory_epoch_1.pt
+  Saved best model to checkpoints_qa_dog_cat\full_memory_best.pt
+
+============================================================
+Epoch 2/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: Which breed of dogs is known for strong loyalty?...
+    True answer: Collies and Akitas are known for their strong sense of loyalty.... 
+    Pred answer: ond and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and
+    LLM score: 0.0000, difflib score: 0.0663 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=7
+    Question: What are the risks associated with both overweight and underfed puppies during their critical growin...
+    True answer: Overweight puppies are at risk of crippling bone diseases, while underfed puppies may experience poo...
+    Pred answer: and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and
+    LLM score: 0.0000, difflib score: 0.0468 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What are some examples of breed-typical personalities in dogs?...     
+    True answer: Breed-typical personalities in dogs are developed through generations of selection for certain trait...
+    Pred answer: and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and
+    LLM score: 0.0000, difflib score: 0.0000 (threshold: 0.5, using LLM-judge)      
+    Success: False
+  Step 10/200: loss=2.2837, STM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.057), LTM_acc=0.000 (0/1) score_avg=0.000 (LLM=0.000/difflib=0.000)
+  Step 20/200: loss=2.2382, STM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.054), LTM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.002)
+  Step 30/200: loss=2.2031, STM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.050), LTM_acc=0.000 (0/3) score_avg=0.000 (LLM=0.000/difflib=0.036)
+  Step 40/200: loss=2.2057, STM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.043), LTM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.027)
+  Step 50/200: loss=2.1976, STM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.046), LTM_acc=0.000 (0/5) score_avg=0.000 (LLM=0.000/difflib=0.040)
+    Sample pred: and and and and and and and and and and and and and and and and and and and and and and and and and ...
+  Step 60/200: loss=2.1900, STM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.039), LTM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.034)
+  Step 70/200: loss=2.1809, STM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.036), LTM_acc=0.000 (0/7) score_avg=0.000 (LLM=0.000/difflib=0.029)
+  Step 80/200: loss=2.1753, STM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.041), LTM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.034)
+  Step 90/200: loss=2.1688, STM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.046), LTM_acc=0.000 (0/9) score_avg=0.000 (LLM=0.000/difflib=0.041)
+  Step 100/200: loss=2.1764, STM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.042), LTM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.037)
+    Sample pred: and cat and cat and cat and cat and cat and cat and cat and cat and cat and cat and cat and cat and ...
+  Step 110/200: loss=2.1655, STM_acc=0.000 (0/22) score_avg=0.000 (LLM=0.000/difflib=0.042), LTM_acc=0.000 (0/11) score_avg=0.000 (LLM=0.000/difflib=0.034)
+  Step 120/200: loss=2.1517, STM_acc=0.000 (0/24) score_avg=0.000 (LLM=0.000/difflib=0.039), LTM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.031)
+  Step 130/200: loss=2.1458, STM_acc=0.000 (0/26) score_avg=0.000 (LLM=0.000/difflib=0.036), LTM_acc=0.000 (0/13) score_avg=0.000 (LLM=0.000/difflib=0.028)
+  Step 140/200: loss=2.1393, STM_acc=0.000 (0/28) score_avg=0.000 (LLM=0.000/difflib=0.035), LTM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.027)
+  Step 150/200: loss=2.1304, STM_acc=0.000 (0/30) score_avg=0.000 (LLM=0.000/difflib=0.033), LTM_acc=0.000 (0/15) score_avg=0.000 (LLM=0.000/difflib=0.025)
+    Sample pred: the the the the the the the the the the the the the the the the the the the the the the the the the ...
+  Step 160/200: loss=2.1189, STM_acc=0.000 (0/32) score_avg=0.000 (LLM=0.000/difflib=0.032), LTM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.023)
+  Step 170/200: loss=2.1081, STM_acc=0.000 (0/34) score_avg=0.000 (LLM=0.000/difflib=0.035), LTM_acc=0.000 (0/17) score_avg=0.000 (LLM=0.000/difflib=0.026)
+  Step 180/200: loss=2.1039, STM_acc=0.000 (0/36) score_avg=0.000 (LLM=0.000/difflib=0.034), LTM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.025)
+  Step 190/200: loss=2.1015, STM_acc=0.000 (0/38) score_avg=0.000 (LLM=0.000/difflib=0.032), LTM_acc=0.000 (0/19) score_avg=0.000 (LLM=0.000/difflib=0.023)
+  Step 200/200: loss=2.1039, STM_acc=0.000 (0/40) score_avg=0.000 (LLM=0.000/difflib=0.030), LTM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.022)
+    Sample pred: ng and cats and cats and cats and cats and cats and cats and cats and cats and cats and cats and cat...
+
+Epoch 2 Summary:
+  Average loss: 2.1039
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.030, min=0.000, max=0.117
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.022, min=0.000, max=0.103
+  Saved checkpoint to checkpoints_qa_dog_cat\full_memory_epoch_2.pt
+
+============================================================
+Epoch 3/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: Which breed of dogs is known for strong loyalty?...
+    True answer: Collies and Akitas are known for their strong sense of loyalty.... 
+    Pred answer: e and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and an
+    LLM score: 0.0000, difflib score: 0.0661 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=7
+    Question: What are the risks associated with both overweight and underfed puppies during their critical growin...
+    True answer: Overweight puppies are at risk of crippling bone diseases, while underfed puppies may experience poo...
+    Pred answer: and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and
+    LLM score: 0.0000, difflib score: 0.0468 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What are some examples of breed-typical personalities in dogs?...     
+    True answer: Breed-typical personalities in dogs are developed through generations of selection for certain trait...
+    Pred answer: re and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and a
+    LLM score: 0.0000, difflib score: 0.0000 (threshold: 0.5, using LLM-judge)      
+    Success: False
+  Step 10/200: loss=2.0950, STM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.056), LTM_acc=0.000 (0/1) score_avg=0.000 (LLM=0.000/difflib=0.000)
+  Step 20/200: loss=2.0477, STM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.054), LTM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.002)
+  Step 30/200: loss=2.0115, STM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.048), LTM_acc=0.000 (0/3) score_avg=0.000 (LLM=0.000/difflib=0.033)
+  Step 40/200: loss=2.0170, STM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.049), LTM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.025)
+  Step 50/200: loss=2.0113, STM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.048), LTM_acc=0.000 (0/5) score_avg=0.000 (LLM=0.000/difflib=0.039)
+    Sample pred: cat and and and and and and and and and and and and and and and and and and and and and and and and ...
+  Step 60/200: loss=2.0101, STM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.040), LTM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.032)
+  Step 70/200: loss=2.0046, STM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.040), LTM_acc=0.000 (0/7) score_avg=0.000 (LLM=0.000/difflib=0.028)
+  Step 80/200: loss=2.0011, STM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.043), LTM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.032)
+  Step 90/200: loss=1.9925, STM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.050), LTM_acc=0.000 (0/9) score_avg=0.000 (LLM=0.000/difflib=0.044)
+  Step 100/200: loss=2.0027, STM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.045), LTM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.039)
+    Sample pred: to cat to cat to cat to cat to cat to cat to cat to cat to cat to cat to cat to cat to cat to cat to...
+  Step 110/200: loss=1.9922, STM_acc=0.000 (0/22) score_avg=0.000 (LLM=0.000/difflib=0.044), LTM_acc=0.000 (0/11) score_avg=0.000 (LLM=0.000/difflib=0.036)
+  Step 120/200: loss=1.9788, STM_acc=0.000 (0/24) score_avg=0.000 (LLM=0.000/difflib=0.041), LTM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.033)
+  Step 130/200: loss=1.9739, STM_acc=0.000 (0/26) score_avg=0.000 (LLM=0.000/difflib=0.038), LTM_acc=0.000 (0/13) score_avg=0.000 (LLM=0.000/difflib=0.030)
+  Step 140/200: loss=1.9688, STM_acc=0.000 (0/28) score_avg=0.000 (LLM=0.000/difflib=0.039), LTM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.028)
+  Step 150/200: loss=1.9616, STM_acc=0.000 (0/30) score_avg=0.000 (LLM=0.000/difflib=0.036), LTM_acc=0.000 (0/15) score_avg=0.000 (LLM=0.000/difflib=0.026)
+    Sample pred: the the the the the the the the the the the the the the the the the the the the the the the the the ...
+  Step 160/200: loss=1.9512, STM_acc=0.000 (0/32) score_avg=0.000 (LLM=0.000/difflib=0.035), LTM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.025)
+  Step 170/200: loss=1.9424, STM_acc=0.000 (0/34) score_avg=0.000 (LLM=0.000/difflib=0.039), LTM_acc=0.000 (0/17) score_avg=0.000 (LLM=0.000/difflib=0.029)
+  Step 180/200: loss=1.9410, STM_acc=0.000 (0/36) score_avg=0.000 (LLM=0.000/difflib=0.037), LTM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.027)
+  Step 190/200: loss=1.9406, STM_acc=0.000 (0/38) score_avg=0.000 (LLM=0.000/difflib=0.035), LTM_acc=0.000 (0/19) score_avg=0.000 (LLM=0.000/difflib=0.026)
+  Step 200/200: loss=1.9445, STM_acc=0.000 (0/40) score_avg=0.000 (LLM=0.000/difflib=0.033), LTM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.025)
+    Sample pred: ng and cats and cats and cats and cats and cats and cats and cats and cats and cats and cats and cat...
+
+Epoch 3 Summary:
+  Average loss: 1.9445
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.033, min=0.000, max=0.120
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.025, min=0.000, max=0.141
+  Saved checkpoint to checkpoints_qa_dog_cat\full_memory_epoch_3.pt
+
+============================================================
+Epoch 4/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: Which breed of dogs is known for strong loyalty?...
+    True answer: Collies and Akitas are known for their strong sense of loyalty.... 
+    Pred answer: are and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and
+    LLM score: 0.0000, difflib score: 0.0663 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=7
+    Question: What are the risks associated with both overweight and underfed puppies during their critical growin...
+    True answer: Overweight puppies are at risk of crippling bone diseases, while underfed puppies may experience poo...
+    Pred answer: and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and
+    LLM score: 0.0000, difflib score: 0.0468 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What are some examples of breed-typical personalities in dogs?...     
+    True answer: Breed-typical personalities in dogs are developed through generations of selection for certain trait...
+    Pred answer: and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and
+    LLM score: 0.0000, difflib score: 0.0000 (threshold: 0.5, using LLM-judge)      
+    Success: False
+  Step 10/200: loss=1.9581, STM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.057), LTM_acc=0.000 (0/1) score_avg=0.000 (LLM=0.000/difflib=0.000)
+  Step 20/200: loss=1.9141, STM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.054), LTM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.002)
+  Step 30/200: loss=1.8798, STM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.072), LTM_acc=0.000 (0/3) score_avg=0.000 (LLM=0.000/difflib=0.038)
+  Step 40/200: loss=1.8899, STM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.071), LTM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.029)
+  Step 50/200: loss=1.8889, STM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.063), LTM_acc=0.000 (0/5) score_avg=0.000 (LLM=0.000/difflib=0.044)
+    Sample pred: cat to health and and and and and and and and and and and and and and and and and and and and and an...
+  Step 60/200: loss=1.8934, STM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.052), LTM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.037)
+  Step 70/200: loss=1.8901, STM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.050), LTM_acc=0.000 (0/7) score_avg=0.000 (LLM=0.000/difflib=0.032)
+  Step 80/200: loss=1.8875, STM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.052), LTM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.034)
+  Step 90/200: loss=1.8762, STM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.057), LTM_acc=0.000 (0/9) score_avg=0.000 (LLM=0.000/difflib=0.045)
+  Step 100/200: loss=1.8867, STM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.052), LTM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.041)
+    Sample pred: to cat to cat to cat to cat to cat to cat to cat to cat to cat to cat to cat to cat to cat to cat to...
+  Step 110/200: loss=1.8759, STM_acc=0.000 (0/22) score_avg=0.000 (LLM=0.000/difflib=0.051), LTM_acc=0.000 (0/11) score_avg=0.000 (LLM=0.000/difflib=0.037)
+  Step 120/200: loss=1.8618, STM_acc=0.000 (0/24) score_avg=0.000 (LLM=0.000/difflib=0.047), LTM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.034)
+  Step 130/200: loss=1.8563, STM_acc=0.000 (0/26) score_avg=0.000 (LLM=0.000/difflib=0.043), LTM_acc=0.000 (0/13) score_avg=0.000 (LLM=0.000/difflib=0.031)
+  Step 140/200: loss=1.8515, STM_acc=0.000 (0/28) score_avg=0.000 (LLM=0.000/difflib=0.043), LTM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.029)
+  Step 150/200: loss=1.8449, STM_acc=0.000 (0/30) score_avg=0.000 (LLM=0.000/difflib=0.040), LTM_acc=0.000 (0/15) score_avg=0.000 (LLM=0.000/difflib=0.027)
+    Sample pred: the strat the strat the strat the strat the strat the strat the strat the strat the strat the strat ...
+  Step 160/200: loss=1.8350, STM_acc=0.000 (0/32) score_avg=0.000 (LLM=0.000/difflib=0.039), LTM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.026)
+  Step 170/200: loss=1.8274, STM_acc=0.000 (0/34) score_avg=0.000 (LLM=0.000/difflib=0.044), LTM_acc=0.000 (0/17) score_avg=0.000 (LLM=0.000/difflib=0.030)
+  Step 180/200: loss=1.8276, STM_acc=0.000 (0/36) score_avg=0.000 (LLM=0.000/difflib=0.041), LTM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.028)
+  Step 190/200: loss=1.8283, STM_acc=0.000 (0/38) score_avg=0.000 (LLM=0.000/difflib=0.039), LTM_acc=0.000 (0/19) score_avg=0.000 (LLM=0.000/difflib=0.027)
+  Step 200/200: loss=1.8327, STM_acc=0.000 (0/40) score_avg=0.000 (LLM=0.000/difflib=0.037), LTM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.026)
+    Sample pred: ng and cats and cats and cats and cats and cats and cats and cats and cats and cats and cats and cat...
+
+Epoch 4 Summary:
+  Average loss: 1.8327
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.037, min=0.000, max=0.138
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.026, min=0.000, max=0.141
+  Saved checkpoint to checkpoints_qa_dog_cat\full_memory_epoch_4.pt
+
+============================================================
+Epoch 5/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: Which breed of dogs is known for strong loyalty?...
+    True answer: Collies and Akitas are known for their strong sense of loyalty.... 
+    Pred answer: are and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and
+    LLM score: 0.0000, difflib score: 0.0663 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=7
+    Question: What are the risks associated with both overweight and underfed puppies during their critical growin...
+    True answer: Overweight puppies are at risk of crippling bone diseases, while underfed puppies may experience poo...
+    Pred answer: and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and
+    LLM score: 0.0000, difflib score: 0.0468 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What are some examples of breed-typical personalities in dogs?...     
+    True answer: Breed-typical personalities in dogs are developed through generations of selection for certain trait...
+    Pred answer: and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and
+    LLM score: 0.0000, difflib score: 0.0000 (threshold: 0.5, using LLM-judge)      
+    Success: False
+  Step 10/200: loss=1.8487, STM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.057), LTM_acc=0.000 (0/1) score_avg=0.000 (LLM=0.000/difflib=0.000)
+  Step 20/200: loss=1.8112, STM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.056), LTM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.020)
+  Step 30/200: loss=1.7773, STM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.069), LTM_acc=0.000 (0/3) score_avg=0.000 (LLM=0.000/difflib=0.041)
+  Step 40/200: loss=1.7906, STM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.068), LTM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.030)
+  Step 50/200: loss=1.7934, STM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.064), LTM_acc=0.000 (0/5) score_avg=0.000 (LLM=0.000/difflib=0.046)
+    Sample pred: cat in and and and and and and and and and and and and and and and and and and and and and and and a...
+  Step 60/200: loss=1.8027, STM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.053), LTM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.038)
+  Step 70/200: loss=1.8008, STM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.051), LTM_acc=0.000 (0/7) score_avg=0.000 (LLM=0.000/difflib=0.033)
+  Step 80/200: loss=1.7979, STM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.056), LTM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.034)
+  Step 90/200: loss=1.7850, STM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.062), LTM_acc=0.000 (0/9) score_avg=0.000 (LLM=0.000/difflib=0.046)
+  Step 100/200: loss=1.7954, STM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.057), LTM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.042)
+    Sample pred: food to cat food to cat food to cat food to cat food to cat food to cat food to cat food to cat food...
+  Step 110/200: loss=1.7844, STM_acc=0.000 (0/22) score_avg=0.000 (LLM=0.000/difflib=0.056), LTM_acc=0.000 (0/11) score_avg=0.000 (LLM=0.000/difflib=0.038)
+  Step 120/200: loss=1.7700, STM_acc=0.000 (0/24) score_avg=0.000 (LLM=0.000/difflib=0.052), LTM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.035)
+  Step 130/200: loss=1.7640, STM_acc=0.000 (0/26) score_avg=0.000 (LLM=0.000/difflib=0.048), LTM_acc=0.000 (0/13) score_avg=0.000 (LLM=0.000/difflib=0.033)
+  Step 140/200: loss=1.7591, STM_acc=0.000 (0/28) score_avg=0.000 (LLM=0.000/difflib=0.048), LTM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.030)
+  Step 150/200: loss=1.7532, STM_acc=0.000 (0/30) score_avg=0.000 (LLM=0.000/difflib=0.045), LTM_acc=0.000 (0/15) score_avg=0.000 (LLM=0.000/difflib=0.028)
+    Sample pred: the strat the strat the strat the strat the strat the strat the strat the strat the strat the strat ...
+  Step 160/200: loss=1.7434, STM_acc=0.000 (0/32) score_avg=0.000 (LLM=0.000/difflib=0.043), LTM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.027)
+  Step 170/200: loss=1.7364, STM_acc=0.000 (0/34) score_avg=0.000 (LLM=0.000/difflib=0.048), LTM_acc=0.000 (0/17) score_avg=0.000 (LLM=0.000/difflib=0.031)
+  Step 180/200: loss=1.7380, STM_acc=0.000 (0/36) score_avg=0.000 (LLM=0.000/difflib=0.045), LTM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.029)
+  Step 190/200: loss=1.7394, STM_acc=0.000 (0/38) score_avg=0.000 (LLM=0.000/difflib=0.043), LTM_acc=0.000 (0/19) score_avg=0.000 (LLM=0.000/difflib=0.028)
+  Step 200/200: loss=1.7442, STM_acc=0.000 (0/40) score_avg=0.000 (LLM=0.000/difflib=0.041), LTM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.027)
+    Sample pred: ng and cats and cats and cats and cats and cats and cats and cats and cats and cats and cats and cat...
+
+Epoch 5 Summary:
+  Average loss: 1.7442
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.041, min=0.000, max=0.138
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.027, min=0.000, max=0.141
+  Saved checkpoint to checkpoints_qa_dog_cat\full_memory_epoch_5.pt
+
+============================================================
+Epoch 6/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: Which breed of dogs is known for strong loyalty?...
+    True answer: Collies and Akitas are known for their strong sense of loyalty.... 
+    Pred answer: ight and and and and propets and and and and and propets and and and and and propets and and and and and propets and and and and and propets and and and and and propets and and and and and propets and
+    LLM score: 0.0000, difflib score: 0.1157 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=7
+    Question: What are the risks associated with both overweight and underfed puppies during their critical growin...
+    True answer: Overweight puppies are at risk of crippling bone diseases, while underfed puppies may experience poo...
+    Pred answer: and and and and and and propets and and and and and propets and and and and and propets and and and and and propets and and and and and propets and and and and and propets and and and and and propets
+    LLM score: 0.0000, difflib score: 0.0515 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What are some examples of breed-typical personalities in dogs?...     
+    True answer: Breed-typical personalities in dogs are developed through generations of selection for certain trait...
+    Pred answer: ress and and and and and and propets and and and and and propets and and and and and propets and and and and and propets and and and and and propets and and and and and propets and and and and and pro
+    LLM score: 0.0000, difflib score: 0.0000 (threshold: 0.5, using LLM-judge)      
+    Success: False
+  Step 10/200: loss=1.7463, STM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.084), LTM_acc=0.000 (0/1) score_avg=0.000 (LLM=0.000/difflib=0.000)
+  Step 20/200: loss=1.7193, STM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.069), LTM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.014)
+  Step 30/200: loss=1.6891, STM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.074), LTM_acc=0.000 (0/3) score_avg=0.000 (LLM=0.000/difflib=0.060)
+  Step 40/200: loss=1.7039, STM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.072), LTM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.045)
+  Step 50/200: loss=1.7086, STM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.068), LTM_acc=0.000 (0/5) score_avg=0.000 (LLM=0.000/difflib=0.057)
+    Sample pred: cat in a cat is a cat is a cat is a cat is a cat is a cat is a cat is a cat is a cat is a cat is a c...
+  Step 60/200: loss=1.7229, STM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.057), LTM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.047)
+  Step 70/200: loss=1.7229, STM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.056), LTM_acc=0.000 (0/7) score_avg=0.000 (LLM=0.000/difflib=0.040)
+  Step 80/200: loss=1.7207, STM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.062), LTM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.046)
+  Step 90/200: loss=1.7062, STM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.067), LTM_acc=0.000 (0/9) score_avg=0.000 (LLM=0.000/difflib=0.056)
+  Step 100/200: loss=1.7169, STM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.061), LTM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.051)
+    Sample pred: food to cat food to cat food to cat food to cat food to cat food to cat food to cat food to cat food...
+  Step 110/200: loss=1.7065, STM_acc=0.000 (0/22) score_avg=0.000 (LLM=0.000/difflib=0.059), LTM_acc=0.000 (0/11) score_avg=0.000 (LLM=0.000/difflib=0.046)
+  Step 120/200: loss=1.6921, STM_acc=0.000 (0/24) score_avg=0.000 (LLM=0.000/difflib=0.055), LTM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.043)
+  Step 130/200: loss=1.6861, STM_acc=0.000 (0/26) score_avg=0.000 (LLM=0.000/difflib=0.053), LTM_acc=0.000 (0/13) score_avg=0.000 (LLM=0.000/difflib=0.045)
+  Step 140/200: loss=1.6813, STM_acc=0.000 (0/28) score_avg=0.000 (LLM=0.000/difflib=0.057), LTM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.042)
+  Step 150/200: loss=1.6761, STM_acc=0.000 (0/30) score_avg=0.000 (LLM=0.000/difflib=0.054), LTM_acc=0.000 (0/15) score_avg=0.000 (LLM=0.000/difflib=0.039)
+    Sample pred: the cat to the strain the strain the strain the strain the strain the strain the strain the strain t...
+  Step 160/200: loss=1.6667, STM_acc=0.000 (0/32) score_avg=0.000 (LLM=0.000/difflib=0.052), LTM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.037)
+  Step 170/200: loss=1.6598, STM_acc=0.000 (0/34) score_avg=0.000 (LLM=0.000/difflib=0.056), LTM_acc=0.000 (0/17) score_avg=0.000 (LLM=0.000/difflib=0.037)
+  Step 180/200: loss=1.6624, STM_acc=0.000 (0/36) score_avg=0.000 (LLM=0.000/difflib=0.053), LTM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.035)
+  Step 190/200: loss=1.6642, STM_acc=0.000 (0/38) score_avg=0.000 (LLM=0.000/difflib=0.050), LTM_acc=0.000 (0/19) score_avg=0.000 (LLM=0.000/difflib=0.033)
+  Step 200/200: loss=1.6692, STM_acc=0.000 (0/40) score_avg=0.000 (LLM=0.000/difflib=0.048), LTM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.032)
+    Sample pred: ng the cats and cats and cats and cats and cats and cats and cats and cats and cats and cats and cat...
+
+Epoch 6 Summary:
+  Average loss: 1.6692
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.048, min=0.000, max=0.202
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.032, min=0.000, max=0.152
+  Saved checkpoint to checkpoints_qa_dog_cat\full_memory_epoch_6.pt
+
+============================================================
+Epoch 7/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: Which breed of dogs is known for strong loyalty?...
+    True answer: Collies and Akitas are known for their strong sense of loyalty.... 
+    Pred answer: ight and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and
+    LLM score: 0.0000, difflib score: 0.0884 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=7
+    Question: What are the risks associated with both overweight and underfed puppies during their critical growin...
+    True answer: Overweight puppies are at risk of crippling bone diseases, while underfed puppies may experience poo...
+    Pred answer: and and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and
+    LLM score: 0.0000, difflib score: 0.0468 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What are some examples of breed-typical personalities in dogs?...     
+    True answer: Breed-typical personalities in dogs are developed through generations of selection for certain trait...
+    Pred answer: ress and and and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and and and and a cats and
+    LLM score: 0.0000, difflib score: 0.0191 (threshold: 0.5, using LLM-judge)      
+    Success: False
+  Step 10/200: loss=1.6537, STM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.068), LTM_acc=0.000 (0/1) score_avg=0.000 (LLM=0.000/difflib=0.019)
+  Step 20/200: loss=1.6400, STM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.059), LTM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.023)
+  Step 30/200: loss=1.6134, STM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.076), LTM_acc=0.000 (0/3) score_avg=0.000 (LLM=0.000/difflib=0.053)
+  Step 40/200: loss=1.6289, STM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.068), LTM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.039)
+  Step 50/200: loss=1.6361, STM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.072), LTM_acc=0.000 (0/5) score_avg=0.000 (LLM=0.000/difflib=0.046)
+    Sample pred: cat is and and a cat is and and a cat is and and a cat is and and a cat is and and a cat is and and ...
+  Step 60/200: loss=1.6540, STM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.060), LTM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.038)
+  Step 70/200: loss=1.6549, STM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.059), LTM_acc=0.000 (0/7) score_avg=0.000 (LLM=0.000/difflib=0.033)
+  Step 80/200: loss=1.6519, STM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.071), LTM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.039)
+  Step 90/200: loss=1.6358, STM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.074), LTM_acc=0.000 (0/9) score_avg=0.000 (LLM=0.000/difflib=0.051)
+  Step 100/200: loss=1.6465, STM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.068), LTM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.046)
+    Sample pred: food to cat food to cat food to cat food to cat food to cat food to cat food to cat food to cat food...
+  Step 110/200: loss=1.6372, STM_acc=0.000 (0/22) score_avg=0.000 (LLM=0.000/difflib=0.064), LTM_acc=0.000 (0/11) score_avg=0.000 (LLM=0.000/difflib=0.041)
+  Step 120/200: loss=1.6228, STM_acc=0.000 (0/24) score_avg=0.000 (LLM=0.000/difflib=0.060), LTM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.038)
+  Step 130/200: loss=1.6168, STM_acc=0.000 (0/26) score_avg=0.000 (LLM=0.000/difflib=0.058), LTM_acc=0.000 (0/13) score_avg=0.000 (LLM=0.000/difflib=0.041)
+  Step 140/200: loss=1.6124, STM_acc=0.000 (0/28) score_avg=0.000 (LLM=0.000/difflib=0.062), LTM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.039)
+  Step 150/200: loss=1.6073, STM_acc=0.000 (0/30) score_avg=0.000 (LLM=0.000/difflib=0.058), LTM_acc=0.000 (0/15) score_avg=0.000 (LLM=0.000/difflib=0.036)
+    Sample pred: the cat to the cat to the cat to the cat to the cat to the cat to the cat to the cat to the cat to t...
+  Step 160/200: loss=1.5979, STM_acc=0.000 (0/32) score_avg=0.000 (LLM=0.000/difflib=0.057), LTM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.034)
+  Step 170/200: loss=1.5910, STM_acc=0.000 (0/34) score_avg=0.000 (LLM=0.000/difflib=0.059), LTM_acc=0.000 (0/17) score_avg=0.000 (LLM=0.000/difflib=0.039)
+  Step 180/200: loss=1.5943, STM_acc=0.000 (0/36) score_avg=0.000 (LLM=0.000/difflib=0.056), LTM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.037)
+  Step 190/200: loss=1.5968, STM_acc=0.000 (0/38) score_avg=0.000 (LLM=0.000/difflib=0.054), LTM_acc=0.000 (0/19) score_avg=0.000 (LLM=0.000/difflib=0.036)
+  Step 200/200: loss=1.6017, STM_acc=0.000 (0/40) score_avg=0.000 (LLM=0.000/difflib=0.051), LTM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.034)
+    Sample pred: ng the cats and cats and cats and cats and cats and cats and cats and cats and cats and cats and cat...
+
+Epoch 7 Summary:
+  Average loss: 1.6017
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.051, min=0.000, max=0.214
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.034, min=0.000, max=0.141
+  Saved checkpoint to checkpoints_qa_dog_cat\full_memory_epoch_7.pt
+
+============================================================
+Epoch 8/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: Which breed of dogs is known for strong loyalty?...
+    True answer: Collies and Akitas are known for their strong sense of loyalty.... 
+    Pred answer: The side and and and and and and and and their disease and provide their disease and provide their disease and provide their disease and provide their disease and provide their disease and provide the
+    LLM score: 0.0000, difflib score: 0.1433 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=7
+    Question: What are the risks associated with both overweight and underfed puppies during their critical growin...
+    True answer: Overweight puppies are at risk of crippling bone diseases, while underfed puppies may experience poo...
+    Pred answer: and and and and and and and and and and and their disease and provide their disease and provide their disease and provide their disease and provide their disease and provide their disease and provide
+    LLM score: 0.0000, difflib score: 0.1030 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What are some examples of breed-typical personalities in dogs?...     
+    True answer: Breed-typical personalities in dogs are developed through generations of selection for certain trait...
+    Pred answer: Cats and and and and and and and and and and and their disease and provide their disease and provide their disease and provide their disease and provide their disease and provide their disease and pro
+    LLM score: 0.0000, difflib score: 0.0191 (threshold: 0.5, using LLM-judge)      
+    Success: False
+  Step 10/200: loss=1.5689, STM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.123), LTM_acc=0.000 (0/1) score_avg=0.000 (LLM=0.000/difflib=0.019)
+  Step 20/200: loss=1.5656, STM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.106), LTM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.027)
+  Step 30/200: loss=1.5406, STM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.098), LTM_acc=0.000 (0/3) score_avg=0.000 (LLM=0.000/difflib=0.050)
+  Step 40/200: loss=1.5587, STM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.090), LTM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.037)
+  Step 50/200: loss=1.5675, STM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.087), LTM_acc=0.000 (0/5) score_avg=0.000 (LLM=0.000/difflib=0.043)
+    Sample pred: cat is and a cat is and a cat is and a cat is and a cat is and a cat is and a cat is and a cat is an...
+  Step 60/200: loss=1.5886, STM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.073), LTM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.036)
+  Step 70/200: loss=1.5910, STM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.069), LTM_acc=0.000 (0/7) score_avg=0.000 (LLM=0.000/difflib=0.031)
+  Step 80/200: loss=1.5871, STM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.079), LTM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.037)
+  Step 90/200: loss=1.5696, STM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.083), LTM_acc=0.000 (0/9) score_avg=0.000 (LLM=0.000/difflib=0.050)
+  Step 100/200: loss=1.5803, STM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.077), LTM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.045)
+    Sample pred: food is and cat food is and cat food is and cat food is and cat food is and cat food is and cat food...
+  Step 110/200: loss=1.5714, STM_acc=0.000 (0/22) score_avg=0.000 (LLM=0.000/difflib=0.072), LTM_acc=0.000 (0/11) score_avg=0.000 (LLM=0.000/difflib=0.042)
+  Step 120/200: loss=1.5567, STM_acc=0.000 (0/24) score_avg=0.000 (LLM=0.000/difflib=0.067), LTM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.038)
+  Step 130/200: loss=1.5509, STM_acc=0.000 (0/26) score_avg=0.000 (LLM=0.000/difflib=0.064), LTM_acc=0.000 (0/13) score_avg=0.000 (LLM=0.000/difflib=0.041)
+  Step 140/200: loss=1.5467, STM_acc=0.000 (0/28) score_avg=0.000 (LLM=0.000/difflib=0.067), LTM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.038)
+  Step 150/200: loss=1.5420, STM_acc=0.000 (0/30) score_avg=0.000 (LLM=0.000/difflib=0.063), LTM_acc=0.000 (0/15) score_avg=0.000 (LLM=0.000/difflib=0.035)
+    Sample pred: the cat to the cat to the cat to the cat to the cat to the cat to the cat to the cat to the cat to t...
+  Step 160/200: loss=1.5332, STM_acc=0.000 (0/32) score_avg=0.000 (LLM=0.000/difflib=0.062), LTM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.034)
+  Step 170/200: loss=1.5266, STM_acc=0.000 (0/34) score_avg=0.000 (LLM=0.000/difflib=0.066), LTM_acc=0.000 (0/17) score_avg=0.000 (LLM=0.000/difflib=0.038)
+  Step 180/200: loss=1.5305, STM_acc=0.000 (0/36) score_avg=0.000 (LLM=0.000/difflib=0.064), LTM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.036)
+  Step 190/200: loss=1.5335, STM_acc=0.000 (0/38) score_avg=0.000 (LLM=0.000/difflib=0.061), LTM_acc=0.000 (0/19) score_avg=0.000 (LLM=0.000/difflib=0.034)
+  Step 200/200: loss=1.5386, STM_acc=0.000 (0/40) score_avg=0.000 (LLM=0.000/difflib=0.058), LTM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.033)
+    Sample pred: ng the side and cats and cats and cats and cats and cats and cats and cats and cats and cats and cat...
+
+Epoch 8 Summary:
+  Average loss: 1.5386
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.058, min=0.000, max=0.205
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.033, min=0.000, max=0.155
+  Saved checkpoint to checkpoints_qa_dog_cat\full_memory_epoch_8.pt
+
+============================================================
+Epoch 9/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: Which breed of dogs is known for strong loyalty?...
+    True answer: Collies and Akitas are known for their strong sense of loyalty.... 
+    Pred answer: The side and disease and disease and disease and disease and disease and provide the sense of the sense of the sense of the sense of the sense of the sense and provide the sense of the sense of the si
+    LLM score: 0.0000, difflib score: 0.1657 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=7
+    Question: What are the risks associated with both overweight and underfed puppies during their critical growin...
+    True answer: Overweight puppies are at risk of crippling bone diseases, while underfed puppies may experience poo...
+    Pred answer: and disease and provide their disease and provide the sense of the sense of the sense of the sense of the sense and provide the sense of the sense of the sense of the sense and provide the sense of th
+    LLM score: 0.0000, difflib score: 0.1171 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What are some examples of breed-typical personalities in dogs?...     
+    True answer: Breed-typical personalities in dogs are developed through generations of selection for certain trait...
+    Pred answer: Cats and provide their disease and provide their disease and provide their disease and provide the sense of the sense of the sense of the sense of the sense of the sense and provide the sense of the s
+    LLM score: 0.0000, difflib score: 0.0191 (threshold: 0.5, using LLM-judge)      
+    Success: False
+  Step 10/200: loss=1.4938, STM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.141), LTM_acc=0.000 (0/1) score_avg=0.000 (LLM=0.000/difflib=0.019)
+  Step 20/200: loss=1.5012, STM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.091), LTM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.023)
+  Step 30/200: loss=1.4768, STM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.112), LTM_acc=0.000 (0/3) score_avg=0.000 (LLM=0.000/difflib=0.047)
+  Step 40/200: loss=1.4966, STM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.094), LTM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.035)
+  Step 50/200: loss=1.5060, STM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.085), LTM_acc=0.000 (0/5) score_avg=0.000 (LLM=0.000/difflib=0.045)
+    Sample pred: cat is a cat is a cat is a cat is a cat is a cat is a cat is a cat is a cat is a cat is a cat is a c...
+  Step 60/200: loss=1.5299, STM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.073), LTM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.041)
+  Step 70/200: loss=1.5333, STM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.069), LTM_acc=0.000 (0/7) score_avg=0.000 (LLM=0.000/difflib=0.035)
+  Step 80/200: loss=1.5287, STM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.078), LTM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.041)
+  Step 90/200: loss=1.5097, STM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.087), LTM_acc=0.000 (0/9) score_avg=0.000 (LLM=0.000/difflib=0.055)
+  Step 100/200: loss=1.5201, STM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.080), LTM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.050)
+    Sample pred: food is and cat food is and cat food is and cat food is and cat food is and cat food is and cat food...
+  Step 110/200: loss=1.5112, STM_acc=0.000 (0/22) score_avg=0.000 (LLM=0.000/difflib=0.079), LTM_acc=0.000 (0/11) score_avg=0.000 (LLM=0.000/difflib=0.046)
+  Step 120/200: loss=1.4966, STM_acc=0.000 (0/24) score_avg=0.000 (LLM=0.000/difflib=0.073), LTM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.042)
+  Step 130/200: loss=1.4911, STM_acc=0.000 (0/26) score_avg=0.000 (LLM=0.000/difflib=0.070), LTM_acc=0.000 (0/13) score_avg=0.000 (LLM=0.000/difflib=0.044)
+  Step 140/200: loss=1.4869, STM_acc=0.000 (0/28) score_avg=0.000 (LLM=0.000/difflib=0.074), LTM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.041)
+  Step 150/200: loss=1.4823, STM_acc=0.000 (0/30) score_avg=0.000 (LLM=0.000/difflib=0.069), LTM_acc=0.000 (0/15) score_avg=0.000 (LLM=0.000/difflib=0.039)
+    Sample pred: the cat to the strawberries and the cat to the cat to the strawberries and the cat to the strawberri...
+  Step 160/200: loss=1.4735, STM_acc=0.000 (0/32) score_avg=0.000 (LLM=0.000/difflib=0.070), LTM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.037)
+  Step 170/200: loss=1.4672, STM_acc=0.000 (0/34) score_avg=0.000 (LLM=0.000/difflib=0.073), LTM_acc=0.000 (0/17) score_avg=0.000 (LLM=0.000/difflib=0.039)
+  Step 180/200: loss=1.4716, STM_acc=0.000 (0/36) score_avg=0.000 (LLM=0.000/difflib=0.071), LTM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.037)
+  Step 190/200: loss=1.4751, STM_acc=0.000 (0/38) score_avg=0.000 (LLM=0.000/difflib=0.067), LTM_acc=0.000 (0/19) score_avg=0.000 (LLM=0.000/difflib=0.036)
+  Step 200/200: loss=1.4803, STM_acc=0.000 (0/40) score_avg=0.000 (LLM=0.000/difflib=0.064), LTM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.034)
+    Sample pred: ng the side and cats and cats and cats and cats and cats and cats and cats and cats and cats and cat...
+
+Epoch 9 Summary:
+  Average loss: 1.4803
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.064, min=0.000, max=0.218
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.034, min=0.000, max=0.169
+  Saved checkpoint to checkpoints_qa_dog_cat\full_memory_epoch_9.pt
+
+============================================================
+Epoch 10/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: Which breed of dogs is known for strong loyalty?...
+    True answer: Collies and Akitas are known for their strong sense of loyalty.... 
+    Pred answer: The side and disease and disease and disease and disease and disease and disease and disease and disease and disease and disease and disease and disease and disease and disease and disease and disease
+    LLM score: 0.0000, difflib score: 0.0771 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=7
+    Question: What are the risks associated with both overweight and underfed puppies during their critical growin...
+    True answer: Overweight puppies are at risk of crippling bone diseases, while underfed puppies may experience poo...
+    Pred answer: and and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats a
+    LLM score: 0.0000, difflib score: 0.0469 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What are some examples of breed-typical personalities in dogs?...     
+    True answer: Breed-typical personalities in dogs are developed through generations of selection for certain trait...
+    Pred answer: Cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats and and a cats
+    LLM score: 0.0000, difflib score: 0.0192 (threshold: 0.5, using LLM-judge)      
+    Success: False
+  Step 10/200: loss=1.4212, STM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.062), LTM_acc=0.000 (0/1) score_avg=0.000 (LLM=0.000/difflib=0.019)
+  Step 20/200: loss=1.4372, STM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.052), LTM_acc=0.000 (0/2) score_avg=0.000 (LLM=0.000/difflib=0.029)
+  Step 30/200: loss=1.4151, STM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.070), LTM_acc=0.000 (0/3) score_avg=0.000 (LLM=0.000/difflib=0.051)
+  Step 40/200: loss=1.4353, STM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.063), LTM_acc=0.000 (0/4) score_avg=0.000 (LLM=0.000/difflib=0.038)
+  Step 50/200: loss=1.4456, STM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.061), LTM_acc=0.000 (0/5) score_avg=0.000 (LLM=0.000/difflib=0.043)
+    Sample pred: cat is a cat is a cat in a cat in a cat in a cat in a cat in a cat in a cat in a cat in a cat in a c...
+  Step 60/200: loss=1.4732, STM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.053), LTM_acc=0.000 (0/6) score_avg=0.000 (LLM=0.000/difflib=0.036)
+  Step 70/200: loss=1.4775, STM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.051), LTM_acc=0.000 (0/7) score_avg=0.000 (LLM=0.000/difflib=0.031)
+  Step 80/200: loss=1.4729, STM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.063), LTM_acc=0.000 (0/8) score_avg=0.000 (LLM=0.000/difflib=0.038)
+  Step 90/200: loss=1.4526, STM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.074), LTM_acc=0.000 (0/9) score_avg=0.000 (LLM=0.000/difflib=0.052)
+  Step 100/200: loss=1.4626, STM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.070), LTM_acc=0.000 (0/10) score_avg=0.000 (LLM=0.000/difflib=0.047)
+    Sample pred: food is and the cat food is and the cat food is and the cat food is and the cat food is and the cat ...
+  Step 110/200: loss=1.4541, STM_acc=0.000 (0/22) score_avg=0.000 (LLM=0.000/difflib=0.069), LTM_acc=0.000 (0/11) score_avg=0.000 (LLM=0.000/difflib=0.044)
+  Step 120/200: loss=1.4400, STM_acc=0.000 (0/24) score_avg=0.000 (LLM=0.000/difflib=0.064), LTM_acc=0.000 (0/12) score_avg=0.000 (LLM=0.000/difflib=0.040)
+  Step 130/200: loss=1.4351, STM_acc=0.000 (0/26) score_avg=0.000 (LLM=0.000/difflib=0.059), LTM_acc=0.000 (0/13) score_avg=0.000 (LLM=0.000/difflib=0.043)
+  Step 140/200: loss=1.4314, STM_acc=0.000 (0/28) score_avg=0.000 (LLM=0.000/difflib=0.059), LTM_acc=0.000 (0/14) score_avg=0.000 (LLM=0.000/difflib=0.040)
+  Step 150/200: loss=1.4270, STM_acc=0.000 (0/30) score_avg=0.000 (LLM=0.000/difflib=0.055), LTM_acc=0.000 (0/15) score_avg=0.000 (LLM=0.000/difflib=0.037)
+    Sample pred: the strawberries and the cat to the cat to the cat to the cat to the cat to the cat to the cat to th...
+  Step 160/200: loss=1.4186, STM_acc=0.000 (0/32) score_avg=0.000 (LLM=0.000/difflib=0.056), LTM_acc=0.000 (0/16) score_avg=0.000 (LLM=0.000/difflib=0.035)
+  Step 170/200: loss=1.4124, STM_acc=0.000 (0/34) score_avg=0.000 (LLM=0.000/difflib=0.062), LTM_acc=0.000 (0/17) score_avg=0.000 (LLM=0.000/difflib=0.041)
+  Step 180/200: loss=1.4170, STM_acc=0.000 (0/36) score_avg=0.000 (LLM=0.000/difflib=0.060), LTM_acc=0.000 (0/18) score_avg=0.000 (LLM=0.000/difflib=0.039)
+  Step 190/200: loss=1.4211, STM_acc=0.000 (0/38) score_avg=0.000 (LLM=0.000/difflib=0.057), LTM_acc=0.000 (0/19) score_avg=0.000 (LLM=0.000/difflib=0.037)
+  Step 200/200: loss=1.4264, STM_acc=0.000 (0/40) score_avg=0.000 (LLM=0.000/difflib=0.054), LTM_acc=0.000 (0/20) score_avg=0.000 (LLM=0.000/difflib=0.035)
+    Sample pred: ng the signs of cats and cats and cats and cats and cats and cats and cats and cats and cats and cat...
+
+Epoch 10 Summary:
+  Average loss: 1.4264
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.054, min=0.000, max=0.210
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.035, min=0.000, max=0.169
+  Saved checkpoint to checkpoints_qa_dog_cat\full_memory_epoch_10.pt
+
+Training complete!

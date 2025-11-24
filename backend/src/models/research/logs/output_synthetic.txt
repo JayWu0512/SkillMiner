@@ -1,0 +1,767 @@
+synthetic
+0 base
+============================================================
+Epoch 1/10
+============================================================
+
+Epoch 1 Summary:
+  Average loss: 1.9220
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.013, min=0.000, max=0.050
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.011, min=0.000, max=0.052
+  Saved checkpoint to checkpoints_qa\base_epoch_1.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 2/10
+============================================================
+
+Epoch 2 Summary:
+  Average loss: 0.6491
+  STM accuracy: 0.025 (1/40) [threshold: 0.6]
+    STM LLM score: avg=0.123, min=0.000, max=0.600
+    STM difflib score: avg=0.059, min=0.000, max=0.266
+  LTM accuracy: 0.050 (1/20) [threshold: 0.5]
+    LTM LLM score: avg=0.090, min=0.000, max=0.500
+    LTM difflib score: avg=0.042, min=0.000, max=0.134
+  Saved checkpoint to checkpoints_qa\base_epoch_2.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 3/10
+============================================================
+
+Epoch 3 Summary:
+  Average loss: 0.2400
+  STM accuracy: 0.100 (4/40) [threshold: 0.6]
+    STM LLM score: avg=0.353, min=0.000, max=0.800
+    STM difflib score: avg=0.165, min=0.011, max=0.610
+  LTM accuracy: 0.550 (11/20) [threshold: 0.5]
+    LTM LLM score: avg=0.415, min=0.200, max=0.600
+    LTM difflib score: avg=0.113, min=0.011, max=0.463
+  Saved checkpoint to checkpoints_qa\base_epoch_3.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 4/10
+============================================================
+
+Epoch 4 Summary:
+  Average loss: 0.1319
+  STM accuracy: 0.325 (13/40) [threshold: 0.6]
+    STM LLM score: avg=0.485, min=0.200, max=0.800
+    STM difflib score: avg=0.174, min=0.014, max=0.881
+  LTM accuracy: 0.500 (10/20) [threshold: 0.5]
+    LTM LLM score: avg=0.460, min=0.200, max=0.800
+    LTM difflib score: avg=0.175, min=0.014, max=0.795
+  Saved checkpoint to checkpoints_qa\base_epoch_4.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 5/10
+============================================================
+
+Epoch 5 Summary:
+  Average loss: 0.0974
+  STM accuracy: 0.275 (11/40) [threshold: 0.6]
+    STM LLM score: avg=0.470, min=0.200, max=0.900
+    STM difflib score: avg=0.121, min=0.014, max=0.690
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.490, min=0.200, max=0.800
+    LTM difflib score: avg=0.170, min=0.014, max=0.705
+  Saved checkpoint to checkpoints_qa\base_epoch_5.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 6/10
+============================================================
+
+Epoch 6 Summary:
+  Average loss: 0.0789
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.520, min=0.200, max=1.000
+    STM difflib score: avg=0.153, min=0.014, max=0.935
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.465, min=0.200, max=0.800
+    LTM difflib score: avg=0.187, min=0.011, max=0.732
+  Saved checkpoint to checkpoints_qa\base_epoch_6.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 7/10
+============================================================
+
+Epoch 7 Summary:
+  Average loss: 0.0687
+  STM accuracy: 0.300 (12/40) [threshold: 0.6]
+    STM LLM score: avg=0.485, min=0.200, max=1.000
+    STM difflib score: avg=0.199, min=0.014, max=0.935
+  LTM accuracy: 0.550 (11/20) [threshold: 0.5]
+    LTM LLM score: avg=0.445, min=0.000, max=0.700
+    LTM difflib score: avg=0.155, min=0.011, max=0.794
+  Saved checkpoint to checkpoints_qa\base_epoch_7.pt
+
+============================================================
+Epoch 8/10
+============================================================
+
+Epoch 8 Summary:
+  Average loss: 0.0621
+  STM accuracy: 0.300 (12/40) [threshold: 0.6]
+    STM LLM score: avg=0.490, min=0.200, max=0.900
+    STM difflib score: avg=0.149, min=0.011, max=0.810
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.480, min=0.200, max=0.900
+    LTM difflib score: avg=0.154, min=0.011, max=0.870
+  Saved checkpoint to checkpoints_qa\base_epoch_8.pt
+
+============================================================
+Epoch 9/10
+============================================================
+
+Epoch 9 Summary:
+  Average loss: 0.0578
+  STM accuracy: 0.325 (13/40) [threshold: 0.6]
+    STM LLM score: avg=0.493, min=0.200, max=0.900
+    STM difflib score: avg=0.184, min=0.014, max=0.832
+  LTM accuracy: 0.700 (14/20) [threshold: 0.5]
+    LTM LLM score: avg=0.480, min=0.000, max=0.900
+    LTM difflib score: avg=0.224, min=0.011, max=0.870
+  Saved checkpoint to checkpoints_qa\base_epoch_9.pt
+  Saved best model to checkpoints_qa\base_best.pt
+
+============================================================
+Epoch 10/10
+============================================================
+
+Epoch 10 Summary:
+  Average loss: 0.0541
+  STM accuracy: 0.475 (19/40) [threshold: 0.6]
+    STM LLM score: avg=0.570, min=0.200, max=1.000
+    STM difflib score: avg=0.202, min=0.010, max=0.911
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.495, min=0.200, max=0.900
+    LTM difflib score: avg=0.200, min=0.014, max=0.845
+
+
+1 summarization_only
+
+
+============================================================
+Epoch 1/10
+============================================================
+
+Epoch 1 Summary:
+  Average loss: 1.9097
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.016, min=0.000, max=0.090
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.011, min=0.000, max=0.067
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_1.pt
+  Saved best model to checkpoints_qa\summarization_only_best.pt
+
+============================================================
+Epoch 2/10
+============================================================
+
+Epoch 2 Summary:
+  Average loss: 0.6097
+  STM accuracy: 0.025 (1/40) [threshold: 0.6]
+    STM LLM score: avg=0.172, min=0.000, max=0.600
+    STM difflib score: avg=0.079, min=0.007, max=0.340
+  LTM accuracy: 0.100 (2/20) [threshold: 0.5]
+    LTM LLM score: avg=0.180, min=0.000, max=0.500
+    LTM difflib score: avg=0.081, min=0.014, max=0.428
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_2.pt
+  Saved best model to checkpoints_qa\summarization_only_best.pt
+
+============================================================
+Epoch 3/10
+============================================================
+
+Epoch 3 Summary:
+  Average loss: 0.2160
+  STM accuracy: 0.225 (9/40) [threshold: 0.6]
+    STM LLM score: avg=0.382, min=0.000, max=0.700
+    STM difflib score: avg=0.089, min=0.011, max=0.272
+  LTM accuracy: 0.450 (9/20) [threshold: 0.5]
+    LTM LLM score: avg=0.385, min=0.000, max=0.700
+    LTM difflib score: avg=0.089, min=0.018, max=0.508
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_3.pt
+  Saved best model to checkpoints_qa\summarization_only_best.pt
+
+============================================================
+Epoch 4/10
+============================================================
+
+Epoch 4 Summary:
+  Average loss: 0.1216
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.470, min=0.200, max=0.800
+    STM difflib score: avg=0.131, min=0.014, max=0.793
+  LTM accuracy: 0.700 (14/20) [threshold: 0.5]
+    LTM LLM score: avg=0.490, min=0.200, max=0.800
+    LTM difflib score: avg=0.185, min=0.018, max=0.848
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_4.pt
+  Saved best model to checkpoints_qa\summarization_only_best.pt
+
+============================================================
+Epoch 5/10
+============================================================
+
+Epoch 5 Summary:
+  Average loss: 0.0916
+  STM accuracy: 0.325 (13/40) [threshold: 0.6]
+    STM LLM score: avg=0.468, min=0.200, max=0.800
+    STM difflib score: avg=0.110, min=0.014, max=0.464
+  LTM accuracy: 0.550 (11/20) [threshold: 0.5]
+    LTM LLM score: avg=0.445, min=0.000, max=0.700
+    LTM difflib score: avg=0.197, min=0.018, max=0.848
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_5.pt
+
+============================================================
+Epoch 6/10
+============================================================
+
+Epoch 6 Summary:
+  Average loss: 0.0777
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.490, min=0.200, max=0.800
+    STM difflib score: avg=0.132, min=0.011, max=0.641
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.480, min=0.200, max=0.800
+    LTM difflib score: avg=0.186, min=0.011, max=0.848
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_6.pt
+
+============================================================
+Epoch 7/10
+============================================================
+
+Epoch 7 Summary:
+  Average loss: 0.0694
+  STM accuracy: 0.300 (12/40) [threshold: 0.6]
+    STM LLM score: avg=0.483, min=0.200, max=0.800
+    STM difflib score: avg=0.151, min=0.015, max=0.690
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.500, min=0.200, max=0.700
+    LTM difflib score: avg=0.197, min=0.011, max=0.800
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_7.pt
+
+============================================================
+Epoch 8/10
+============================================================
+
+Epoch 8 Summary:
+  Average loss: 0.0639
+  STM accuracy: 0.275 (11/40) [threshold: 0.6]
+    STM LLM score: avg=0.480, min=0.200, max=0.800
+    STM difflib score: avg=0.191, min=0.018, max=0.866
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.495, min=0.200, max=1.000
+    LTM difflib score: avg=0.216, min=0.011, max=0.881
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_8.pt
+
+============================================================
+Epoch 9/10
+============================================================
+
+Epoch 9 Summary:
+  Average loss: 0.0609
+  STM accuracy: 0.425 (17/40) [threshold: 0.6]
+    STM LLM score: avg=0.525, min=0.200, max=0.800
+    STM difflib score: avg=0.124, min=0.014, max=0.853
+  LTM accuracy: 0.700 (14/20) [threshold: 0.5]
+    LTM LLM score: avg=0.515, min=0.200, max=0.800
+    LTM difflib score: avg=0.193, min=0.018, max=0.800
+  Saved checkpoint to checkpoints_qa\summarization_only_epoch_9.pt
+  Saved best model to checkpoints_qa\summarization_only_best.pt
+
+============================================================
+Epoch 10/10
+============================================================
+
+Epoch 10 Summary:
+  Average loss: 0.0571
+  STM accuracy: 0.400 (16/40) [threshold: 0.6]
+    STM LLM score: avg=0.505, min=0.200, max=0.800
+    STM difflib score: avg=0.180, min=0.011, max=0.893
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.510, min=0.200, max=1.000
+    LTM difflib score: avg=0.211, min=0.014, max=0.881
+
+
+
+2 sum_token_limit
+
+============================================================
+Epoch 1/10
+============================================================
+Epoch 1 Summary:
+  Average loss: 1.8975
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.014, min=0.000, max=0.057
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.013, min=0.000, max=0.070
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_1.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 2/10
+============================================================
+Epoch 2 Summary:
+  Average loss: 0.6290
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.158, min=0.000, max=0.500
+    STM difflib score: avg=0.074, min=0.007, max=0.303
+  LTM accuracy: 0.150 (3/20) [threshold: 0.5]
+    LTM LLM score: avg=0.145, min=0.000, max=0.700
+    LTM difflib score: avg=0.070, min=0.014, max=0.278
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_2.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 3/10
+============================================================
+Epoch 3 Summary:
+  Average loss: 0.2290
+  STM accuracy: 0.150 (6/40) [threshold: 0.6]
+    STM LLM score: avg=0.330, min=0.000, max=0.700
+    STM difflib score: avg=0.099, min=0.011, max=0.354
+  LTM accuracy: 0.300 (6/20) [threshold: 0.5]
+    LTM LLM score: avg=0.350, min=0.000, max=0.700
+    LTM difflib score: avg=0.100, min=0.018, max=0.399
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_3.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 4/10
+============================================================
+
+Epoch 4 Summary:
+  Average loss: 0.1266
+  STM accuracy: 0.300 (12/40) [threshold: 0.6]
+    STM LLM score: avg=0.480, min=0.200, max=0.700
+    STM difflib score: avg=0.196, min=0.014, max=0.842
+  LTM accuracy: 0.550 (11/20) [threshold: 0.5]
+    LTM LLM score: avg=0.475, min=0.200, max=0.800
+    LTM difflib score: avg=0.178, min=0.018, max=0.799
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_4.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 5/10
+============================================================
+Epoch 5 Summary:
+  Average loss: 0.0939
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.482, min=0.200, max=0.800
+    STM difflib score: avg=0.165, min=0.011, max=0.799
+  LTM accuracy: 0.550 (11/20) [threshold: 0.5]
+    LTM LLM score: avg=0.500, min=0.200, max=0.800
+    LTM difflib score: avg=0.146, min=0.018, max=0.795
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_5.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 6/10
+============================================================
+Epoch 6 Summary:
+  Average loss: 0.0788
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.480, min=0.200, max=0.800
+    STM difflib score: avg=0.181, min=0.014, max=0.744
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.500, min=0.200, max=0.800
+    LTM difflib score: avg=0.152, min=0.018, max=0.794
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_6.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 7/10
+============================================================
+
+Epoch 7 Summary:
+  Average loss: 0.0692
+  STM accuracy: 0.400 (16/40) [threshold: 0.6]
+    STM LLM score: avg=0.527, min=0.200, max=0.900
+    STM difflib score: avg=0.216, min=0.011, max=0.873
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.495, min=0.200, max=0.900
+    LTM difflib score: avg=0.228, min=0.018, max=0.929
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_7.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 8/10
+============================================================
+
+Epoch 8 Summary:
+  Average loss: 0.0632
+  STM accuracy: 0.425 (17/40) [threshold: 0.6]
+    STM LLM score: avg=0.518, min=0.200, max=0.900
+    STM difflib score: avg=0.198, min=0.014, max=0.854
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.475, min=0.200, max=0.700
+    LTM difflib score: avg=0.263, min=0.018, max=0.800
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_8.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 9/10
+============================================================
+  [DEBUG] Test idx=2
+    Question: How does SkillMiner prioritize topics when I have limited time each week?...
+    True answer: SkillMiner uses your resume, target role business analyst, and declared strengths in Python to gener...
+    Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in data visualization to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks
+    LLM score: 0.6000, difflib score: 0.3259 (threshold: 0.6, using LLM-judge)      
+    Success: True
+
+  [DEBUG] Test idx=7
+    Question: How does SkillMiner use my resume to identify missing skills for a product manager?...
+    True answer: SkillMiner uses your resume, target role product manager, and declared strengths in time‑series anal...
+    Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in data visualization to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks
+    LLM score: 0.4000, difflib score: 0.1759 (threshold: 0.6, using LLM-judge)      
+    Success: False
+
+  [DEBUG] Test idx=0
+    Question: What will SkillMiner recommend if my current strength is data visualization but I want to focus more...
+    True answer: SkillMiner uses your resume, target role backend developer, and declared strengths in data visualiza...
+    Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in data visualization to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks
+    LLM score: 0.7000, difflib score: 0.1577 (threshold: 0.5, using LLM-judge)      
+    Success: True
+
+Epoch 9 Summary:
+  Average loss: 0.0571
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.517, min=0.200, max=0.800
+    STM difflib score: avg=0.164, min=0.014, max=0.878
+  LTM accuracy: 0.750 (15/20) [threshold: 0.5]
+    LTM LLM score: avg=0.555, min=0.200, max=1.000
+    LTM difflib score: avg=0.205, min=0.011, max=0.929
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_9.pt
+  Saved best model to checkpoints_qa\sum_token_limit_best.pt
+
+============================================================
+Epoch 10/10
+============================================================
+Epoch 10 Summary:
+  Average loss: 0.0522
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.505, min=0.200, max=0.900
+    STM difflib score: avg=0.221, min=0.011, max=0.878
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.515, min=0.200, max=0.900
+    LTM difflib score: avg=0.236, min=0.018, max=0.881
+  Saved checkpoint to checkpoints_qa\sum_token_limit_epoch_10.pt
+
+
+3 sum_tok_ner
+
+
+Epoch 1 Summary:
+  Average loss: 1.9378
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.010, min=0.000, max=0.078
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.008, min=0.000, max=0.052
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_1.pt
+  Saved best model to checkpoints_qa\sum_tok_ner_best.pt
+
+============================================================
+Epoch 2/10
+============================================================
+Epoch 2 Summary:
+  Average loss: 0.6317
+  STM accuracy: 0.050 (2/40) [threshold: 0.6]
+    STM LLM score: avg=0.160, min=0.000, max=0.600
+    STM difflib score: avg=0.068, min=0.007, max=0.282
+  LTM accuracy: 0.100 (2/20) [threshold: 0.5]
+    LTM LLM score: avg=0.105, min=0.000, max=0.600
+    LTM difflib score: avg=0.062, min=0.007, max=0.272
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_2.pt
+  Saved best model to checkpoints_qa\sum_tok_ner_best.pt
+
+============================================================
+Epoch 3/10
+============================================================
+
+Epoch 3 Summary:
+  Average loss: 0.2249
+  STM accuracy: 0.200 (8/40) [threshold: 0.6]
+    STM LLM score: avg=0.378, min=0.000, max=0.900
+    STM difflib score: avg=0.115, min=0.007, max=0.482
+  LTM accuracy: 0.450 (9/20) [threshold: 0.5]
+    LTM LLM score: avg=0.405, min=0.000, max=0.800
+    LTM difflib score: avg=0.152, min=0.018, max=0.559
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_3.pt
+  Saved best model to checkpoints_qa\sum_tok_ner_best.pt
+
+============================================================
+Epoch 4/10
+============================================================
+Epoch 4 Summary:
+  Average loss: 0.1254
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.505, min=0.000, max=0.800
+    STM difflib score: avg=0.143, min=0.014, max=0.551
+  LTM accuracy: 0.750 (15/20) [threshold: 0.5]
+    LTM LLM score: avg=0.495, min=0.200, max=0.700
+    LTM difflib score: avg=0.102, min=0.018, max=0.455
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_4.pt
+  Saved best model to checkpoints_qa\sum_tok_ner_best.pt
+
+============================================================
+Epoch 5/10
+============================================================
+
+Epoch 5 Summary:
+  Average loss: 0.0930
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.500, min=0.200, max=0.900
+    STM difflib score: avg=0.140, min=0.014, max=0.670
+  LTM accuracy: 0.800 (16/20) [threshold: 0.5]
+    LTM LLM score: avg=0.505, min=0.200, max=0.700
+    LTM difflib score: avg=0.106, min=0.018, max=0.591
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_5.pt
+  Saved best model to checkpoints_qa\sum_tok_ner_best.pt
+
+============================================================
+Epoch 6/10
+============================================================
+Epoch 6 Summary:
+  Average loss: 0.0781
+  STM accuracy: 0.500 (20/40) [threshold: 0.6]
+    STM LLM score: avg=0.532, min=0.200, max=0.900
+    STM difflib score: avg=0.153, min=0.011, max=0.788
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.475, min=0.200, max=0.700
+    LTM difflib score: avg=0.115, min=0.018, max=0.705
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_6.pt
+
+============================================================
+Epoch 7/10
+============================================================
+
+Epoch 7 Summary:
+  Average loss: 0.0699
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.517, min=0.200, max=0.900
+    STM difflib score: avg=0.188, min=0.011, max=0.856
+  LTM accuracy: 0.700 (14/20) [threshold: 0.5]
+    LTM LLM score: avg=0.490, min=0.200, max=0.800
+    LTM difflib score: avg=0.139, min=0.021, max=0.795
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_7.pt
+
+============================================================
+Epoch 8/10
+============================================================
+
+Epoch 8 Summary:
+  Average loss: 0.0634
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.500, min=0.200, max=0.900
+    STM difflib score: avg=0.192, min=0.014, max=0.873
+  LTM accuracy: 0.750 (15/20) [threshold: 0.5]
+    LTM LLM score: avg=0.535, min=0.200, max=0.800
+    LTM difflib score: avg=0.185, min=0.018, max=0.851
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_8.pt
+
+============================================================
+Epoch 9/10
+============================================================
+
+Epoch 9 Summary:
+  Average loss: 0.0588
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.500, min=0.000, max=0.900
+    STM difflib score: avg=0.179, min=0.014, max=0.873
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.500, min=0.200, max=0.800
+    LTM difflib score: avg=0.171, min=0.014, max=0.800
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_9.pt
+
+============================================================
+Epoch 10/10
+============================================================
+
+Epoch 10 Summary:
+  Average loss: 0.0558
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.522, min=0.200, max=0.800
+    STM difflib score: avg=0.177, min=0.007, max=0.866
+  LTM accuracy: 0.650 (13/20) [threshold: 0.5]
+    LTM LLM score: avg=0.510, min=0.300, max=0.800
+    LTM difflib score: avg=0.192, min=0.014, max=0.851
+  Saved checkpoint to checkpoints_qa\sum_tok_ner_epoch_10.pt
+
+4 full_memory
+
+============================================================
+Epoch 1/10
+============================================================
+
+Epoch 1 Summary:
+  Average loss: 1.8962
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.000, min=0.000, max=0.000
+    STM difflib score: avg=0.005, min=0.000, max=0.029
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.000, min=0.000, max=0.000
+    LTM difflib score: avg=0.003, min=0.000, max=0.030
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_1.pt
+  Saved best model to checkpoints_qa\full_memory_best.pt
+
+============================================================
+Epoch 2/10
+============================================================
+
+Epoch 2 Summary:
+  Average loss: 0.6234
+  STM accuracy: 0.000 (0/40) [threshold: 0.6]
+    STM LLM score: avg=0.060, min=0.000, max=0.300
+    STM difflib score: avg=0.051, min=0.000, max=0.277
+  LTM accuracy: 0.000 (0/20) [threshold: 0.5]
+    LTM LLM score: avg=0.070, min=0.000, max=0.200
+    LTM difflib score: avg=0.055, min=0.004, max=0.235
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_2.pt
+
+============================================================
+Epoch 3/10
+============================================================
+
+Epoch 3 Summary:
+  Average loss: 0.2426
+  STM accuracy: 0.150 (6/40) [threshold: 0.6]
+    STM LLM score: avg=0.330, min=0.000, max=0.800
+    STM difflib score: avg=0.077, min=0.000, max=0.581
+  LTM accuracy: 0.150 (3/20) [threshold: 0.5]
+    LTM LLM score: avg=0.250, min=0.000, max=0.700
+    LTM difflib score: avg=0.089, min=0.011, max=0.414
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_3.pt
+  Saved best model to checkpoints_qa\full_memory_best.pt
+
+============================================================
+Epoch 4/10
+============================================================
+Epoch 4 Summary:
+  Average loss: 0.1466
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.465, min=0.000, max=0.800
+    STM difflib score: avg=0.154, min=0.011, max=0.648
+  LTM accuracy: 0.750 (15/20) [threshold: 0.5]
+    LTM LLM score: avg=0.510, min=0.200, max=0.700
+    LTM difflib score: avg=0.073, min=0.011, max=0.407
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_4.pt
+  Saved best model to checkpoints_qa\full_memory_best.pt
+
+============================================================
+Epoch 5/10
+============================================================
+Epoch 5 Summary:
+  Average loss: 0.1116
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.512, min=0.200, max=0.800
+    STM difflib score: avg=0.113, min=0.011, max=0.690
+  LTM accuracy: 0.800 (16/20) [threshold: 0.5]
+    LTM LLM score: avg=0.535, min=0.300, max=0.800
+    LTM difflib score: avg=0.110, min=0.015, max=0.705
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_5.pt
+  Saved best model to checkpoints_qa\full_memory_best.pt
+
+============================================================
+Epoch 6/10
+============================================================
+
+Epoch 6 Summary:
+  Average loss: 0.0933
+  STM accuracy: 0.325 (13/40) [threshold: 0.6]
+    STM LLM score: avg=0.508, min=0.200, max=0.800
+    STM difflib score: avg=0.110, min=0.011, max=0.676
+  LTM accuracy: 0.700 (14/20) [threshold: 0.5]
+    LTM LLM score: avg=0.495, min=0.200, max=0.800
+    LTM difflib score: avg=0.130, min=0.015, max=0.705
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_6.pt
+
+============================================================
+Epoch 7/10
+===========================================================
+Epoch 7 Summary:
+  Average loss: 0.0818
+  STM accuracy: 0.375 (15/40) [threshold: 0.6]
+    STM LLM score: avg=0.500, min=0.200, max=0.900
+    STM difflib score: avg=0.098, min=0.011, max=0.407
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.485, min=0.200, max=0.700
+    LTM difflib score: avg=0.097, min=0.011, max=0.403
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_7.pt
+
+============================================================
+Epoch 8/10
+============================================================
+Epoch 8 Summary:
+  Average loss: 0.0740
+  STM accuracy: 0.425 (17/40) [threshold: 0.6]
+    STM LLM score: avg=0.515, min=0.200, max=0.800
+    STM difflib score: avg=0.096, min=0.014, max=0.724
+  LTM accuracy: 0.600 (12/20) [threshold: 0.5]
+    LTM LLM score: avg=0.500, min=0.200, max=0.800
+    LTM difflib score: avg=0.165, min=0.011, max=0.705
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_8.pt
+
+============================================================
+Epoch 9/10
+============================================================
+
+  [DEBUG] Test idx=2
+    Question: How does SkillMiner prioritize topics when I have limited time each week?...
+    True answer: SkillMiner uses your resume, target role business analyst, and declared strengths in Python to gener...
+    Pred answer: role, SkillMiner clusters your skills around themes such as deep learning and aligns them with job relevant milestones. The study plan focuses on LeetCode practice, and tracks completion so each week
+    LLM score: 0.8000, difflib score: 0.0260 (threshold: 0.6, using LLM-judge)      
+    Success: True
+
+  [DEBUG] Test idx=7
+    Question: How does SkillMiner use my resume to identify missing skills for a product manager?...
+    True answer: SkillMiner uses your resume, target role product manager, and declared strengths in time‑series anal...
+    Pred answer: t role, SkillMiner clusters your skills around themes such as deep learning and aligns them with job relevant milestones. The study plan focuses on LeetCode practice, and tracks completion so each wee
+    LLM score: 0.6000, difflib score: 0.0251 (threshold: 0.6, using LLM-judge)      
+    Success: True
+
+  [DEBUG] Test idx=0
+    Question: What will SkillMiner recommend if my current strength is data visualization but I want to focus more...
+    True answer: SkillMiner uses your resume, target role backend developer, and declared strengths in data visualiza...
+    Pred answer: SkillMiner uses your resume, target role business analyst, and declared strengths in deep learning to generate a learning plan. It balances review of fundamentals with deeper interview prep tasks, and
+    LLM score: 0.2000, difflib score: 0.1580 (threshold: 0.5, using LLM-judge)      
+    Success: False
+
+Epoch 9 Summary:
+  Average loss: 0.0687
+  STM accuracy: 0.550 (22/40) [threshold: 0.6]
+    STM LLM score: avg=0.512, min=0.000, max=0.800
+    STM difflib score: avg=0.056, min=0.007, max=0.339
+  LTM accuracy: 0.750 (15/20) [threshold: 0.5]
+    LTM LLM score: avg=0.505, min=0.200, max=0.700
+    LTM difflib score: avg=0.112, min=0.014, max=0.701
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_9.pt
+  Saved best model to checkpoints_qa\full_memory_best.pt
+
+============================================================
+Epoch 10/10
+============================================================
+Epoch 10 Summary:
+  Average loss: 0.0627
+  STM accuracy: 0.350 (14/40) [threshold: 0.6]
+    STM LLM score: avg=0.487, min=0.200, max=0.700
+    STM difflib score: avg=0.086, min=0.011, max=0.727
+  LTM accuracy: 0.500 (10/20) [threshold: 0.5]
+    LTM LLM score: avg=0.470, min=0.200, max=0.700
+    LTM difflib score: avg=0.133, min=0.011, max=0.705
+  Saved checkpoint to checkpoints_qa\full_memory_epoch_10.pt

@@ -1,0 +1,300 @@
+% CVPR 2026 Paper Template; see https://github.com/cvpr-org/author-kit
+
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+%%%%%%%%% PAPER TYPE  - PLEASE UPDATE FOR FINAL VERSION
+\usepackage{cvpr}              % To produce the CAMERA-READY version (no blue margin numbers/text)
+% \usepackage[review]{cvpr}      % To produce the REVIEW version
+% \usepackage[pagenumbers]{cvpr} % To force page numbers, e.g. for an arXiv version
+
+% It is strongly recommended to use hyperref, especially for the review version.
+% hyperref with option pagebackref eases the reviewers' job.
+% Please disable hyperref *only* if you encounter grave issues, 
+% e.g. with the file validation for the camera-ready version.
+%
+% If you comment hyperref and then uncomment it, you should delete *.aux before re-running LaTeX.
+\definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
+\usepackage[pagebackref,breaklinks,colorlinks,allcolors=cvprblue]{hyperref}
+
+%%%%%%%%% PAPER ID  - PLEASE UPDATE
+\def\paperID{*****} % *** Enter the Paper ID here
+\def\confName{CVPR}
+\def\confYear{2026}
+
+%%%%%%%%% TITLE - PLEASE UPDATE
+\title{Language Modeling with Memory-Augmented LSTM: Improving Long-Context Text Prediction}
+
+%%%%%%%%% AUTHORS - PLEASE UPDATE
+\author{
+He Jiang\\
+Duke University\\
+{\tt\small hj193@duke.edu}
+\and
+Sung-Tse Wu (Jay)\\
+Duke University\\
+{\tt\small sw693@duke.edu}
+\and
+Yiyun Yao\\
+Duke University\\
+{\tt\small yy508@duke.edu}
+}
+
+% Additional packages
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Configure listings for terminal output
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    backgroundcolor=\color{gray!10}
+}
+
+\begin{document}
+\maketitle
+
+% ========== ABSTRACT ==========
+\begin{abstract}
+Traditional LSTM-based language models suffer from limited ability to retain information across long sequences due to vanishing gradients and fixed hidden state size. We propose a Memory-Augmented LSTM that integrates external memory components to explicitly store and retrieve summarized or semantically enriched representations of previous contexts. Our approach introduces two complementary memory mechanisms: Short-Term Memory (STM) using summarization and token limits, and Long-Term Memory (LTM) using Named Entity Recognition and semantic search. We evaluate five progressively complex model variants on synthetic and real-world QA datasets. Results show consistent improvement as memory components are added, with Model 2 achieving 0.375 STM and 0.750 LTM accuracy on synthetic data, demonstrating effective long-context retention capabilities.
+\end{abstract}
+
+% ========== INTRODUCTION ==========
+\section{Introduction}
+\label{sec:intro}
+
+Traditional LSTM-based language models face significant challenges in retaining information across long sequences. The vanishing gradient problem and fixed hidden state size limit their ability to maintain context continuity, which becomes particularly problematic in tasks such as question-answering systems where answers depend on information from previous interactions.
+
+This work addresses these limitations by integrating external memory components that explicitly store and retrieve summarized or semantically enriched representations of previous contexts. Unlike approaches that rely solely on hidden state propagation, our Memory-Augmented LSTM design allows the model to ``recall'' relevant past information through structured memory management.
+
+% ========== RELATED WORK ==========
+\section{Related Work}
+
+Memory-augmented neural networks have been explored in various contexts, from Neural Turing Machines \cite{graves2014neural} to recent retrieval-augmented generation approaches \cite{lewis2020retrieval}. Our work bridges the gap between recurrent networks and modern retrieval-augmented transformers while maintaining interpretability and computational efficiency.
+
+% ========== METHODOLOGY ==========
+\section{Methodology}
+\label{sec:method}
+
+\subsection{Base LSTM Encoder-Decoder}
+
+A standard LSTM network serves as the core language model, responsible for token-level prediction and next-word generation. The encoder processes the input sequence, and the decoder predicts the next token based on the hidden state and the memory-augmented context.
+
+\subsection{Memory-Augmented Module}
+
+To enhance context retention, we introduce two complementary memory mechanisms:
+
+\textbf{Short-Term Memory (STM)}: Captures recent context using a summarization layer and token limit controller, which condense previous sentences into a compact representation (max 256 tokens).
+
+\textbf{Long-Term Memory (LTM)}: Stores semantically meaningful information derived from previous text segments, including semantic search embeddings and named-entity representations (NER), which are retrieved during prediction to enrich the LSTM's input.
+
+During inference, the model retrieves both short-term and long-term summaries and concatenates them with the current input before passing them to the LSTM encoder.
+
+\subsection{Model Variants}
+
+We implement five progressively complex model variants:
+
+\begin{enumerate}
+    \item \textbf{Model 0 (Base)}: Baseline LSTM with no memory components.
+    \item \textbf{Model 1 (SummarizationOnly)}: Adds summarization of historical context.
+    \item \textbf{Model 2 (SumTokenLimit)}: Extends Model 1 with token limit truncation.
+    \item \textbf{Model 3 (SumTokNer)}: Extends Model 2 with Named Entity Recognition.
+    \item \textbf{Model 4 (FullMemory)}: Complete model with semantic search capabilities.
+\end{enumerate}
+
+% ========== EXPERIMENTS ==========
+\section{Experimental Setup}
+\label{sec:experiments}
+
+\subsection{Datasets}
+
+We evaluate on two datasets:
+\begin{itemize}
+    \item \textbf{Synthetic Dataset}: SkillMiner QA dataset with 200 question-answer pairs, generated from a ChatGPT conversation \cite{chatgpt2025synthetic}.
+    \item \textbf{Real Dataset}: Dog-Cat QA dataset \cite{shahi2024dogcat} with 200 question-answer pairs focusing on pet care and behavior.
+\end{itemize}
+
+\subsection{Training Configuration}
+
+All models use 256 hidden dimensions with character-level tokenization, trained for 10 epochs. Evaluation metrics include:
+\begin{itemize}
+    \item \textbf{STM Accuracy}: Tests questions from 2 rows before (threshold: 0.6)
+    \item \textbf{LTM Accuracy}: Tests questions from 9 rows before (threshold: 0.5)
+    \item Similarity scores using LLM-as-a-judge (primary) and difflib (secondary)
+\end{itemize}
+
+% ========== RESULTS ==========
+\section{Results}
+\label{sec:results}
+
+\subsection{Synthetic Dataset Results}
+
+Table~\ref{tab:results} shows the performance of all models on the synthetic dataset. We observe consistent improvement as memory components are added: Model 0 (Base) achieves 0.325 STM and 0.700 LTM accuracy at epoch 9. Adding summarization (Model 1) improves STM accuracy to 0.425 while maintaining LTM at 0.700. Model 2, with token limit truncation, achieves 0.375 STM and 0.750 LTM accuracy. Model 3, with NER, achieves 0.375 STM and 0.800 LTM accuracy at epoch 5---notably reaching peak performance earlier than other models. Model 4 (FullMemory) achieves the highest STM accuracy of 0.550 at epoch 9, though LTM accuracy decreases to 0.750.
+
+\begin{table}[t]
+  \centering
+\caption{Performance comparison on synthetic dataset (best epoch).}
+\label{tab:results}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Model & Epoch & STM Acc & LTM Acc \\
+\midrule
+0 (Base) & 9 & 0.325 & 0.700 \\
+1 (SumOnly) & 9 & 0.425 & 0.700 \\
+2 (SumTokLimit) & 9 & 0.375 & 0.750 \\
+3 (SumTokNer) & 5 & 0.375 & 0.800 \\
+4 (FullMemory) & 9 & 0.550 & 0.750 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The detailed results are shown in Table~\ref{tab:detailed}. Notably, Model 3 reaches its best performance at epoch 5 (loss: 0.0930), suggesting that additional memory components enable faster convergence. Model 4 achieves the highest STM accuracy (0.550) with strong LLM scores, though LTM accuracy decreases slightly from Model 3's peak of 0.800.
+
+\begin{table}[t]
+  \centering
+\caption{Detailed metrics for all models (best epoch).}
+\label{tab:detailed}
+\footnotesize
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Model & Loss & STM Acc & LTM Acc & STM LLM & LTM LLM \\
+\midrule
+0 (Base) & 0.0578 & 0.325 & 0.700 & 0.493 & 0.480 \\
+1 (SumOnly) & 0.0609 & 0.425 & 0.700 & 0.525 & 0.515 \\
+2 (SumTokLimit) & 0.0571 & 0.375 & 0.750 & 0.517 & 0.555 \\
+3 (SumTokNer) & 0.0930 & 0.375 & 0.800 & 0.500 & 0.505 \\
+4 (FullMemory) & 0.0687 & 0.550 & 0.750 & 0.512 & 0.505 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Real Dataset Results}
+
+We evaluate models on the Dog-Cat QA dataset. As shown in Table~\ref{tab:real}, all models achieve 0.000 accuracy across all epochs, indicating the models struggle with this domain. This represents a poorly performing aspect of our project. However, we observe positive trends for Model 4: loss decreases from 2.5025 to 1.4264, and difflib scores increase from 0.033 to 0.054 for STM and 0.027 to 0.035 for LTM, suggesting gradual learning despite not meeting accuracy thresholds.
+
+\begin{table}[t]
+  \centering
+\caption{Real dataset (Dog-Cat) results: Loss and difflib scores (best epoch).}
+\label{tab:real}
+\footnotesize
+\begin{tabular}{@{}lcccc@{}}
+    \toprule
+Model & Loss & STM Difflib & LTM Difflib & Epoch \\
+    \midrule
+0 (Base) & 1.4217 & 0.060 & 0.062 & 10 \\
+1 (SumOnly) & 1.4286 & 0.063 & 0.050 & 10 \\
+2 (SumTokLimit) & 1.3974 & 0.061 & 0.041 & 10 \\
+3 (SumTokNer) & 1.4145 & 0.059 & 0.042 & 10 \\
+4 (FullMemory) & 1.4289 & 0.071 & 0.062 & 10 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+All models achieve 0.000 accuracy across all epochs, indicating the models struggle with this domain. This represents a poorly performing aspect of our project. However, we observe positive learning trends across all models: loss consistently decreases from epoch 1 to epoch 10 (e.g., Model 0: 2.4974 $\rightarrow$ 1.4217, Model 2: 2.4895 $\rightarrow$ 1.3974, Model 4: 2.5147 $\rightarrow$ 1.4289), and difflib scores generally increase, suggesting gradual learning despite not meeting accuracy thresholds. Model 2 achieves the lowest final loss (1.3974), while Model 4 shows the highest STM difflib score (0.071) at epoch 10.
+
+Qualitative analysis reveals all models generate repetitive patterns (e.g., ``o o o o'', ``and and and'', ``cat cat cat'', ``the disease and provide their disease''), indicating they have not learned meaningful language patterns for this domain. This suggests the models may require domain-specific adaptations, more training data, or different hyperparameters for the Dog-Cat domain.
+
+% ========== ANALYSIS ==========
+\section{Analysis and Discussion}
+\label{sec:analysis}
+
+\subsection{Performance Trends}
+
+From the synthetic dataset results, we observe clear improvement as memory components are added. Model 0 $\rightarrow$ Model 1 shows a 30.8\% relative improvement in STM accuracy (0.325 $\rightarrow$ 0.425), demonstrating that summarization effectively captures recent context.
+
+Model 1 $\rightarrow$ Model 2 shows a trade-off: STM accuracy decreases slightly (0.425 $\rightarrow$ 0.375) but LTM accuracy increases (0.700 $\rightarrow$ 0.750), explained by token truncation focusing summaries for long-term retrieval while potentially removing recent details.
+
+Model 2 $\rightarrow$ Model 3 shows LTM accuracy improving to 0.800, the highest among all models, demonstrating that NER effectively captures key entities for long-term context. Notably, Model 3 reaches its best performance at epoch 5 (loss: 0.0930), compared to epoch 9 for other models, suggesting that additional memory components enable faster convergence and better capability.
+
+Model 3 $\rightarrow$ Model 4 shows an interesting trade-off: STM accuracy increases significantly (0.375 $\rightarrow$ 0.550), but LTM accuracy decreases (0.800 $\rightarrow$ 0.750). This suggests semantic search may introduce noise or distract from entity-focused information for LTM tasks, while improving short-term context retrieval through richer semantic connections.
+
+\subsection{Loss Trends}
+
+All models show consistent loss reduction: Model 0 (1.9220 $\rightarrow$ 0.0541), Model 1 (1.9097 $\rightarrow$ 0.0571), Model 2 (1.8975 $\rightarrow$ 0.0522), Model 3 (1.9378 $\rightarrow$ 0.0558), Model 4 (1.8962 $\rightarrow$ 0.0627). Most models reach best performance at epoch 9, but Model 3 achieves its best at epoch 5, demonstrating that increased model capability (through NER) enables faster convergence with lower loss and higher accuracy.
+
+\subsection{Qualitative Analysis}
+
+From epoch 9 of Model 2, we observe examples demonstrating strong performance. In one successful STM case, the model's output matches the first 10+ words exactly with the ground truth, correctly capturing core structure and meaning. The only difference is entity substitution (``Python'' $\rightarrow$ ``data visualization''), but the overall meaning is preserved.
+
+Model 4 shows both strong and weak examples. In successful cases (epoch 9), the model produces semantically coherent responses with LLM scores of 0.800 and 0.600, such as: ``role, SkillMiner clusters your skills around themes such as deep learning and aligns them with job relevant milestones.'' However, some failures show low LLM scores (0.200) when the model generates responses that don't match the specific question context, indicating limitations in context-aware retrieval despite semantic search capabilities.
+
+\subsection{Similarity Score Analysis}
+
+The comparison between LLM scores and difflib scores reveals important insights. LLM scores (avg: 0.517 for STM, 0.555 for LTM) are significantly higher than difflib scores (avg: 0.164 for STM, 0.205 for LTM), suggesting many model outputs are semantically correct but differ in exact wording. This aligns with qualitative observations that the model produces human-readable, meaningful responses.
+
+\subsection{Where the Model Performs Well}
+
+\begin{itemize}
+    \item \textbf{Structural Consistency}: Maintains overall structure and format, often matching first 10-15 words exactly.
+    \item \textbf{Semantic Coherence}: Produces semantically equivalent responses even when exact words differ.
+    \item \textbf{Long-Term Context Retrieval}: LTM accuracy of 0.750 demonstrates successful retrieval from 9 rows earlier.
+    \item \textbf{Domain-Specific Patterns}: Learns common patterns in the SkillMiner QA domain.
+\end{itemize}
+
+\subsection{Where the Model Performs Poorly}
+
+\begin{itemize}
+    \item \textbf{Entity Substitution}: Sometimes substitutes specific entities with generic or previously seen ones.
+    \item \textbf{Generic Response Generation}: Occasionally generates generic responses that don't adapt to specific questions.
+    \item \textbf{Exact Match Requirements}: Performance appears lower under strict similarity metrics than human judgment suggests.
+\end{itemize}
+
+\subsection{Real Dataset Analysis}
+
+On the Dog-Cat QA dataset, all models show consistent loss reduction across epochs, indicating learning is occurring despite 0.000 accuracy. Model 0 shows loss decreasing from 2.4974 (epoch 1) to 1.4217 (epoch 10), a 43.1\% reduction. Model 2 achieves the lowest final loss (1.3974), suggesting token limit truncation helps focus learning even in challenging domains. Model 4 shows the highest STM difflib score (0.071) at epoch 10, indicating semantic search may help retrieve relevant patterns despite overall poor performance.
+
+The increasing difflib scores across epochs (e.g., Model 0 STM: 0.027 $\rightarrow$ 0.060, Model 4 STM: 0.032 $\rightarrow$ 0.071) suggest the models are gradually learning to produce outputs that share more character-level similarity with ground truth, even if they don't meet the accuracy thresholds. However, the repetitive output patterns (e.g., ``and and and'', ``cat cat cat'') indicate the models are overfitting to common tokens rather than learning meaningful language structures. This suggests the Dog-Cat domain may require: (1) domain-specific tokenization or preprocessing, (2) larger training datasets, (3) different hyperparameters (learning rate, batch size), or (4) domain-adapted embeddings for semantic search components.
+
+% ========== PROS AND CONS ==========
+\section{Pros and Cons}
+\label{sec:proscons}
+
+\subsection{Advantages}
+
+\begin{itemize}
+    \item \textbf{Interpretability}: Unlike black-box transformers, we can examine retrieved summaries, entities, and semantic memories.
+    \item \textbf{Computational Efficiency}: Lightweight compared to large transformer models; memory components can be pre-computed and cached.
+    \item \textbf{Explicit Memory Management}: Fine-grained control over information retention and usage.
+    \item \textbf{Scalability}: Modular design allows easy extension with additional components.
+\end{itemize}
+
+\subsection{Disadvantages}
+
+\begin{itemize}
+    \item \textbf{Limited Context Window}: Token limit (256 tokens) and summarization may lose important details.
+    \item \textbf{Summarization Quality}: Performance directly depends on summarization quality.
+    \item \textbf{Entity Extraction Limitations}: NER may miss domain-specific entities.
+    \item \textbf{Semantic Search Quality}: Relies on embedding quality for effective retrieval.
+\end{itemize}
+
+% ========== CONCLUSION ==========
+\section{Conclusion}
+\label{sec:conclusion}
+
+Our Memory-Augmented LSTM successfully addresses the long-context retention problem in traditional LSTMs by integrating explicit memory management. The progressive improvement from Model 0 to Model 4 validates our approach of incrementally adding memory components. The model demonstrates strong performance in maintaining semantic coherence and retrieving long-term context, though it faces challenges with exact entity matching. The interpretable, modular design makes it suitable for domains requiring context continuity.
+
+Future work could explore improved summarization techniques, better semantic embeddings, domain-specific fine-tuning, and hybrid approaches combining our memory-augmented LSTM with transformer architectures. Our implementation code is publicly available \cite{skillminer2025code}.
+
+% ========== REFERENCES ==========
+{
+    \small
+    \bibliographystyle{ieeenat_fullname}
+    \bibliography{main}
+}
+
+% ========== APPENDIX ==========
+\newpage
+\appendix
+\section{Terminal Output}
+\label{app:output}
+
+The epoch summaries for all models on both datasets are provided below. Note that only epoch summaries are included (debug examples omitted for brevity).
+
+\lstinputlisting[basicstyle=\ttfamily\tiny]{../report_output.txt}
+
+\end{document}

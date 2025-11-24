@@ -37,7 +37,7 @@ class FullMemoryLSTM(BaseMemoryLSTM):
         # 2. NER on summary (same as model 3)
         entities = self.ner_feat.extract(summary)
         entity_str_parts = []
-        # Support both general and finance domains
+        # Support general, finance, python, and pets domains
         if entities.get("skills"):
             entity_str_parts.append("Skills: " + ", ".join(entities["skills"]))
         if entities.get("products"):  # Finance domain
@@ -48,6 +48,18 @@ class FullMemoryLSTM(BaseMemoryLSTM):
             entity_str_parts.append("Financial Terms: " + ", ".join(entities["financial_terms"]))
         if entities.get("companies"):
             entity_str_parts.append("Companies: " + ", ".join(entities["companies"]))
+        if entities.get("libraries"):  # Python domain
+            entity_str_parts.append("Libraries: " + ", ".join(entities["libraries"]))
+        if entities.get("concepts"):  # Python domain
+            entity_str_parts.append("Concepts: " + ", ".join(entities["concepts"]))
+        if entities.get("tools"):  # Python domain
+            entity_str_parts.append("Tools: " + ", ".join(entities["tools"]))
+        if entities.get("breeds"):  # Pets domain
+            entity_str_parts.append("Breeds: " + ", ".join(entities["breeds"]))
+        if entities.get("health_issues"):  # Pets domain
+            entity_str_parts.append("Health Issues: " + ", ".join(entities["health_issues"]))
+        if entities.get("care_topics"):  # Pets domain
+            entity_str_parts.append("Care Topics: " + ", ".join(entities["care_topics"]))
 
         entity_block = "\n".join(entity_str_parts)
         

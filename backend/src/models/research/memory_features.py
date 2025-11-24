@@ -364,7 +364,7 @@ class NERExtractor:
             "other": [],
         }
 
-        # Financial/technical keywords for finance domain
+        # Domain-specific keywords
         finance_keywords = {
             "skills": [  # Products/Technologies
                 "gpu", "cpu", "dpu", "soc", "rtx", "cuda", "tensor", "dlss",
@@ -377,16 +377,90 @@ class NERExtractor:
                 "balance sheet", "income statement", "10-k", "10-q", "sec filing"
             ]
         }
+        
+        python_keywords = {
+            "skills": [  # Python libraries/packages
+                "pandas", "numpy", "sklearn", "scikit-learn", "keras", "tensorflow",
+                "pytorch", "fuzzywuzzy", "zipfile", "pickle", "datetime", "threading",
+                "flask", "django", "pytest", "conftest", "spacy", "nltk", "openai"
+            ],
+            "roles": [  # Programming concepts/topics
+                "gradient clipping", "lstm", "rnn", "neural network", "machine learning",
+                "operator overloading", "threading", "multithreading", "generator",
+                "yield", "decorator", "context manager", "class", "inheritance",
+                "polymorphism", "encapsulation", "exception handling", "async", "await",
+                "cross validation", "smote", "auc", "f1 score", "precision", "recall",
+                "tokenizer", "embedding", "vectorizer", "tfidf", "countvectorizer"
+            ],
+            "companies": [  # Tools/platforms
+                "pycharm", "jupyter", "anaconda", "pip", "conda", "aws", "ec2",
+                "google app engine", "bash", "shell", "linux", "windows"
+            ]
+        }
+        
+        pets_keywords = {
+            "skills": [  # Dog and cat breeds
+                "labrador", "retriever", "golden retriever", "german shepherd", "bulldog",
+                "beagle", "poodle", "rottweiler", "yorkshire terrier", "dachshund",
+                "siberian husky", "great dane", "boxer", "doberman", "australian shepherd",
+                "corgi", "shih tzu", "boston terrier", "pomeranian", "chihuahua",
+                "maltese", "basset hound", "mastiff", "saint bernard", "border collie",
+                "persian", "maine coon", "british shorthair", "ragdoll", "american shorthair",
+                "scottish fold", "sphynx", "russian blue", "siamese", "abyssinian",
+                "bengal", "birman", "himalayan", "norwegian forest", "oriental shorthair",
+                "korat", "javanese", "japanese bobtail", "havana brown", "burmilla",
+                "burmese", "bombay", "akita", "collie", "setter", "spaniel", "terrier"
+            ],
+            "roles": [  # Health issues and medical conditions
+                "diabetes", "arthritis", "cancer", "heart disease", "kidney disease",
+                "liver disease", "urinary tract", "infection", "parasite", "flea",
+                "tick", "heartworm", "allergy", "asthma", "obesity", "anemia",
+                "cataract", "glaucoma", "deafness", "blindness", "dental", "tooth",
+                "gum", "vomiting", "diarrhea", "constipation", "fever", "lethargy",
+                "seizure", "hyperthyroidism", "hypothyroidism", "pancreatitis",
+                "gastric", "volvulus", "colitis", "megacolon", "lymphoma", "leukemia"
+            ],
+            "companies": [  # Care topics: training, grooming, feeding, behavior
+                "training", "grooming", "feeding", "nutrition", "exercise", "walking",
+                "vaccination", "spaying", "neutering", "litter box", "scratching",
+                "bathing", "brushing", "nail trimming", "dental care", "socialization",
+                "behavior", "aggression", "anxiety", "stress", "play", "toys",
+                "carrier", "crate", "leash", "harness", "food", "treats", "diet",
+                "weight", "obesity", "hydration", "water", "shelter", "bedding"
+            ]
+        }
 
         text_lower = text.lower()
         
-        # Extract finance keywords
+        # Extract finance keywords (if finance domain)
         for keyword in finance_keywords["skills"]:
             if keyword in text_lower:
                 entities["skills"].append(keyword.title())
         for keyword in finance_keywords["roles"]:
             if keyword in text_lower:
                 entities["roles"].append(keyword.title())
+        
+        # Extract Python keywords (if python domain)
+        for keyword in python_keywords["skills"]:
+            if keyword in text_lower:
+                entities["skills"].append(keyword.title())
+        for keyword in python_keywords["roles"]:
+            if keyword in text_lower:
+                entities["roles"].append(keyword.title())
+        for keyword in python_keywords["companies"]:
+            if keyword in text_lower:
+                entities["companies"].append(keyword.title())
+        
+        # Extract pets keywords (if pets domain)
+        for keyword in pets_keywords["skills"]:
+            if keyword in text_lower:
+                entities["skills"].append(keyword.title())
+        for keyword in pets_keywords["roles"]:
+            if keyword in text_lower:
+                entities["roles"].append(keyword.title())
+        for keyword in pets_keywords["companies"]:
+            if keyword in text_lower:
+                entities["companies"].append(keyword.title())
 
         for ent in doc.ents:
             if ent.label_ in ("ORG",):
@@ -468,7 +542,9 @@ class NERFeature:
         
         Args:
             domain: "general" for skills/roles/companies (default),
-                   "finance" for products/financial_terms/companies
+                   "finance" for products/financial_terms/companies,
+                   "python" for libraries/concepts/tools,
+                   "pets" for breeds/health_issues/care_topics
         """
         self.ner = NERExtractor()
         self.domain = domain
@@ -483,6 +559,22 @@ class NERFeature:
                 "products": entities.get("skills", []),  # Technologies/products
                 "financial_terms": entities.get("roles", []),  # Financial concepts
                 "companies": entities.get("companies", []),
+            }
+            return mapped
+        elif self.domain == "python":
+            # For python: map to libraries, concepts, tools
+            mapped = {
+                "libraries": entities.get("skills", []),  # Python libraries/packages
+                "concepts": entities.get("roles", []),  # Programming concepts/topics
+                "tools": entities.get("companies", []),  # Development tools/platforms
+            }
+            return mapped
+        elif self.domain == "pets":
+            # For pets: map to breeds, health_issues, care_topics
+            mapped = {
+                "breeds": entities.get("skills", []),  # Dog and cat breeds
+                "health_issues": entities.get("roles", []),  # Health problems and medical conditions
+                "care_topics": entities.get("companies", []),  # Training, grooming, feeding, behavior
             }
             return mapped
         else:
