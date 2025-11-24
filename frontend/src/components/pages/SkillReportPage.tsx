@@ -3,8 +3,6 @@ import {
   Target,
   TrendingUp,
   CheckCircle,
-  AlertCircle,
-  Clock,
   Calendar,
   ArrowRight,
   Sparkles,
@@ -17,8 +15,7 @@ import {
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { Progress } from "../ui/progress";
-import { Input } from "../ui/input";
+import { Separator } from "../ui/separator";
 import { Label } from "../ui/label";
 import {
   Select,
@@ -27,12 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Separator } from "../ui/separator";
 // import { Header } from "../Header";
 import { generateStudyPlan } from "../../services/studyPlan";
 import { createClient } from "../../utils/supabase/client";
 
-// === helpers for mapping weekly_hours <-> hoursPerDay 選項 ===
+// ===== 跟 analysis 一樣：直接寫死 API base URL =====
+const API_BASE_URL = "http://localhost:8000";
+
+// === helpers for mapping weekly_hours <-> hoursPerDay options ===
 type HoursPerDayOption = "1-2" | "2-3" | "3-4" | "4+";
 
 function mapWeeklyHoursToDailyOption(weekly: number | null): HoursPerDayOption {
@@ -57,71 +56,6 @@ function estimateWeeklyHours(
   return Math.round(mid * daysPerWeek);
 }
 
-const existingSkills = [
-  { name: "Python", level: "Intermediate", color: "blue" },
-  { name: "Excel", level: "Advanced", color: "green" },
-  { name: "Communication", level: "Advanced", color: "green" },
-  { name: "R", level: "Beginner", color: "yellow" },
-];
-
-const softSkillsYouHave = [
-  "Team Collaboration",
-  "Problem Solving",
-  "Communication",
-  "Time Management",
-];
-
-const softSkillsToDevelop = ["Leadership", "Strategic Thinking"];
-
-const missingSkills = [
-  {
-    name: "SQL",
-    priority: "High",
-    estimatedTime: "20 hours",
-    resources: [
-      { name: "Mode SQL Tutorial", url: "https://mode.com/sql-tutorial/" },
-      { name: "LeetCode SQL", url: "https://leetcode.com/problemset/database/" },
-    ],
-    type: "hard",
-  },
-  {
-    name: "Tableau",
-    priority: "High",
-    estimatedTime: "15 hours",
-    resources: [
-      {
-        name: "Tableau Public Tutorials",
-        url: "https://public.tableau.com/en-us/s/resources",
-      },
-      {
-        name: "DataCamp Tableau Courses",
-        url: "https://www.datacamp.com/courses/tableau",
-      },
-    ],
-    type: "hard",
-  },
-  {
-    name: "Statistics",
-    priority: "Medium",
-    estimatedTime: "25 hours",
-    resources: [
-      {
-        name: "Khan Academy Statistics",
-        url: "https://www.khanacademy.org/math/statistics-probability",
-      },
-      { name: "StatQuest (YouTube)", url: "https://www.youtube.com/c/joshstarmer" },
-    ],
-    type: "hard",
-  },
-  {
-    name: "Problem Solving",
-    priority: "Medium",
-    estimatedTime: "10 hours",
-    resources: [{ name: "Practice with case studies", url: "" }],
-    type: "soft",
-  },
-];
-
 interface SkillReportProps {
   onGenerateStudyPlan?: (planId?: string) => void;
   analysisId?: string;
@@ -129,9 +63,24 @@ interface SkillReportProps {
   useBackend?: boolean;
 }
 
+// 從 /analysis/{id}/resources 回來的單一 resource 可能的欄位
+type Resource = {
+  title?: string;
+  name?: string;
+  full_name?: string;
+  url?: string;
+  link?: string;
+  html_url?: string;
+  repo_url?: string;
+  provider?: string;
+  [key: string]: any;
+};
+
+type ResourceMap = Record<string, Resource[]>;
+
 export function SkillReport({
   onGenerateStudyPlan,
-  analysisId,
+  analysisId: initialAnalysisId,
   accessToken,
   useBackend = true,
 }: SkillReportProps) {
@@ -148,10 +97,32 @@ export function SkillReport({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const readinessScore = 68;
-  const hardSkillsMissing = missingSkills.filter((s) => s.type === "hard");
-  const softSkillsMissing = missingSkills.filter((s) => s.type === "soft");
+  // Local analysis state
+  const [analysisId, setAnalysisId] = useState<string | undefined>(
+    initialAnalysisId
+  );
+  const [matchScore, setMatchScore] = useState<number | null>(null);
 
+  // dynamic skills from API / DB
+  const [matchedTechnical, setMatchedTechnical] = useState<string[]>([]);
+  const [matchedSoft, setMatchedSoft] = useState<string[]>([]);
+  const [missingTechnical, setMissingTechnical] = useState<string[]>([]);
+  const [missingSoft, setMissingSoft] = useState<string[]>([]);
+
+  // resources 狀態
+  const [techResources, setTechResources] = useState<ResourceMap>({});
+  const [softResources, setSoftResources] = useState<ResourceMap>({});
+  const [loadingResources, setLoadingResources] = useState(false);
+
+  // Convert matchScore -> percentage readiness score
+  const readinessScore =
+    matchScore !== null
+      ? matchScore <= 1
+        ? Math.round(matchScore * 100) // treat as 0–1
+        : Math.round(matchScore) // treat as 0–100
+      : 68; // fallback if not loaded
+
+  // ===== 1) Load weekly_hours from profiles -> map to hoursPerDay =====
   useEffect(() => {
     if (!useBackend) return;
 
@@ -189,6 +160,141 @@ export function SkillReport({
     loadProfilePreferences();
   }, [useBackend]);
 
+  // ===== 2) Auto-resolve analysisId: use prop if given, else latest from skill_analyses =====
+  useEffect(() => {
+    if (!useBackend) return;
+
+    const loadLatestAnalysis = async () => {
+      try {
+        // If parent already provided analysisId, just use it
+        if (initialAnalysisId) {
+          setAnalysisId(initialAnalysisId);
+          return;
+        }
+
+        const supabase = createClient();
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          console.warn("[SkillReport] No auth user, cannot load analysis");
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("skill_analyses")
+          .select("id, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          console.warn("[SkillReport] Failed to load latest skill analysis:", error);
+          return;
+        }
+
+        const row = data as { id: string } | null;
+
+        if (row?.id) {
+          setAnalysisId(row.id);
+        } else {
+          console.log("[SkillReport] No skill_analyses rows found for this user");
+        }
+      } catch (err) {
+        console.warn("[SkillReport] loadLatestAnalysis error:", err);
+      }
+    };
+
+    loadLatestAnalysis();
+  }, [initialAnalysisId, useBackend]);
+
+  // ===== 3) Once we have analysisId, load match_score & skills from skill_analyses =====
+  useEffect(() => {
+    if (!useBackend || !analysisId) return;
+
+    const loadAnalysisDetails = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("skill_analyses")
+          .select(
+            "match_score, matched_skills_technical, matched_skills_soft, missing_skills_technical, missing_skills_soft"
+          )
+          .eq("id", analysisId)
+          .maybeSingle();
+
+        if (error) {
+          console.warn("[SkillReport] Failed to load analysis details:", error);
+          return;
+        }
+
+        const row = data as {
+          match_score: number | null;
+          matched_skills_technical: string[] | null;
+          matched_skills_soft: string[] | null;
+          missing_skills_technical: string[] | null;
+          missing_skills_soft: string[] | null;
+        } | null;
+
+        if (!row) return;
+
+        if (row.match_score !== null) {
+          setMatchScore(row.match_score);
+        } else {
+          setMatchScore(null);
+        }
+
+        setMatchedTechnical(row.matched_skills_technical || []);
+        setMatchedSoft(row.matched_skills_soft || []);
+        setMissingTechnical(row.missing_skills_technical || []);
+        setMissingSoft(row.missing_skills_soft || []);
+      } catch (err) {
+        console.warn("[SkillReport] loadAnalysisDetails error:", err);
+      }
+    };
+
+    loadAnalysisDetails();
+  }, [analysisId, useBackend]);
+
+  // ===== 4) 有 analysisId 之後，去打 /analysis/{id}/resources 抓學習資源 =====
+  useEffect(() => {
+    if (!useBackend || !analysisId) return;
+
+    const loadResources = async () => {
+      try {
+        setLoadingResources(true);
+        const res = await fetch(
+          `${API_BASE_URL}/analysis/${analysisId}/resources`
+        );
+        if (!res.ok) {
+          console.warn(
+            "[SkillReport] Failed to fetch resources, status:",
+            res.status
+          );
+          return;
+        }
+
+        const data: {
+          technical?: ResourceMap;
+          soft?: ResourceMap;
+          message?: string;
+        } = await res.json();
+
+        setTechResources(data.technical || {});
+        setSoftResources(data.soft || {});
+      } catch (err) {
+        console.warn("[SkillReport] loadResources error:", err);
+      } finally {
+        setLoadingResources(false);
+      }
+    };
+
+    loadResources();
+  }, [analysisId, useBackend]);
+
   const getReadinessMessage = (score: number) => {
     if (score >= 80)
       return {
@@ -210,6 +316,30 @@ export function SkillReport({
   };
 
   const readiness = getReadinessMessage(readinessScore);
+
+  // 小 helper：從 resource 物件抓 label / url
+  const getResourceLabel = (r: Resource): string =>
+    r.title ||
+    r.name ||
+    r.full_name ||
+    r.provider ||
+    "View resource";
+
+  const getResourceUrl = (r: Resource): string | undefined => {
+    // 先嘗試常見欄位
+    if (typeof r.url === "string") return r.url;
+    if (typeof r.link === "string") return r.link;
+    if (typeof r.html_url === "string") return r.html_url;
+    if (typeof r.repo_url === "string") return r.repo_url;
+
+    // fallback：從所有欄位中找第一個 http 開頭的字串
+    for (const v of Object.values(r)) {
+      if (typeof v === "string" && v.startsWith("http")) {
+        return v;
+      }
+    }
+    return undefined;
+  };
 
   const handleGenerateStudyPlan = async () => {
     if (!useBackend) {
@@ -267,14 +397,13 @@ export function SkillReport({
                 weekly_hours: weeklyHours,
               } as any
             );
-
         } catch (profileErr) {
           console.warn(
             "[SkillReport] Failed to sync profile preferences (weekly_hours):",
             profileErr
           );
         }
-}
+      }
 
       console.log("Generating study plan with:", {
         analysisId,
@@ -289,7 +418,7 @@ export function SkillReport({
         hoursPerDay,
         timeline,
         studyDays,
-        jobDescription: "Data Analyst (Entry-Level) Position",
+        jobDescription: "",
       });
 
       console.log("Study plan generated:", studyPlan.id);
@@ -317,7 +446,6 @@ export function SkillReport({
             Your Career Readiness Report
           </h1>
           <p className="text-lg text-slate-600">
-            Data Analyst (Entry-Level) Position
           </p>
         </div>
 
@@ -329,27 +457,33 @@ export function SkillReport({
                 <div className="text-4xl text-purple-600 mb-1">
                   {readinessScore}%
                 </div>
-                <div className="text-xs text-slate-600">Ready</div>
+                <div className="text-xs text-slate-600">
+                </div>
               </div>
             </div>
             <h2 className={`text-2xl mb-2 ${readiness.color}`}>
               {readiness.icon} {readiness.text}
             </h2>
             <p className="text-slate-700 max-w-2xl mx-auto">
-              You have a solid foundation with <strong>4 relevant skills</strong>.
-              Focus on building <strong>4 key areas</strong> to become fully
-              qualified for this role. With consistent effort, you could be ready
-              in about <strong>2-3 months</strong>.
+              Your resume currently has a{" "}
+              <strong>{readinessScore}% match</strong> to this role. Focus on
+              strengthening the missing skills to become fully qualified. With
+              consistent effort, you could be job-ready in about{" "}
+              <strong>2-3 months</strong>.
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-6 mt-6">
             <div className="text-center p-4 bg-white rounded-lg border border-purple-200">
-              <div className="text-2xl text-green-600 mb-1">4</div>
+              <div className="text-2xl text-green-600 mb-1">
+                {matchedTechnical.length + matchedSoft.length}
+              </div>
               <div className="text-sm text-slate-600">Skills You Have</div>
             </div>
             <div className="text-center p-4 bg-white rounded-lg border border-purple-200">
-              <div className="text-2xl text-purple-600 mb-1">4</div>
+              <div className="text-2xl text-purple-600 mb-1">
+                {missingTechnical.length + missingSoft.length}
+              </div>
               <div className="text-sm text-slate-600">Skills to Learn</div>
             </div>
             <div className="text-center p-4 bg-white rounded-lg border border-purple-200">
@@ -543,7 +677,7 @@ export function SkillReport({
           )}
         </Card>
 
-        {/* Existing Skills */}
+        {/* Existing Skills (Matched) */}
         <Card className="p-6 mb-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-green-100 p-3 rounded-xl">
@@ -552,38 +686,60 @@ export function SkillReport({
             <div>
               <h2 className="text-xl text-slate-900">Your Existing Strengths</h2>
               <p className="text-sm text-slate-600">
-                Skills you already have for this role
+                Skills detected in your resume that match this role
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {existingSkills.map((skill) => (
-              <div
-                key={skill.name}
-                className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200"
-              >
+          {matchedTechnical.length === 0 && matchedSoft.length === 0 ? (
+            <p className="text-sm text-slate-600">
+              No skills detected yet. Try uploading a resume with more detailed
+              skill descriptions.
+            </p>
+          ) : (
+            <div className="space-y-6">
+              {/* Technical */}
+              {matchedTechnical.length > 0 && (
                 <div>
-                  <div className="text-slate-900 mb-1">{skill.name}</div>
-                  <Badge
-                    className={
-                      skill.color === "green"
-                        ? "bg-green-100 text-green-700"
-                        : skill.color === "blue"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }
-                  >
-                    {skill.level}
-                  </Badge>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">
+                    Technical Skills
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {matchedTechnical.map((skill) => (
+                      <Badge
+                        key={skill}
+                        className="bg-green-50 text-green-700 border border-green-200"
+                      >
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-            ))}
-          </div>
+              )}
+
+              {/* Soft */}
+              {matchedSoft.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">
+                    Soft Skills
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {matchedSoft.map((skill) => (
+                      <Badge
+                        key={skill}
+                        className="bg-blue-50 text-blue-700 border border-blue-200"
+                      >
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </Card>
 
-        {/* Skills to Develop */}
+        {/* Skills to Develop (Missing + Resources) */}
         <Card className="p-6 mb-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-purple-100 p-3 rounded-xl">
@@ -597,64 +753,83 @@ export function SkillReport({
             </div>
           </div>
 
-          {/* Hard Skills */}
+          {/* Technical Skills to Develop */}
           <div className="mb-6">
             <h3 className="text-slate-900 mb-4 flex items-center gap-2">
               <Target className="w-5 h-5 text-purple-600" />
               Technical Skills
             </h3>
-            <div className="space-y-3">
-              {hardSkillsMissing.map((skill) => (
-                <div
-                  key={skill.name}
-                  className="p-4 bg-white rounded-lg border border-slate-200"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="text-slate-900">{skill.name}</h4>
-                        <Badge
-                          className={
-                            skill.priority === "High"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-orange-100 text-orange-700"
-                          }
-                        >
-                          {skill.priority} Priority
+
+            {missingTechnical.length === 0 ? (
+              <p className="text-sm text-slate-600">
+                No missing technical skills detected for this job description.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {missingTechnical.map((skill) => {
+                  const resources = techResources[skill] || [];
+                  return (
+                    <div
+                      key={skill}
+                      className="p-4 bg-white rounded-lg border border-slate-200"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-slate-900 font-medium">
+                          {skill}
+                        </span>
+                        <Badge className="bg-red-50 text-red-700 border border-red-200">
+                          Missing
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-slate-600">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {skill.estimatedTime}
-                        </span>
-                      </div>
+
+                      {loadingResources && resources.length === 0 ? (
+                        <p className="text-xs text-slate-500">
+                          Loading learning resources...
+                        </p>
+                      ) : resources.length === 0 ? (
+                        <p className="text-xs text-slate-500">
+                          No curated resources yet for this skill.
+                        </p>
+                      ) : (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {resources.map((r, idx) => {
+                            const label = getResourceLabel(r);
+                            const url = getResourceUrl(r);
+                            if (!url) {
+                              return (
+                                <Badge
+                                  key={idx}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {label}
+                                </Badge>
+                              );
+                            }
+                            return (
+                              <a
+                                key={idx}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-block"
+                              >
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors"
+                                >
+                                  {label} →
+                                </Badge>
+                              </a>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="text-sm text-slate-700">
-                    <strong>Recommended resources:</strong>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {skill.resources.map((resource, idx) => (
-                        <a
-                          key={idx}
-                          href={resource.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block"
-                        >
-                          <Badge
-                            variant="outline"
-                            className="text-xs cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors"
-                          >
-                            {resource.name} →
-                          </Badge>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Soft Skills */}
@@ -671,40 +846,106 @@ export function SkillReport({
               </div>
             </div>
 
-            {/* Skills You Have */}
+            {/* Skills You Have (from matchedSoft) */}
             <div className="mb-4">
               <div className="flex items-center gap-2 mb-3">
                 <CheckCircle className="w-4 h-4 text-green-600" />
                 <h4 className="text-sm text-slate-900">Skills You Have</h4>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {softSkillsYouHave.map((skill) => (
-                  <Badge
-                    key={skill}
-                    className="bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100"
-                  >
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
+              {matchedSoft.length === 0 ? (
+                <p className="text-xs text-slate-500">
+                  No soft skills detected yet.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {matchedSoft.map((skill) => (
+                    <Badge
+                      key={skill}
+                      className="bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100"
+                    >
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Skills to Develop */}
+            {/* Skills to Develop (from missingSoft + resources) */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <X className="w-4 h-4 text-red-600" />
                 <h4 className="text-sm text-slate-900">Skills to Develop</h4>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {softSkillsToDevelop.map((skill) => (
-                  <Badge
-                    key={skill}
-                    className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
-                  >
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
+              {missingSoft.length === 0 ? (
+                <p className="text-xs text-slate-500">
+                  No missing soft skills detected for this role.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {missingSoft.map((skill) => {
+                    const resources = softResources[skill] || [];
+                    return (
+                      <div
+                        key={skill}
+                        className="p-4 bg-white rounded-lg border border-slate-200"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-slate-900 font-medium">
+                            {skill}
+                          </span>
+                          <Badge className="bg-red-50 text-red-700 border border-red-200">
+                            Missing
+                          </Badge>
+                        </div>
+
+                        {loadingResources && resources.length === 0 ? (
+                          <p className="text-xs text-slate-500">
+                            Loading learning resources...
+                          </p>
+                        ) : resources.length === 0 ? (
+                          <p className="text-xs text-slate-500">
+                            No curated resources yet for this skill.
+                          </p>
+                        ) : (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {resources.map((r, idx) => {
+                              const label = getResourceLabel(r);
+                              const url = getResourceUrl(r);
+                              if (!url) {
+                                return (
+                                  <Badge
+                                    key={idx}
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
+                                    {label}
+                                  </Badge>
+                                );
+                              }
+                              return (
+                                <a
+                                  key={idx}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-block"
+                                >
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                                  >
+                                    {label} →
+                                  </Badge>
+                                </a>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </Card>
@@ -742,12 +983,15 @@ export function SkillReport({
                   Exponent - Behavioral Interview Prep
                 </h4>
                 <p className="text-sm text-slate-600 mb-3">
-                  Practice common behavioral questions for Leadership, Strategic
-                  Thinking, and other soft skills with expert feedback and
-                  frameworks.
+                  Practice common behavioral questions for leadership, strategic
+                  thinking, communication, and other soft skills with expert
+                  feedback and frameworks.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {softSkillsToDevelop.map((skill) => (
+                  {(missingSoft.length > 0
+                    ? missingSoft.slice(0, 4)
+                    : ["Leadership", "Strategic Thinking", "Communication"]
+                  ).map((skill) => (
                     <Badge
                       key={skill}
                       className="bg-blue-50 text-blue-700 border border-blue-200"
