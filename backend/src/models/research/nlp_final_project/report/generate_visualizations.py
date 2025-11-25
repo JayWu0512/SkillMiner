@@ -135,13 +135,13 @@ def plot_model_comparison_synthetic():
     ax.set_xticklabels(model_labels, rotation=0)
     ax.legend(loc='upper left', frameon=True)
     ax.grid(axis='y', alpha=0.3, linestyle='--')
-    ax.set_ylim([0, 0.85])
+    ax.set_ylim([0, 0.90])  # Increased upper limit to accommodate labels
     
     # Add value labels on bars
     for bars in [bars1, bars2]:
         for bar in bars:
             height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height + 0.01,
+            ax.text(bar.get_x() + bar.get_width()/2., height + 0.015,
                    f'{height:.3f}', ha='center', va='bottom', fontsize=9)
     
     plt.tight_layout()
@@ -179,9 +179,14 @@ def plot_model_comparison_real():
     ax1.grid(alpha=0.3, linestyle='--')
     ax1.legend(frameon=True)
     
+    # Set y-axis limits with padding for labels
+    loss_min, loss_max = min(losses), max(losses)
+    loss_range = loss_max - loss_min
+    ax1.set_ylim([loss_min - 0.05, loss_max + 0.05])
+    
     # Add value labels
     for i, (xi, yi) in enumerate(zip(x, losses)):
-        ax1.text(xi, yi + 0.02, f'{yi:.3f}', ha='center', va='bottom', fontsize=9)
+        ax1.text(xi, yi + 0.01, f'{yi:.3f}', ha='center', va='bottom', fontsize=9)
     
     # Plot 2: Difflib scores
     width = 0.35
@@ -195,10 +200,14 @@ def plot_model_comparison_real():
     ax2.legend(frameon=True)
     ax2.grid(axis='y', alpha=0.3, linestyle='--')
     
+    # Set y-axis limits with padding for labels
+    difflib_max = max(max(stm_difflibs), max(ltm_difflibs))
+    ax2.set_ylim([0, difflib_max * 1.15])
+    
     # Add value labels
     for i, (stm, ltm) in enumerate(zip(stm_difflibs, ltm_difflibs)):
-        ax2.text(i - width/2, stm + 0.002, f'{stm:.3f}', ha='center', va='bottom', fontsize=8)
-        ax2.text(i + width/2, ltm + 0.002, f'{ltm:.3f}', ha='center', va='bottom', fontsize=8)
+        ax2.text(i - width/2, stm + difflib_max * 0.01, f'{stm:.3f}', ha='center', va='bottom', fontsize=8)
+        ax2.text(i + width/2, ltm + difflib_max * 0.01, f'{ltm:.3f}', ha='center', va='bottom', fontsize=8)
     
     plt.tight_layout()
     plt.savefig('model_comparison_real.pdf', dpi=300, bbox_inches='tight')
