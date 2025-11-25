@@ -44,6 +44,7 @@ Duke University\\
 \usepackage{multirow}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{graphicx}
 
 % Configure listings for terminal output
 \lstset{
@@ -120,7 +121,7 @@ We evaluate on two datasets:
 
 \subsection{Training Configuration}
 
-All models use 256 hidden dimensions with character-level tokenization, trained for 10 epochs. Evaluation metrics include:
+All models use 256 hidden dimensions with character-level tokenization, trained for 10 epochs. Training time is approximately 6 hours for all 5 models on both datasets (10 training runs total) on NVIDIA GPU with CUDA, or $\sim$24-30 hours on Mac (CPU). Evaluation metrics include:
 \begin{itemize}
     \item \textbf{STM Accuracy}: Tests questions from 2 rows before (threshold: 0.6)
     \item \textbf{LTM Accuracy}: Tests questions from 9 rows before (threshold: 0.5)
@@ -133,10 +134,10 @@ All models use 256 hidden dimensions with character-level tokenization, trained 
 
 \subsection{Synthetic Dataset Results}
 
-Table~\ref{tab:results} shows the performance of all models on the synthetic dataset. We observe consistent improvement as memory components are added: Model 0 (Base) achieves 0.325 STM and 0.700 LTM accuracy at epoch 9. Adding summarization (Model 1) improves STM accuracy to 0.425 while maintaining LTM at 0.700. Model 2, with token limit truncation, achieves 0.375 STM and 0.750 LTM accuracy. Model 3, with NER, achieves 0.375 STM and 0.800 LTM accuracy at epoch 5---notably reaching peak performance earlier than other models. Model 4 (FullMemory) achieves the highest STM accuracy of 0.550 at epoch 9, though LTM accuracy decreases to 0.750.
+Table~\ref{tab:results} shows the performance of all models on the synthetic dataset. Figure~\ref{fig:model_comp_syn} visualizes the model comparison, and Figure~\ref{fig:training_syn} shows training progress over epochs. We observe consistent improvement as memory components are added: Model 0 (Base) achieves 0.325 STM and 0.700 LTM accuracy at epoch 9. Adding summarization (Model 1) improves STM accuracy to 0.425 while maintaining LTM at 0.700. Model 2, with token limit truncation, achieves 0.375 STM and 0.750 LTM accuracy. Model 3, with NER, achieves 0.375 STM and 0.800 LTM accuracy at epoch 5---notably reaching peak performance earlier than other models. Model 4 (FullMemory) achieves the highest STM accuracy of 0.550 at epoch 9, though LTM accuracy decreases to 0.750.
 
 \begin{table}[t]
-  \centering
+\centering
 \caption{Performance comparison on synthetic dataset (best epoch).}
 \label{tab:results}
 \small
@@ -153,7 +154,14 @@ Model & Epoch & STM Acc & LTM Acc \\
 \end{tabular}
 \end{table}
 
-The detailed results are shown in Table~\ref{tab:detailed}. Notably, Model 3 reaches its best performance at epoch 5 (loss: 0.0930), suggesting that additional memory components enable faster convergence. Model 4 achieves the highest STM accuracy (0.550) with strong LLM scores, though LTM accuracy decreases slightly from Model 3's peak of 0.800.
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.48\textwidth]{model_comparison_synthetic.pdf}
+\caption{Model comparison on synthetic dataset (best epoch).}
+\label{fig:model_comp_syn}
+\end{figure*}
+
+The detailed results are shown in Table~\ref{tab:detailed}. Figure~\ref{fig:training_syn} shows training progress over epochs, demonstrating how each model improves over time. Notably, Model 3 reaches its best performance at epoch 5 (loss: 0.0930), suggesting that additional memory components enable faster convergence. Model 4 achieves the highest STM accuracy (0.550) with strong LLM scores, though LTM accuracy decreases slightly from Model 3's peak of 0.800.
 
 \begin{table}[t]
   \centering
@@ -175,27 +183,34 @@ Model & Loss & STM Acc & LTM Acc & STM LLM & LTM LLM \\
 
 \subsection{Real Dataset Results}
 
-We evaluate models on the Dog-Cat QA dataset. As shown in Table~\ref{tab:real}, all models achieve 0.000 accuracy across all epochs, indicating the models struggle with this domain. This represents a poorly performing aspect of our project. However, we observe positive trends for Model 4: loss decreases from 2.5025 to 1.4264, and difflib scores increase from 0.033 to 0.054 for STM and 0.027 to 0.035 for LTM, suggesting gradual learning despite not meeting accuracy thresholds.
+We evaluate models on the Dog-Cat QA dataset. As shown in Table~\ref{tab:real} and Figure~\ref{fig:model_comp_real}, all models achieve 0.000 accuracy across all epochs, indicating the models struggle with this domain. This represents a poorly performing aspect of our project. However, we observe positive trends across all models: loss consistently decreases (see Figure~\ref{fig:training_real}), and difflib scores generally increase, suggesting gradual learning despite not meeting accuracy thresholds.
 
 \begin{table}[t]
-  \centering
+\centering
 \caption{Real dataset (Dog-Cat) results: Loss and difflib scores (best epoch).}
 \label{tab:real}
 \footnotesize
 \begin{tabular}{@{}lcccc@{}}
-    \toprule
+\toprule
 Model & Loss & STM Difflib & LTM Difflib & Epoch \\
-    \midrule
+\midrule
 0 (Base) & 1.4217 & 0.060 & 0.062 & 10 \\
 1 (SumOnly) & 1.4286 & 0.063 & 0.050 & 10 \\
 2 (SumTokLimit) & 1.3974 & 0.061 & 0.041 & 10 \\
 3 (SumTokNer) & 1.4145 & 0.059 & 0.042 & 10 \\
 4 (FullMemory) & 1.4289 & 0.071 & 0.062 & 10 \\
-    \bottomrule
-  \end{tabular}
+\bottomrule
+\end{tabular}
 \end{table}
 
-All models achieve 0.000 accuracy across all epochs, indicating the models struggle with this domain. This represents a poorly performing aspect of our project. However, we observe positive learning trends across all models: loss consistently decreases from epoch 1 to epoch 10 (e.g., Model 0: 2.4974 $\rightarrow$ 1.4217, Model 2: 2.4895 $\rightarrow$ 1.3974, Model 4: 2.5147 $\rightarrow$ 1.4289), and difflib scores generally increase, suggesting gradual learning despite not meeting accuracy thresholds. Model 2 achieves the lowest final loss (1.3974), while Model 4 shows the highest STM difflib score (0.071) at epoch 10.
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.48\textwidth]{model_comparison_real.pdf}
+\caption{Model comparison on real dataset (epoch 10).}
+\label{fig:model_comp_real}
+\end{figure*}
+
+All models achieve 0.000 accuracy across all epochs, indicating the models struggle with this domain. This represents a poorly performing aspect of our project. However, we observe positive learning trends across all models: loss consistently decreases from epoch 1 to epoch 10 (e.g., Model 0: 2.4974 $\rightarrow$ 1.4217, Model 2: 2.4895 $\rightarrow$ 1.3974, Model 4: 2.5147 $\rightarrow$ 1.4289), and difflib scores generally increase, suggesting gradual learning despite not meeting accuracy thresholds. Model 2 achieves the lowest final loss (1.3974), while Model 4 shows the highest STM difflib score (0.071) at epoch 10. Figure~\ref{fig:training_real} visualizes the training progress.
 
 Qualitative analysis reveals all models generate repetitive patterns (e.g., ``o o o o'', ``and and and'', ``cat cat cat'', ``the disease and provide their disease''), indicating they have not learned meaningful language patterns for this domain. This suggests the models may require domain-specific adaptations, more training data, or different hyperparameters for the Dog-Cat domain.
 
@@ -286,6 +301,20 @@ Future work could explore improved summarization techniques, better semantic emb
     \bibliographystyle{ieeenat_fullname}
     \bibliography{main}
 }
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.95\textwidth]{training_progress_synthetic.pdf}
+\caption{Training progress over epochs for synthetic dataset.}
+\label{fig:training_syn}
+\end{figure*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.95\textwidth]{training_progress_real.pdf}
+\caption{Training progress over epochs for real dataset.}
+\label{fig:training_real}
+\end{figure*}
 
 % ========== APPENDIX ==========
 \newpage

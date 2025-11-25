@@ -131,23 +131,23 @@ We evaluate our models on two datasets:
 
 \subsection{Synthetic Dataset Results}
 
-Table~\ref{tab:summary} summarizes the performance of all models on both datasets. On the synthetic dataset, we observe consistent improvement as memory components are added: Model 0 (Base) achieves 0.325 STM and 0.700 LTM accuracy at epoch 9. Model 1 improves STM to 0.425. Model 2 achieves 0.375 STM and 0.750 LTM. Model 3 achieves 0.375 STM and 0.800 LTM at epoch 5---notably reaching peak performance earlier. Model 4 achieves the highest STM accuracy of 0.550, though LTM decreases to 0.750.
+Table~\ref{tab:summary} summarizes the performance of all models on the synthetic dataset. We observe consistent improvement as memory components are added: Model 0 (Base) achieves 0.325 STM and 0.700 LTM accuracy at epoch 9. Model 1 improves STM to 0.425. Model 2 achieves 0.375 STM and 0.750 LTM. Model 3 achieves 0.375 STM and 0.800 LTM at epoch 5---notably reaching peak performance earlier. Model 4 achieves the highest STM accuracy of 0.550, though LTM decreases to 0.750.
 
-On the real dataset (Dog-Cat), Model 4 shows 0.000 accuracy across all epochs, indicating the model struggles with this domain. However, loss decreases from 2.5025 to 1.4264, and difflib scores increase, suggesting gradual learning.
+On the real dataset (Dog-Cat), all models show 0.000 accuracy across all epochs, indicating the models struggle with this domain. However, loss decreases consistently and difflib scores increase, suggesting gradual learning (see Table~\ref{tab:real}).
 
 \begin{table}[h]
 \centering
-\caption{Performance comparison on synthetic and real datasets (best epoch).}
+\caption{Performance comparison on synthetic dataset (best epoch).}
 \label{tab:summary}
-\begin{tabularx}{\textwidth}{@{}lXXXX@{}}
+\begin{tabularx}{\textwidth}{@{}lXXX@{}}
 \toprule
-Model & Syn. Epoch & Syn. STM/LTM & Real STM Acc & Real LTM Acc \\
+Model & Syn. Epoch & Syn. STM Acc & Syn. LTM Acc \\
 \midrule
-0 (Base) & 9 & 0.325 / 0.700 & 0.000 & 0.000 \\
-1 (SumOnly) & 9 & 0.425 / 0.700 & 0.000 & 0.000 \\
-2 (SumTokLimit) & 9 & 0.375 / 0.750 & 0.000 & 0.000 \\
-3 (SumTokNer) & 5 & 0.375 / 0.800 & 0.000 & 0.000 \\
-4 (FullMemory) & 9 & 0.550 / 0.750 & 0.000 & 0.000 \\
+0 (Base) & 9 & 0.325 & 0.700 \\
+1 (SumOnly) & 9 & 0.425 & 0.700 \\
+2 (SumTokLimit) & 9 & 0.375 & 0.750 \\
+3 (SumTokNer) & 5 & 0.375 & 0.800 \\
+4 (FullMemory) & 9 & 0.550 & 0.750 \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -171,7 +171,7 @@ Model & Loss & STM Acc & LTM Acc & STM LLM & LTM LLM \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:real} shows the real dataset results, demonstrating loss reduction and difflib score improvement for Model 4 despite 0.000 accuracy.
+Table~\ref{tab:real} shows the real dataset results. Figure~\ref{fig:model_comp_real} and Figure~\ref{fig:training_real} visualize the model comparison and training progress, demonstrating loss reduction and difflib score improvement across all models despite 0.000 accuracy.
 
 \begin{table}[h]
 \centering
@@ -373,9 +373,9 @@ The increasing difflib scores across epochs (e.g., Model 0 STM: 0.027 $\rightarr
 \subsection{Time Requirements}
 
 \begin{itemize}
-    \item \textbf{Training}: $\sim$10 epochs per model, with each epoch taking approximately [TO BE FILLED] minutes
+    \item \textbf{Training}: $\sim$10 epochs per model, with each epoch taking approximately 36 minutes on NVIDIA GPU with CUDA
     \item \textbf{Pre-computation}: Summarization and NER features are cached to avoid recomputation
-    \item \textbf{Total Training Time}: [TO BE FILLED] hours for all 5 models on both datasets
+    \item \textbf{Total Training Time}: $\sim$6 hours for all 5 models on both datasets (10 training runs total) on NVIDIA GPU with CUDA. On Mac (CPU), estimated time is $\sim$24-30 hours
 \end{itemize}
 
 \subsection{Computational Requirements}
@@ -383,7 +383,7 @@ The increasing difflib scores across epochs (e.g., Model 0 STM: 0.027 $\rightarr
 \begin{itemize}
     \item \textbf{Hardware}: GPU recommended for LSTM training
     \item \textbf{Memory}: Moderate memory requirements for storing embeddings and cached features
-    \item \textbf{Dependencies}: PyTorch, OpenAI API (for LLM-as-a-judge), transformers (for summarization/NER)
+    \item \textbf{Dependencies}: PyTorch, OpenAI API (for LLM-as-a-judge), transformers (for summarization/NER/autotokenizer)
 \end{itemize}
 
 \section{Conclusions}
@@ -411,6 +411,34 @@ The model has limitations in handling extremely long contexts, depends on summar
 \subsection{Future Work.} 
 
 Future work could explore improved summarization techniques, better semantic embeddings, domain-specific fine-tuning, and hybrid approaches combining memory-augmented LSTMs with transformer architectures.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{model_comparison_synthetic.pdf}
+\caption{Model comparison on synthetic dataset (best epoch).}
+\label{fig:model_comp_syn}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{training_progress_synthetic.pdf}
+\caption{Training progress over epochs for synthetic dataset.}
+\label{fig:training_syn}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{model_comparison_real.pdf}
+\caption{Model comparison on real dataset (epoch 10).}
+\label{fig:model_comp_real}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{training_progress_real.pdf}
+\caption{Training progress over epochs for real dataset.}
+\label{fig:training_real}
+\end{figure}
 
 \newpage
 
