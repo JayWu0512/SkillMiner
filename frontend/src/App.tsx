@@ -13,14 +13,15 @@ import { Profile } from "./components/pages/ProfilePage";
 import { Resume } from "./components/pages/ResumePage";
 import { SkillReport } from "./components/pages/SkillReportPage";
 
-// ---- Global UI ----
 import { Header } from "./components/features/Header";
 import { Toaster } from "./components/ui/sonner";
 import { PersistentChatbot } from "./components/features/PersistentChatbot";
 
-// ---- Supabase ----
 import { createClient } from "./utils/supabase/client";
-import { getStudyPlan, type StudyPlan as StudyPlanData } from "./services/studyPlan";
+import {
+  getStudyPlan,
+  type StudyPlan as StudyPlanData,
+} from "./services/studyPlan";
 
 type Nullable<T> = T | null;
 
@@ -29,10 +30,11 @@ type AuthUser = {
   email: string | null;
 };
 
-// === CONFIG ===
 const USE_REAL_AUTH = true as const;
 
-// App state
+// ⭐ 單一 supabase client，避免到處 new
+const supabase = createClient();
+
 type AppState =
   | "login"
   | "upload"
@@ -48,9 +50,9 @@ type AppState =
 type HeaderNavKey =
   | "today"
   | "study-plan"
-  | "practice"           
-  | "coding-practice"     
-  | "interview-practice" 
+  | "practice"
+  | "coding-practice"
+  | "interview-practice"
   | "profile"
   | "settings";
 
@@ -63,8 +65,10 @@ export default function App() {
     if (typeof window === "undefined") return null;
     return window.localStorage.getItem("currentStudyPlanId");
   });
-  const [activeStudyPlan, setActiveStudyPlan] = useState<Nullable<StudyPlanData>>(null);
+  const [activeStudyPlan, setActiveStudyPlan] =
+    useState<Nullable<StudyPlanData>>(null);
 
+  // ---- localStorage 同步 ----
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (currentPlanId) {
@@ -74,13 +78,11 @@ export default function App() {
     }
   }, [currentPlanId]);
 
-  const handlePlanUpdate = useCallback(
-    (plan: Nullable<StudyPlanData>) => {
-      setActiveStudyPlan(plan);
-    },
-    []
-  );
+  const handlePlanUpdate = useCallback((plan: Nullable<StudyPlanData>) => {
+    setActiveStudyPlan(plan);
+  }, []);
 
+  // ---- 從 chatbot 更新 study plan ----
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleStudyPlanUpdate = (event: Event) => {
@@ -89,15 +91,27 @@ export default function App() {
       setCurrentPlanId(detail.id);
       handlePlanUpdate(detail);
     };
-    window.addEventListener("studyPlanUpdatedFromChat", handleStudyPlanUpdate as EventListener);
+    window.addEventListener(
+      "studyPlanUpdatedFromChat",
+      handleStudyPlanUpdate as EventListener
+    );
     return () => {
-      window.removeEventListener("studyPlanUpdatedFromChat", handleStudyPlanUpdate as EventListener);
+      window.removeEventListener(
+        "studyPlanUpdatedFromChat",
+        handleStudyPlanUpdate as EventListener
+      );
     };
   }, [handlePlanUpdate]);
 
-  const fetchAndStorePlan = async (planId: string, tokenOverride?: string | null) => {
+  const fetchAndStorePlan = async (
+    planId: string,
+    tokenOverride?: string | null
+  ) => {
     try {
-      const plan = await getStudyPlan(tokenOverride ?? accessToken ?? null, planId);
+      const plan = await getStudyPlan(
+        tokenOverride ?? accessToken ?? null,
+        planId
+      );
       handlePlanUpdate(plan);
       return plan;
     } catch (error) {
@@ -107,127 +121,145 @@ export default function App() {
     }
   };
 
-  const routeByHistory = async (uid: string, tokenOverride?: string) => {
-    const supabase = createClient();
+  // ---- 根據歷史決定要去 plan / upload / dashboard ----
+  async function routeByHistory(uid: string, tokenOverride?: string) {
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      console.log("[auth] user.id =", userRes?.user?.id);
 
-    const { data: userRes } = await supabase.auth.getUser();
-    console.log("[auth] user.id =", userRes?.user?.id);
-
-    const { data: latestPlanRowsRaw, error: latestPlanError } = await supabase
-      .from("study_plans")
-      .select("id")
-      .eq("user_id", uid)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    const latestPlanRows = (latestPlanRowsRaw as Array<{ id: string }> | null) ?? null;
-
-    if (!latestPlanError && latestPlanRows && latestPlanRows.length > 0) {
-      const latestPlanId = latestPlanRows?.[0]?.id;
-      if (latestPlanId) {
-        setCurrentPlanId(latestPlanId);
-        try {
-          await fetchAndStorePlan(latestPlanId, tokenOverride);
-        } catch (planError) {
-          console.warn("[routeByHistory] Latest study plan retrieval failed:", planError);
-        }
-        setAppState("plan");
-        return;
-      }
-    } else if (latestPlanError) {
-      console.warn("[routeByHistory] failed to fetch latest study plan:", latestPlanError);
-      if (currentPlanId) {
-        try {
-          await fetchAndStorePlan(currentPlanId, tokenOverride);
-          setAppState("plan");
-          return;
-        } catch (planError) {
-          console.warn("[routeByHistory] Stored study plan retrieval failed:", planError);
-        }
-      }
-    }
-
-    const q1 = await supabase
-      .from("skill_analyses")
-      .select("id, user_id, resume_text")
-      .eq("user_id", uid)
-      .limit(1);
-    // console.log("[q1] error =", q1.error, "rows =", q1.data?.length, q1.data);
-
-    let hasAny = false;
-    if (!q1.error && q1.data && q1.data.length > 0) {
-      const q2 = await supabase
-        .from("skill_analyses")
+      // 1) 先看有沒有最新的 study_plan
+      const { data: latestPlanRowsRaw, error: latestPlanError } = await supabase
+        .from("study_plans")
         .select("id")
         .eq("user_id", uid)
-        .not("resume_text", "is", null)
-        .neq("resume_text", "")
+        .order("created_at", { ascending: false })
         .limit(1);
-      // console.log("[q2] error =", q2.error, "rows =", q2.data?.length);
-      hasAny = !q2.error && !!q2.data && q2.data.length > 0;
-    }
 
-    if (q1.error) {
-      // console.error("[routeByHistory] Q1 failed:", q1.error);
+      const latestPlanRows =
+        (latestPlanRowsRaw as Array<{ id: string }> | null) ?? null;
+
+      if (!latestPlanError && latestPlanRows && latestPlanRows.length > 0) {
+        const latestPlanId = latestPlanRows?.[0]?.id;
+        if (latestPlanId) {
+          setCurrentPlanId(latestPlanId);
+          try {
+            await fetchAndStorePlan(latestPlanId, tokenOverride);
+          } catch (planError) {
+            console.warn(
+              "[routeByHistory] Latest study plan retrieval failed:",
+              planError
+            );
+          }
+          setAppState("plan");
+          return;
+        }
+      } else if (latestPlanError) {
+        console.warn(
+          "[routeByHistory] failed to fetch latest study plan:",
+          latestPlanError
+        );
+        if (currentPlanId) {
+          try {
+            await fetchAndStorePlan(currentPlanId, tokenOverride);
+            setAppState("plan");
+            return;
+          } catch (planError) {
+            console.warn(
+              "[routeByHistory] Stored study plan retrieval failed:",
+              planError
+            );
+          }
+        }
+      }
+
+      // 2) 沒有 plan，就看有沒有任何 skill_analyses
+      const q1 = await supabase
+        .from("skill_analyses")
+        .select("id, user_id, resume_text")
+        .eq("user_id", uid)
+        .limit(1);
+
+      if (q1.error) {
+        setCurrentPlanId(null);
+        handlePlanUpdate(null);
+        setAppState("upload");
+        return;
+      }
+
+      // 有 analysis 但沒 plan，就回 dashboard
       setCurrentPlanId(null);
       handlePlanUpdate(null);
-      setAppState("upload");
-      return;
+      setAppState("dashboard");
+    } catch (err) {
+      console.error("[routeByHistory] unexpected error:", err);
+      setCurrentPlanId(null);
+      handlePlanUpdate(null);
+      setAppState("dashboard");
     }
+  }
 
-    setCurrentPlanId(null);
-    handlePlanUpdate(null);
-    // if you want to start from the first
-    // setAppState("upload");
-    // default
-    setAppState("dashboard");
-  };
-
+  // ---- 初始化 & auth 監聽 ----
   useEffect(() => {
     if (!USE_REAL_AUTH) return;
 
     const init = async () => {
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      if (session?.access_token && session?.user?.id) {
-        setAccessToken(session.access_token);
-        setAuthUser({
-          id: session.user.id,
-          email: session.user.email ?? null,
-        });                                    
-        await routeByHistory(session.user.id, session.access_token);
-      } else {
-        setAuthUser(null);                    
+        if (session?.access_token && session?.user?.id) {
+          setAccessToken(session.access_token);
+          setAuthUser({
+            id: session.user.id,
+            email: session.user.email ?? null,
+          });
+
+          // 先給一個穩定畫面，不要被 DB call 卡住
+          setAppState("dashboard");
+
+          // 背景決定要不要跳到 plan / upload
+          void routeByHistory(session.user.id, session.access_token);
+        } else {
+          setAuthUser(null);
+          setAppState("login");
+        }
+      } catch (err) {
+        console.error("[App init] getSession failed:", err);
+        setAuthUser(null);
         setAppState("login");
       }
     };
 
-    init();
+    void init();
 
-    const supabase = createClient();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_evt, session) => {
-      if (session?.access_token && session?.user?.id) {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.access_token && session.user) {
         setAccessToken(session.access_token);
         setAuthUser({
           id: session.user.id,
           email: session.user.email ?? null,
-        });                                   
-        await routeByHistory(session.user.id, session.access_token);
-      } else {
-        setAuthUser(null);                   
+        });
+        // 只在真正 SIGNED_IN 時重新 route
+        setAppState("dashboard");
+        void routeByHistory(session.user.id, session.access_token);
+      } else if (event === "SIGNED_OUT") {
+        setAuthUser(null);
         setAppState("login");
+      } else {
+        // TOKEN_REFRESHED 等其他事件就不要亂動目前頁面
+        return;
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []); // ⭐ 不依賴 routeByHistory，避免每次 render 重跑
 
-  // === Handlers ===
+  // ---- Handlers ----
   const handleLoginSuccess = (token: string) => {
     setAccessToken(token);
   };
@@ -246,7 +278,6 @@ export default function App() {
     setAppState("login");
 
     if (USE_REAL_AUTH) {
-      const supabase = createClient();
       supabase.auth.signOut().catch((e) => {
         console.error("[App] supabase signOut failed:", e);
       });
@@ -266,7 +297,7 @@ export default function App() {
       case "profile":
         return "profile";
       case "settings":
-        return "dashboard"; 
+        return "dashboard";
       default:
         return "dashboard";
     }
@@ -276,7 +307,10 @@ export default function App() {
     if (planId) {
       setCurrentPlanId(planId);
       fetchAndStorePlan(planId).catch((err) => {
-        console.warn("[App] Failed to refresh study plan after generation:", err);
+        console.warn(
+          "[App] Failed to refresh study plan after generation:",
+          err
+        );
       });
     }
     setAppState("plan");
@@ -300,7 +334,9 @@ export default function App() {
       {appState !== "login" && appState !== "upload" && (
         <Header
           activePage={headerActive}
-          onNavigate={(key) => setAppState(mapHeaderKeyToState(key as HeaderNavKey))}
+          onNavigate={(key) =>
+            setAppState(mapHeaderKeyToState(key as HeaderNavKey))
+          }
           onLogout={handleLogout}
         />
       )}
@@ -335,17 +371,27 @@ export default function App() {
           planId={currentPlanId ?? undefined}
           accessToken={accessToken}
           initialPlan={activeStudyPlan ?? undefined}
-        onPlanUpdate={handlePlanUpdate}
-          onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")}
+          onPlanUpdate={handlePlanUpdate}
+          onNavigate={(p: string) =>
+            p === "dashboard" && setAppState("dashboard")
+          }
         />
       )}
 
       {appState === "coding" && (
-        <CodingPractice onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")} />
+        <CodingPractice
+          onNavigate={(p: string) =>
+            p === "dashboard" && setAppState("dashboard")
+          }
+        />
       )}
 
       {appState === "interview" && (
-        <InterviewPractice onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")} />
+        <InterviewPractice
+          onNavigate={(p: string) =>
+            p === "dashboard" && setAppState("dashboard")
+          }
+        />
       )}
 
       {appState === "profile" && (
@@ -360,7 +406,12 @@ export default function App() {
       )}
 
       {appState === "resume" && (
-        <Resume onNavigate={(p: string) => p === "dashboard" && setAppState("dashboard")} />
+        <Resume
+          onNavigate={(p) => {
+            if (p === "dashboard") setAppState("dashboard");
+            if (p === "upload") setAppState("upload"); // Re-analyze
+          }}
+        />
       )}
 
       {appState === "report" && (
