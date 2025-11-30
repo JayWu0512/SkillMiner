@@ -372,9 +372,15 @@ export default function App() {
           accessToken={accessToken}
           initialPlan={activeStudyPlan ?? undefined}
           onPlanUpdate={handlePlanUpdate}
-          onNavigate={(p: string) =>
-            p === "dashboard" && setAppState("dashboard")
-          }
+          onNavigate={(p: string) => {
+            if (p === "dashboard") {
+              setAppState("dashboard");
+            }
+            if (p === "skill-report" || p === "report") {
+              // 從 Study Plan 回到 Skill Report page
+              setAppState("report");
+            }
+          }}
         />
       )}
 

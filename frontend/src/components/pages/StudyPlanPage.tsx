@@ -23,7 +23,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "../ui/dialog";
+
 import {
   getStudyPlan,
   updateTaskCompletion,
@@ -33,6 +35,7 @@ import {
 import { createClient } from "../../utils/supabase/client";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
 const normalizeDayKey = (day: string) => day.slice(0, 3).toLowerCase();
 
 const toLocalDate = (isoDate: string | undefined | null) => {
@@ -45,10 +48,10 @@ const toLocalDate = (isoDate: string | undefined | null) => {
   return new Date(year, month - 1, day);
 };
 
-// ------- Supabase 連線（跟 Profile 一樣用單一 client） -------
+// ------- Supabase client -------
 const supabase = createClient();
 
-// ------- DB row 型別：對應 public.study_plans 的欄位 -------
+// （目前沒用到，但保留以後如果要直接 map DB row 用得到）
 type DBStudyPlanRow = {
   id: string;
   user_id: string;
@@ -65,7 +68,6 @@ type DBStudyPlanRow = {
   metadata: any;
 };
 
-// 把 DB 的 snake_case row 轉成前端 StudyPlanType
 const mapDBRowToStudyPlan = (row: DBStudyPlanRow): StudyPlanType => {
   return {
     id: row.id,
@@ -96,6 +98,74 @@ interface DailyTask {
   isRestDay?: boolean;
   color?: string;
 }
+
+// ======== ICS helpers (純 function，component 外面) =========
+
+// Format date to ICS friendly UTC datetime, e.g. 20241201T090000Z
+const formatDateToICS = (date: Date) => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    date.getUTCFullYear().toString() +
+    pad(date.getUTCMonth() + 1) +
+    pad(date.getUTCDate()) +
+    "T" +
+    pad(date.getUTCHours()) +
+    pad(date.getUTCMinutes()) +
+    pad(date.getUTCSeconds()) +
+    "Z"
+  );
+};
+
+// Escape commas, semicolons, newlines for ICS text fields
+const escapeICSText = (text: string) =>
+  text
+    .replace(/\\/g, "\\\\")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;")
+    .replace(/\r?\n/g, "\\n");
+
+// Build ICS string from current study plan + tasks
+const buildICSFromStudyPlan = (
+  plan: StudyPlanType,
+  tasks: Array<DailyTask & { fullDate: Date }>
+) => {
+  const lines: string[] = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//SkillMiner//StudyPlan//EN",
+  ];
+
+  const now = new Date();
+  const dtStamp = formatDateToICS(now);
+
+  tasks.forEach((t, idx) => {
+    if (t.isRestDay) return;
+
+    // For simplicity, set event time at 19:00 local; end time由 estTime 決定
+    const start = new Date(t.fullDate);
+    start.setHours(19, 0, 0, 0);
+    const end = new Date(start);
+
+    const match = t.estTime?.match(/(\d+)\s*h/i);
+    const hours = match ? parseInt(match[1], 10) : 2;
+    end.setHours(start.getHours() + hours);
+
+    lines.push("BEGIN:VEVENT");
+    lines.push(`UID:${plan.id}-${idx}@skillminer`);
+    lines.push(`DTSTAMP:${dtStamp}`);
+    lines.push(`DTSTART:${formatDateToICS(start)}`);
+    lines.push(`DTEND:${formatDateToICS(end)}`);
+    lines.push(`SUMMARY:${escapeICSText(t.theme || "Study Session")}`);
+    const descParts = [t.task, t.resources].filter(Boolean).join(" | ");
+    lines.push(`DESCRIPTION:${escapeICSText(descParts)}`);
+    lines.push("END:VEVENT");
+  });
+
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n");
+};
+
+// =============================================================
 
 // ------- mock 資料：完全沒有 study plan 時才會用 -------
 
@@ -161,7 +231,6 @@ const generateWeekData = (weekOffset: number): DailyTask[] => {
   return weekData.map((data, index) => {
     const date = new Date(startDate);
     date.setDate(date.getDate() + index);
-
     return {
       date: date.toLocaleDateString("en-US", {
         month: "short",
@@ -244,7 +313,6 @@ const generateAllTasks = (): (DailyTask & { fullDate: Date })[] => {
   for (let i = 0; i < 60; i++) {
     const currentDate = new Date(startDate);
     currentDate.setDate(startDate.getDate() + i);
-
     const templateIndex = i % 7;
     const task = taskTemplates[templateIndex];
 
@@ -274,8 +342,6 @@ const generateMonthData = (monthOffset: number) => {
   const month = baseDate.getMonth();
 
   const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-
   const firstDayOfWeek = firstDay.getDay();
   const daysFromPrevMonth = firstDayOfWeek;
 
@@ -317,7 +383,6 @@ const generateMonthData = (monthOffset: number) => {
 
 interface StudyPlanProps {
   onNavigate?: (page: string) => void;
-
   /** 可以給特定 planId；如果沒給，就會用 user_id 抓最新一筆 */
   planId?: string;
   accessToken?: string;
@@ -355,7 +420,6 @@ export function StudyPlan({
       try {
         // 1. 先拿 access token（優先用外面傳進來的）
         let token: string | null = accessToken || null;
-
         if (!token) {
           try {
             const {
@@ -376,7 +440,6 @@ export function StudyPlan({
             data: { user },
             error: userError,
           } = await supabase.auth.getUser();
-
           if (userError) throw userError;
           if (!user) {
             throw new Error("You must be logged in to view your study plan.");
@@ -446,6 +509,7 @@ export function StudyPlan({
       const updated = (event as CustomEvent<StudyPlanType>).detail;
       if (!updated) return;
       if (planId && updated.id !== planId) return;
+
       setStudyPlan(updated);
       onPlanUpdate?.(updated);
     };
@@ -467,6 +531,7 @@ export function StudyPlan({
   const planStudyDays = studyPlan?.studyDays ?? [];
   const planStudyDaySet = new Set(planStudyDays.map(normalizeDayKey));
   const hasStudyDayFilter = planStudyDaySet.size > 0;
+
   const planStartDate = toLocalDate(studyPlan?.startDate ?? undefined);
   const totalWeeks = studyPlan ? Math.ceil(studyPlan.totalDays / 7) : 8; // mock default
 
@@ -515,16 +580,17 @@ export function StudyPlan({
           }
 
           const resolvedDate = fullDate ?? new Date();
+
           const displayDate =
             task.date ??
             resolvedDate.toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
             });
+
           const dayLabel = DAY_LABELS[resolvedDate.getDay()];
           const displayDay = dayLabel === "Sun" ? "Sun" : dayLabel;
           const normalizedDay = normalizeDayKey(displayDay);
-
           const isRestDay =
             task.isRestDay ??
             (hasStudyDayFilter && !planStudyDaySet.has(normalizedDay));
@@ -546,7 +612,7 @@ export function StudyPlan({
 
           return {
             date: displayDate,
-            dayOfWeek: task.dayOfWeek ?? displayDay,
+            dayOfWeek: (task as any).dayOfWeek ?? displayDay,
             theme: task.theme,
             task: task.task,
             resources: task.resources,
@@ -608,11 +674,47 @@ export function StudyPlan({
     });
   };
 
+  // --- Export handlers (Google / ICS) ---
+  const handleExportCalendar = (type: "google" | "ics") => {
+    if (!studyPlan) {
+      alert("No study plan found. Please generate a plan first.");
+      return;
+    }
+
+    if (type === "ics") {
+      const icsText = buildICSFromStudyPlan(studyPlan, allTasks);
+
+      const blob = new Blob([icsText], {
+        type: "text/calendar;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "skillminer-study-plan.ics";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    if (type === "google") {
+      // 目前先顯示還在測試中的訊息
+      window.alert(
+        "Google Calendar sync is currently under testing. Please use the ICS export for now."
+      );
+      return;
+    }
+  };
+
+  // --- Regenerate Plan handler：回 Skill Report ---
+  const handleRegeneratePlan = () => {
+    onNavigate?.("skill-report");
+  };
+
   // 勾選完成（改成用 studyPlan.id，跟 user_id 無關）
-  const handleTaskComplete = async (
-    taskIndex: number,
-    completed: boolean
-  ) => {
+  const handleTaskComplete = async (taskIndex: number, completed: boolean) => {
     if (!studyPlan) return;
     if (studyPlan.planData.tasks[taskIndex]?.isRestDay) return;
 
@@ -620,7 +722,6 @@ export function StudyPlan({
 
     try {
       let token: string | null = accessToken || null;
-
       if (!token) {
         try {
           const {
@@ -643,7 +744,6 @@ export function StudyPlan({
         onPlanUpdate?.(updatedPlan);
       } catch (updateErr) {
         console.error("Error updating task, updating locally:", updateErr);
-
         const updatedTasks = [...studyPlan.planData.tasks];
         updatedTasks[taskIndex].completed = completed;
 
@@ -654,7 +754,6 @@ export function StudyPlan({
             tasks: updatedTasks,
           },
         };
-
         setStudyPlan(locallyUpdatedPlan);
         onPlanUpdate?.(locallyUpdatedPlan);
       }
@@ -675,7 +774,6 @@ export function StudyPlan({
     );
   }
 
-  // 不管有沒有 planId，只要 loadError 有值就顯示錯誤（例如：沒有 study plan）
   if (loadError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center px-6">
@@ -711,7 +809,8 @@ export function StudyPlan({
   }
 
   const currentPhase = weeksPhases.find(
-    (phase) => currentWeek >= phase.range[0] && currentWeek <= phase.range[1]
+    (phase) =>
+      currentWeek >= phase.range[0] && currentWeek <= phase.range[1]
   );
 
   const isUsingMockData = !studyPlan;
@@ -739,7 +838,9 @@ export function StudyPlan({
                   : "Fetching your personalized study plan..."}
               </p>
             </div>
+
             <div className="flex gap-3">
+              {/* Export to Calendar */}
               <Dialog>
                 <DialogTrigger asChild>
                   <Button className="bg-green-600 hover:bg-green-700">
@@ -747,6 +848,7 @@ export function StudyPlan({
                     Export to Calendar
                   </Button>
                 </DialogTrigger>
+
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Export Your Study Plan</DialogTitle>
@@ -755,58 +857,65 @@ export function StudyPlan({
                       your calendar
                     </DialogDescription>
                   </DialogHeader>
+
                   <div className="space-y-4 mt-4">
-                    <Card className="p-4 border-2 border-purple-200 hover:border-purple-400 cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="bg-purple-100 p-2 rounded">
-                          <Calendar className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-slate-900 mb-1">
-                            Google Calendar
-                          </h3>
-                          <p className="text-sm text-slate-600">
-                            Real-time sync with automatic updates (requires
-                            OAuth)
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                    <Card className="p-4 border-2 border-blue-200 hover:border-blue-400 cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="bg-blue-100 p-2 rounded">
-                          <Calendar className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-slate-900 mb-1">
-                            Outlook Calendar
-                          </h3>
-                          <p className="text-sm text-slate-600">
-                            Real-time sync with automatic updates (requires
-                            OAuth)
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                    <Card className="p-4 border-2 border-slate-200 hover:border-slate-400 cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="bg-slate-100 p-2 rounded">
-                          <Download className="w-5 h-5 text-slate-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-slate-900 mb-1">
-                            ICS File (One-time)
-                          </h3>
-                          <p className="text-sm text-slate-600">
-                            Download .ics file to import into any calendar app
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
+                    {/* Google Calendar */}
+                    <DialogClose asChild>
+                      <button
+                        type="button"
+                        className="w-full text-left"
+                        onClick={() => handleExportCalendar("google")}
+                      >
+                        <Card className="p-4 border-2 border-purple-200 hover:border-purple-400 cursor-pointer">
+                          <div className="flex items-start gap-3">
+                            <div className="bg-purple-100 p-2 rounded">
+                              <Calendar className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <div>
+                              <h3 className="text-slate-900 mb-1">
+                                Google Calendar
+                              </h3>
+                              <p className="text-sm text-slate-600">
+                                Real-time sync (currently in testing; ICS export
+                                is fully supported)
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+                      </button>
+                    </DialogClose>
+
+                    {/* ICS File */}
+                    <DialogClose asChild>
+                      <button
+                        type="button"
+                        className="w-full text-left"
+                        onClick={() => handleExportCalendar("ics")}
+                      >
+                        <Card className="p-4 border-2 border-slate-200 hover:border-slate-400 cursor-pointer">
+                          <div className="flex items-start gap-3">
+                            <div className="bg-slate-100 p-2 rounded">
+                              <Download className="w-5 h-5 text-slate-600" />
+                            </div>
+                            <div>
+                              <h3 className="text-slate-900 mb-1">
+                                ICS File (One-time)
+                              </h3>
+                              <p className="text-sm text-slate-600">
+                                Download .ics file to import into any calendar
+                                app
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+                      </button>
+                    </DialogClose>
                   </div>
                 </DialogContent>
               </Dialog>
-              <Button variant="outline">
+
+              {/* Regenerate Plan */}
+              <Button variant="outline" onClick={handleRegeneratePlan}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Regenerate Plan
               </Button>
@@ -823,11 +932,14 @@ export function StudyPlan({
                 <div>
                   <div className="text-sm text-slate-600">Progress</div>
                   <div className="text-xl text-slate-900">
-                    {studyPlan ? `${studyPlan.metadata.progress}%` : "34%"}
+                    {studyPlan
+                      ? `${studyPlan.metadata?.progress ?? 0}%`
+                      : "34%"}
                   </div>
                 </div>
               </div>
             </Card>
+
             <Card className="p-4">
               <div className="flex items-center gap-3">
                 <div className="bg-blue-100 p-2 rounded">
@@ -850,6 +962,7 @@ export function StudyPlan({
                 </div>
               </div>
             </Card>
+
             <Card className="p-4">
               <div className="flex items-center gap-3">
                 <div className="bg-green-100 p-2 rounded">
@@ -859,16 +972,18 @@ export function StudyPlan({
                   <div className="text-sm text-slate-600">Total XP</div>
                   <div className="text-xl text-slate-900">
                     {studyPlan
-                      ? `${
-                          studyPlan.planData.tasks
-                            .filter((t) => t.completed)
-                            .reduce((sum, t) => sum + t.xp, 0)
-                        } / ${studyPlan.metadata.totalXP}`
+                      ? `${studyPlan.planData.tasks
+                          .filter((t: any) => t.completed)
+                          .reduce(
+                            (sum: number, t: any) => sum + (t.xp ?? 0),
+                            0
+                          )} / ${studyPlan.metadata?.totalXP ?? 0}`
                       : "220 / 650"}
                   </div>
                 </div>
               </div>
             </Card>
+
             <Card className="p-4">
               <div className="flex items-center gap-3">
                 <div className="bg-orange-100 p-2 rounded">
@@ -913,6 +1028,7 @@ export function StudyPlan({
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Previous Week
               </Button>
+
               <div className="text-center">
                 <h2 className="text-xl text-slate-900">
                   Week {currentWeek + 1}: {currentPhase?.label}
@@ -921,6 +1037,7 @@ export function StudyPlan({
                   {startDate} - {endDate}
                 </p>
               </div>
+
               <Button
                 variant="outline"
                 onClick={() =>
@@ -990,6 +1107,7 @@ export function StudyPlan({
                           </div>
                         )}
                       </div>
+
                       <Badge
                         className={`w-full justify-center text-xs ${
                           task.completed
@@ -999,6 +1117,7 @@ export function StudyPlan({
                       >
                         {task.completed ? "✓ Completed" : `${task.xp} XP`}
                       </Badge>
+
                       {studyPlan && (
                         <Button
                           size="sm"
@@ -1007,7 +1126,7 @@ export function StudyPlan({
                           onClick={() => {
                             const idx =
                               studyPlan.planData.tasks.findIndex(
-                                (t) =>
+                                (t: any) =>
                                   t.date === task.date &&
                                   (t as any).dayOfWeek === task.dayOfWeek
                               );
@@ -1016,7 +1135,9 @@ export function StudyPlan({
                             }
                           }}
                         >
-                          {task.completed ? "Mark Incomplete" : "Mark Complete"}
+                          {task.completed
+                            ? "Mark Incomplete"
+                            : "Mark Complete"}
                         </Button>
                       )}
                     </div>
@@ -1056,11 +1177,13 @@ export function StudyPlan({
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Previous Month
               </Button>
+
               <div className="text-center">
                 <h2 className="text-xl text-slate-900">
                   {monthData.monthName}
                 </h2>
               </div>
+
               <Button
                 variant="outline"
                 onClick={() =>
@@ -1116,6 +1239,7 @@ export function StudyPlan({
                       >
                         {day.dayNumber}
                       </div>
+
                       <div className="space-y-1">
                         {studyTasksForDay.slice(0, 2).map((task, i2) => (
                           <div
@@ -1137,11 +1261,13 @@ export function StudyPlan({
                             {task.theme}
                           </div>
                         ))}
+
                         {studyTasksForDay.length > 2 && (
                           <div className="text-xs text-slate-500 px-2">
                             +{studyTasksForDay.length - 2} more
                           </div>
                         )}
+
                         {hasRestOnly && (
                           <div className="text-xs text-slate-400 px-2 italic">
                             Rest day
@@ -1169,6 +1295,7 @@ export function StudyPlan({
                     tasks scheduled • Track your progress daily
                   </p>
                 </div>
+
                 <div className="flex gap-3">
                   <div className="flex items-center gap-2 text-sm">
                     <div className="w-4 h-4 bg-green-500 rounded" />
@@ -1208,16 +1335,21 @@ export function StudyPlan({
                           {task.dayOfWeek}, {task.date}
                         </Badge>
                         <h3
-                          className={`text-slate-900 ${
-                            task.isRestDay ? "text-slate-500" : ""
+                          className={`${
+                            task.isRestDay
+                              ? "text-slate-500"
+                              : "text-slate-900"
                           }`}
                         >
                           {task.isRestDay ? "Rest Day" : task.theme}
                         </h3>
                         {task.completed && !task.isRestDay && (
-                          <Badge className="bg-green-600">✓ Completed</Badge>
+                          <Badge className="bg-green-600">
+                            ✓ Completed
+                          </Badge>
                         )}
                       </div>
+
                       <p
                         className={`mb-3 ${
                           task.isRestDay
@@ -1229,6 +1361,7 @@ export function StudyPlan({
                           ? "Recharge day — no study session planned."
                           : task.task}
                       </p>
+
                       {!task.isRestDay && (
                         <div className="flex items-center gap-4 text-sm text-slate-600">
                           <span className="flex items-center gap-1">
@@ -1240,6 +1373,7 @@ export function StudyPlan({
                         </div>
                       )}
                     </div>
+
                     <div className="flex flex-col items-end gap-2">
                       {!task.isRestDay && (
                         <Badge className="bg-purple-100 text-purple-700">
@@ -1266,44 +1400,44 @@ export function StudyPlan({
         <Card className="p-6 mt-8 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
           <h3 className="text-slate-900 mb-4">Study Plan Phases</h3>
           <div className="grid grid-cols-4 gap-4">
-            {weeksPhases.map((phase, index) => (
-              <div
-                key={index}
-                className={`bg-white rounded-lg p-4 border-2 ${
-                  currentWeek >= phase.range[0] && currentWeek <= phase.range[1]
-                    ? "border-purple-400 shadow-md"
-                    : "border-slate-200"
-                }`}
-              >
+            {weeksPhases.map((phase, index) => {
+              const isActive =
+                currentWeek >= phase.range[0] &&
+                currentWeek <= phase.range[1];
+
+              return (
                 <div
-                  className={`mb-2 ${
-                    currentWeek >= phase.range[0] &&
-                    currentWeek <= phase.range[1]
-                      ? "text-purple-600"
-                      : "text-slate-400"
+                  key={index}
+                  className={`bg-white rounded-lg p-4 border-2 ${
+                    isActive
+                      ? "border-purple-400 shadow-md"
+                      : "border-slate-200"
                   }`}
                 >
-                  Phase {index + 1}
+                  <div
+                    className={`mb-2 ${
+                      isActive ? "text-purple-600" : "text-slate-400"
+                    }`}
+                  >
+                    Phase {index + 1}
+                  </div>
+                  <div
+                    className={`text-sm mb-1 ${
+                      isActive ? "text-slate-900" : "text-slate-600"
+                    }`}
+                  >
+                    Weeks {phase.range[0] + 1}-{phase.range[1] + 1}:{" "}
+                    {phase.label}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    {index === 0 && "Python, SQL, Statistics basics"}
+                    {index === 1 && "Matplotlib, Tableau, EDA"}
+                    {index === 2 && "A/B Testing, Regression"}
+                    {index === 3 && "Projects, Interviews"}
+                  </div>
                 </div>
-                <div
-                  className={`text-sm mb-1 ${
-                    currentWeek >= phase.range[0] &&
-                    currentWeek <= phase.range[1]
-                      ? "text-slate-900"
-                      : "text-slate-600"
-                  }`}
-                >
-                  Weeks {phase.range[0] + 1}-{phase.range[1] + 1}:{" "}
-                  {phase.label}
-                </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  {index === 0 && "Python, SQL, Statistics basics"}
-                  {index === 1 && "Matplotlib, Tableau, EDA"}
-                  {index === 2 && "A/B Testing, Regression"}
-                  {index === 3 && "Projects, Interviews"}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       </div>
