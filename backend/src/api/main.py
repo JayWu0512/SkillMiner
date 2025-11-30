@@ -15,6 +15,7 @@ app = FastAPI(title="Resume RAG API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://skillminer.vercel.app/",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:5173",
@@ -28,16 +29,15 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+
 # Global exception handler for validation errors (422)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=jsonable_encoder({
-            "detail": exc.errors(),
-            "body": exc.body
-        }),
+        content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
     )
+
 
 # Global exception handler for unhandled errors (500)
 @app.exception_handler(Exception)
@@ -45,15 +45,14 @@ async def general_exception_handler(request: Request, exc: Exception):
     # Don't catch HTTPExceptions - let them pass through
     if isinstance(exc, HTTPException):
         raise exc
-    
+
     print(f"[Global] Unhandled exception: {exc}")
     print(traceback.format_exc())
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "detail": f"Internal server error: {str(exc)}"
-        },
+        content={"detail": f"Internal server error: {str(exc)}"},
     )
+
 
 app.include_router(health.router)
 app.include_router(upload.router)
