@@ -1,14 +1,22 @@
 // components/Resume.tsx
-import { useRef, useState } from "react";
-import { Upload, FileText, Download, Trash2, Check, Clock, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FileText, Clock } from "lucide-react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { toast } from "sonner";
+import { createClient } from "../../utils/supabase/client";
 
-type MockupPage =
-  | "login" | "upload" | "report" | "dashboard" | "plan"
-  | "coding" | "interview" | "profile" | "resume";
+type Page =
+  | "login"
+  | "upload"
+  | "report"
+  | "dashboard"
+  | "plan"
+  | "coding"
+  | "interview"
+  | "profile"
+  | "resume";
 
 interface ResumeVersion {
   id: string;
@@ -16,187 +24,202 @@ interface ResumeVersion {
   uploadDate: string;
   isActive: boolean;
   fileSize: string;
-  file?: File;      
-  url?: string;       
+  matchScore?: number | null;
+  skillsExtracted?: number | null;
+  createdAt?: string;
+  matchedTechnical?: string[];
+  matchedSoft?: string[];
 }
 
-const fmtBytes = (bytes: number) => {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+const formatUploadDate = (d: Date) =>
+  d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+const formatResumeName = (d: Date) => {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `Resume_${yyyy}-${mm}-${dd}_${hh}-${mi}`;
 };
 
-const todayLabel = () =>
-  new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const formatMatchScore = (score: number | null | undefined): string => {
+  if (score == null) return "—";
+  const val = score <= 1 ? Math.round(score * 100) : Math.round(score);
+  return `${val}%`;
+};
 
-interface ResumeMockupProps {
-  onNavigate?: (page: MockupPage) => void;
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+interface ResumeProps {
+  onNavigate?: (page: Page) => void;
 }
 
-export function Resume({ onNavigate }: ResumeMockupProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [versions, setVersions] = useState<ResumeVersion[]>([
-    {
-      id: crypto.randomUUID(),
-      name: "Resume_DataAnalyst_v3.pdf",
-      uploadDate: "Nov 8, 2024",
-      isActive: true,
-      fileSize: "124 KB",
-    },
-    {
-      id: crypto.randomUUID(),
-      name: "Resume_DataAnalyst_v2.pdf",
-      uploadDate: "Nov 1, 2024",
-      isActive: false,
-      fileSize: "118 KB",
-    },
-    {
-      id: crypto.randomUUID(),
-      name: "Resume_Marketing.pdf",
-      uploadDate: "Oct 15, 2024",
-      isActive: false,
-      fileSize: "112 KB",
-    },
-  ]);
+export function Resume({ onNavigate }: ResumeProps) {
+  const [versions, setVersions] = useState<ResumeVersion[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const active = versions.find(v => v.isActive);
+  // 1) 抓目前 user 在 skill_analyses 的最新三筆
+  useEffect(() => {
+    const fetchLatestAnalyses = async () => {
+      try {
+        setLoading(true);
+        const supabase = createClient();
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const f = files[0];
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
-    const okType = /pdf|docx?$/.test(f.name.toLowerCase());
-    if (!okType) {
-      toast.error("Only PDF or DOCX is allowed.");
-      return;
-    }
-    if (f.size > 5 * 1024 * 1024) {
-      toast.error("Max size 5MB.");
-      return;
-    }
+        if (userError) {
+          console.warn("[Resume] auth.getUser error:", userError);
+          return;
+        }
+        if (!user) {
+          console.warn("[Resume] No auth user, cannot load skill_analyses");
+          return;
+        }
 
-    const url = URL.createObjectURL(f);
-    const newItem: ResumeVersion = {
-      id: crypto.randomUUID(),
-      name: f.name,
-      uploadDate: todayLabel(),
-      isActive: true, 
-      fileSize: fmtBytes(f.size),
-      file: f,
-      url,
+        const { data, error } = await supabase
+          .from("skill_analyses")
+          .select(
+            "id, created_at, match_score, matched_skills_technical, matched_skills_soft"
+          )
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(3);
+
+        if (error) {
+          console.warn("[Resume] Failed to load skill_analyses:", error);
+          toast.error("Failed to load resume analyses.");
+          return;
+        }
+
+        const mapped: ResumeVersion[] =
+          data?.map((row: any, idx: number) => {
+            const created = row.created_at
+              ? new Date(row.created_at)
+              : new Date();
+
+            const technical: string[] =
+              (row.matched_skills_technical as string[] | null) ?? [];
+            const soft: string[] =
+              (row.matched_skills_soft as string[] | null) ?? [];
+
+            const skillsCount = technical.length + soft.length;
+
+            return {
+              id: row.id,
+              name: formatResumeName(created),
+              uploadDate: formatUploadDate(created),
+              isActive: idx === 0,
+              fileSize: "—",
+              matchScore: row.match_score ?? null,
+              skillsExtracted: skillsCount,
+              createdAt: row.created_at,
+              matchedTechnical: technical,
+              matchedSoft: soft,
+            };
+          }) ?? [];
+
+        setVersions(mapped);
+      } catch (err) {
+        console.warn("[Resume] fetchLatestAnalyses error:", err);
+        toast.error("Unexpected error while loading resumes.");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setVersions(prev => [newItem, ...prev.map(p => ({ ...p, isActive: false }))]);
-    toast.success("Resume uploaded (mock).");
-  };
+    void fetchLatestAnalyses();
+  }, []);
 
-  const onChooseFile = () => fileInputRef.current?.click();
+  const active = versions.find((v) => v.isActive);
 
-  const onDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleFiles(e.dataTransfer.files);
-  };
-
-  const onDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const setActive = (id: string) => {
-    setVersions(prev => prev.map(v => ({ ...v, isActive: v.id === id })));
-    toast.success("Set as Active.");
-  };
-
-  const removeOne = (id: string) => {
-    setVersions(prev => {
-      const target = prev.find(v => v.id === id);
-      if (target?.isActive) {
-        toast.error("Cannot delete the Active resume.");
-        return prev;
-      }
-      if (target?.url) URL.revokeObjectURL(target.url);
-      return prev.filter(v => v.id !== id);
-    });
-  };
-
-  const downloadOne = (v: ResumeVersion) => {
-    const url = v.url ?? URL.createObjectURL(new Blob([`Dummy file: ${v.name}`], { type: "text/plain" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = v.name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    if (!v.url) URL.revokeObjectURL(url);
-  };
-
+  // Re-analyze → 跳到 upload page
   const reAnalyze = () => {
-    toast.message("Re-analyzing (mock)…", { description: "No real API call made." });
-    setTimeout(() => toast.success("Analysis complete (mock)."), 800);
+    onNavigate?.("upload");
   };
 
-  const downloadActive = () => {
-    if (!active) {
-      toast.error("No active resume.");
-      return;
-    }
-    downloadOne(active);
-  };
+  const activeMatchScore = formatMatchScore(active?.matchScore);
+  const activeSkills = active?.skillsExtracted ?? "—";
+
+  const lastAnalysisLabel = (() => {
+    if (!active?.createdAt) return active?.uploadDate ?? "—";
+    const created = new Date(active.createdAt);
+    const today = new Date();
+    return isSameDay(created, today) ? "Today" : formatUploadDate(created);
+  })();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-6 py-6">
         <div className="container mx-auto">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl text-slate-900 mb-2">Resume Management</h1>
-              <p className="text-slate-600">Manage and track different versions of your resume</p>
-            </div>
-            <Button className="bg-purple-600 hover:bg-purple-700" onClick={onChooseFile}>
-              <Upload className="w-4 h-4 mr-2" />
-              Upload New Version
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.doc,.docx,application/pdf"
-              className="hidden"
-              onChange={(e) => handleFiles(e.target.files)}
-            />
-          </div>
+          <h1 className="text-3xl text-slate-900 mb-2">Resume Management</h1>
+          <p className="text-slate-600">
+            Review your resume-based skill analyses
+          </p>
         </div>
       </header>
 
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-12 gap-6">
-          {/* Main Content - Resume Versions */}
+          {/* Left: list of resume analyses */}
           <div className="col-span-8">
             <Card className="p-6 mb-6">
-              <h2 className="text-xl text-slate-900 mb-4">Resume Versions</h2>
+              <h2 className="text-xl text-slate-900 mb-4">Resume History</h2>
               <p className="text-slate-600 mb-6">
-                Keep track of different versions of your resume. The active resume is used for skill analysis and job matching.
+                Showing the latest three analyses from your resume uploads.
               </p>
 
-              <div className="space-y-3">
-                {versions.map((resume) => (
-                  <Card key={resume.id} className={`p-5 ${resume.isActive ? "border-2 border-purple-300 bg-purple-50" : ""}`}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className={`p-3 rounded-lg ${resume.isActive ? "bg-purple-100" : "bg-slate-100"}`}>
-                          <FileText className={`w-6 h-6 ${resume.isActive ? "text-purple-600" : "text-slate-600"}`} />
+              {loading && versions.length === 0 ? (
+                <p className="text-sm text-slate-500">Loading resume history...</p>
+              ) : versions.length === 0 ? (
+                <p className="text-sm text-slate-500">
+                  No analyses found yet. Upload a resume and run an analysis
+                  first.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {versions.map((resume) => (
+                    <Card
+                      key={resume.id}
+                      className={`p-5 ${
+                        resume.isActive
+                          ? "border-2 border-purple-300 bg-purple-50"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div
+                          className={`p-3 rounded-lg ${
+                            resume.isActive ? "bg-purple-100" : "bg-slate-100"
+                          }`}
+                        >
+                          <FileText
+                            className={`w-6 h-6 ${
+                              resume.isActive
+                                ? "text-purple-600"
+                                : "text-slate-600"
+                            }`}
+                          />
                         </div>
+
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-slate-900 break-all">{resume.name}</h3>
+                            <h3 className="text-slate-900 break-all">
+                              {resume.name}
+                            </h3>
                             {resume.isActive && (
-                              <Badge className="bg-purple-600">
-                                <Check className="w-3 h-3 mr-1" />
-                                Active
-                              </Badge>
+                              <Badge className="bg-purple-600">Active</Badge>
                             )}
                           </div>
                           <div className="flex items-center gap-4 text-sm text-slate-600">
@@ -210,78 +233,86 @@ export function Resume({ onNavigate }: ResumeMockupProps) {
                         </div>
                       </div>
 
-                      <div className="flex gap-2">
-                        {!resume.isActive && (
-                          <Button variant="outline" size="sm" onClick={() => setActive(resume.id)}>
-                            Set as Active
-                          </Button>
-                        )}
-                        <Button variant="outline" size="sm" onClick={() => downloadOne(resume)}>
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        {!resume.isActive && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => removeOne(resume.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {resume.isActive && (
-                      <div className="mt-4 pt-4 border-t border-purple-200">
-                        <div className="grid grid-cols-3 gap-4 text-sm">
+                      {/* Summary row */}
+                      <div
+                        className={`mt-4 pt-4 border-t ${
+                          resume.isActive ? "border-purple-200" : "border-slate-200"
+                        }`}
+                      >
+                        <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                           <div>
-                            <div className="text-slate-600 mb-1">Skills Extracted</div>
-                            <div className="text-slate-900">12 skills</div>
+                            <div className="text-slate-600 mb-1">
+                              Skills Extracted
+                            </div>
+                            <div className="text-slate-900">
+                              {resume.skillsExtracted == null
+                                ? "—"
+                                : `${resume.skillsExtracted} skills`}
+                            </div>
                           </div>
                           <div>
-                            <div className="text-slate-600 mb-1">Match Score</div>
-                            <div className="text-purple-600">68%</div>
-                          </div>
-                          <div>
-                            <div className="text-slate-600 mb-1">Last Analysis</div>
-                            <div className="text-slate-900">Today</div>
+                            <div className="text-slate-600 mb-1">
+                              Match Score
+                            </div>
+                            <div
+                              className={
+                                resume.isActive
+                                  ? "text-purple-600"
+                                  : "text-slate-900"
+                              }
+                            >
+                              {formatMatchScore(resume.matchScore)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            </Card>
 
-            {/* Upload New Resume (Dropzone) */}
-            <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-              <div className="text-center">
-                <div className="bg-blue-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <Plus className="w-8 h-8 text-blue-600" />
+                        {/* 技術技能 */}
+                        {resume.matchedTechnical &&
+                          resume.matchedTechnical.length > 0 && (
+                            <div className="mb-3">
+                              <div className="text-xs font-semibold text-slate-700 mb-1">
+                                Technical Skills
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {resume.matchedTechnical.map((skill) => (
+                                  <Badge
+                                    key={skill}
+                                    className="bg-green-50 text-green-700 border border-green-200 text-xs"
+                                  >
+                                    {skill}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                        {/* 軟性技能 */}
+                        {resume.matchedSoft && resume.matchedSoft.length > 0 && (
+                          <div>
+                            <div className="text-xs font-semibold text-slate-700 mb-1">
+                              Soft Skills
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {resume.matchedSoft.map((skill) => (
+                                <Badge
+                                  key={skill}
+                                  className="bg-blue-50 text-blue-700 border border-blue-200 text-xs"
+                                >
+                                  {skill}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
                 </div>
-                <h3 className="text-slate-900 mb-2">Upload New Resume Version</h3>
-                <p className="text-sm text-slate-600 mb-6">
-                  PDF or DOCX, max 5MB. This is a mock upload (no API).
-                </p>
-                <div
-                  className="border-2 border-dashed border-blue-300 rounded-lg p-8 bg-white"
-                  onClick={onChooseFile}
-                  onDrop={onDrop}
-                  onDragOver={onDragOver}
-                >
-                  <Button className="bg-blue-600 hover:bg-blue-700">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Choose File
-                  </Button>
-                  <p className="text-xs text-slate-500 mt-3">or drag and drop here</p>
-                </div>
-              </div>
+              )}
             </Card>
           </div>
 
-          {/* Sidebar */}
+          {/* Right: Active resume summary + Re-analyze */}
           <div className="col-span-4">
             <Card className="p-6 mb-6 bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
               <div className="flex items-center gap-3 mb-4">
@@ -299,28 +330,36 @@ export function Resume({ onNavigate }: ResumeMockupProps) {
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-slate-600 mb-1">Uploaded</div>
-                  <div className="text-slate-900 text-sm">{active?.uploadDate ?? "—"}</div>
+                  <div className="text-sm text-slate-600 mb-1">
+                    Last Analysis
+                  </div>
+                  <div className="text-slate-900 text-sm">
+                    {lastAnalysisLabel}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-sm text-slate-600 mb-1">Skills Found</div>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    <Badge variant="outline" className="text-xs">Python</Badge>
-                    <Badge variant="outline" className="text-xs">SQL</Badge>
-                    <Badge variant="outline" className="text-xs">Excel</Badge>
-                    <Badge variant="outline" className="text-xs">+9 more</Badge>
+                  <div className="text-sm text-slate-600 mb-1">Match Score</div>
+                  <div className="text-purple-700 text-sm font-medium">
+                    {activeMatchScore}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-slate-600 mb-1">
+                    Skills Extracted
+                  </div>
+                  <div className="text-slate-900 text-sm">
+                    {activeSkills === "—" ? "—" : `${activeSkills} skills`}
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 mt-4">
-                <Button className="bg-purple-600 hover:bg-purple-700" onClick={downloadActive}>
-                  Download Active
-                </Button>
-                <Button variant="outline" onClick={reAnalyze}>
-                  Re-analyze
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                className="w-full mt-6 py-3 text-base border-purple-600 text-purple-700 hover:bg-purple-100"
+                onClick={reAnalyze}
+              >
+                Re-analyze
+              </Button>
             </Card>
 
             <Card className="p-6 mb-6 bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
@@ -330,22 +369,8 @@ export function Resume({ onNavigate }: ResumeMockupProps) {
                 <li>✓ Include quantifiable achievements</li>
                 <li>✓ Use industry-standard skill names</li>
                 <li>✓ Tailor your resume for target roles</li>
-                <li>✓ Upload new versions as you learn</li>
+                <li>✓ Upload new versions via the Upload page</li>
               </ul>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="text-slate-900 mb-4">Quick Actions</h3>
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" onClick={downloadActive}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Download Active Resume
-                </Button>
-                <Button variant="outline" className="w-full justify-start" onClick={reAnalyze}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Re-analyze Resume
-                </Button>
-              </div>
             </Card>
           </div>
         </div>
