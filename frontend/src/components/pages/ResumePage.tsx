@@ -66,7 +66,7 @@ export function Resume({ onNavigate }: ResumeProps) {
   const [versions, setVersions] = useState<ResumeVersion[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 1) 抓目前 user 在 skill_analyses 的最新三筆
+  // 1) Fetch the latest three entries for the current user in skill_analyses
   useEffect(() => {
     const fetchLatestAnalyses = async () => {
       try {
@@ -143,7 +143,7 @@ export function Resume({ onNavigate }: ResumeProps) {
 
   const active = versions.find((v) => v.isActive);
 
-  // Re-analyze → 跳到 upload page
+  // Re-analyze → navigate to upload page
   const reAnalyze = () => {
     onNavigate?.("upload");
   };
@@ -266,7 +266,7 @@ export function Resume({ onNavigate }: ResumeProps) {
                           </div>
                         </div>
 
-                        {/* 技術技能 */}
+                        {/* Technical Skills */}
                         {resume.matchedTechnical &&
                           resume.matchedTechnical.length > 0 && (
                             <div className="mb-3">
@@ -286,7 +286,7 @@ export function Resume({ onNavigate }: ResumeProps) {
                             </div>
                           )}
 
-                        {/* 軟性技能 */}
+                        {/* Soft Skills */}
                         {resume.matchedSoft && resume.matchedSoft.length > 0 && (
                           <div>
                             <div className="text-xs font-semibold text-slate-700 mb-1">

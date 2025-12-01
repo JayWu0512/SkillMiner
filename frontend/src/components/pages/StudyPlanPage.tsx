@@ -51,7 +51,7 @@ const toLocalDate = (isoDate: string | undefined | null) => {
 // ------- Supabase client -------
 const supabase = createClient();
 
-// （目前沒用到，但保留以後如果要直接 map DB row 用得到）
+// (Currently unused, but kept for future use if we need to directly map DB rows)
 type DBStudyPlanRow = {
   id: string;
   user_id: string;
@@ -99,7 +99,7 @@ interface DailyTask {
   color?: string;
 }
 
-// ======== ICS helpers (純 function，component 外面) =========
+// ======== ICS helpers (pure functions, outside component) =========
 
 // Format date to ICS friendly UTC datetime, e.g. 20241201T090000Z
 const formatDateToICS = (date: Date) => {
@@ -141,7 +141,7 @@ const buildICSFromStudyPlan = (
   tasks.forEach((t, idx) => {
     if (t.isRestDay) return;
 
-    // For simplicity, set event time at 19:00 local; end time由 estTime 決定
+    // For simplicity, set event time at 19:00 local; end time determined by estTime
     const start = new Date(t.fullDate);
     start.setHours(19, 0, 0, 0);
     const end = new Date(start);
@@ -167,9 +167,9 @@ const buildICSFromStudyPlan = (
 
 // =============================================================
 
-// ------- mock 資料：完全沒有 study plan 時才會用 -------
+// ------- mock data: only used when there's no study plan -------
 
-// 一週 mock
+// One week mock
 const generateWeekData = (weekOffset: number): DailyTask[] => {
   const startDate = new Date(2024, 10, 11); // Nov 11, 2024
   startDate.setDate(startDate.getDate() + weekOffset * 7);
@@ -244,7 +244,7 @@ const generateWeekData = (weekOffset: number): DailyTask[] => {
   });
 };
 
-// 60 天 mock
+// 60 days mock
 const generateAllTasks = (): (DailyTask & { fullDate: Date })[] => {
   const startDate = new Date(2024, 10, 11); // Nov 11, 2024
   const allTasks: Array<DailyTask & { fullDate: Date }> = [];
@@ -333,7 +333,7 @@ const generateAllTasks = (): (DailyTask & { fullDate: Date })[] => {
   return allTasks;
 };
 
-// 月曆 mock
+// Calendar mock
 const generateMonthData = (monthOffset: number) => {
   const baseDate = new Date(2024, 10, 1); // Nov 1, 2024
   baseDate.setMonth(baseDate.getMonth() + monthOffset);
@@ -383,7 +383,7 @@ const generateMonthData = (monthOffset: number) => {
 
 interface StudyPlanProps {
   onNavigate?: (page: string) => void;
-  /** 可以給特定 planId；如果沒給，就會用 user_id 抓最新一筆 */
+  /** Can provide a specific planId; if not provided, will fetch the latest one using user_id */
   planId?: string;
   accessToken?: string;
   initialPlan?: StudyPlanType | null;
@@ -409,7 +409,7 @@ export function StudyPlan({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
 
-  // ------------ 用 user_id 找最新的 plan_id，再跑 study plan service -------------
+  // ------------ Find latest plan_id using user_id, then call study plan service -------------
   useEffect(() => {
     let isCancelled = false;
 
@@ -418,7 +418,7 @@ export function StudyPlan({
       setLoadError(null);
 
       try {
-        // 1. 先拿 access token（優先用外面傳進來的）
+        // 1. Get access token (prefer the one passed from outside)
         let token: string | null = accessToken || null;
         if (!token) {
           try {
@@ -431,11 +431,11 @@ export function StudyPlan({
           }
         }
 
-        // 2. 先決定要用的 planId
+        // 2. Determine which planId to use
         let effectivePlanId = planId;
 
         if (!effectivePlanId) {
-          // 如果外面沒有給 planId，就用 user_id 去 study_plans 找最新一筆
+          // If planId is not provided from outside, use user_id to find the latest one from study_plans
           const {
             data: { user },
             error: userError,
@@ -458,7 +458,7 @@ export function StudyPlan({
           }
 
           if (!data) {
-            // 這裡就是真正查不到任何 plan 的情況
+            // This is the case where no plan can be found
             throw new Error(
               "You do not have any study plan yet. Please generate one from the report page."
             );
@@ -467,7 +467,7 @@ export function StudyPlan({
           effectivePlanId = (data as { id: string }).id;
         }
 
-        // 3. 用找到的 planId 去 call 既有的 study plan service（edge function）
+        // 3. Use the found planId to call the existing study plan service (edge function)
         const plan = await getStudyPlan(token, effectivePlanId);
 
         if (!isCancelled) {
@@ -501,7 +501,7 @@ export function StudyPlan({
     };
   }, [planId, accessToken, onPlanUpdate, retryKey]);
 
-  // ---- 監聽從 Chatbot 發出的 studyPlanUpdatedFromChat 事件 ----
+  // ---- Listen for studyPlanUpdatedFromChat event emitted from Chatbot ----
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -527,7 +527,7 @@ export function StudyPlan({
     };
   }, [planId, onPlanUpdate]);
 
-  // ----------------- 根據 study plan 產出 task 資料 -----------------
+  // ----------------- Generate task data based on study plan -----------------
   const planStudyDays = studyPlan?.studyDays ?? [];
   const planStudyDaySet = new Set(planStudyDays.map(normalizeDayKey));
   const hasStudyDayFilter = planStudyDaySet.size > 0;
@@ -700,7 +700,7 @@ export function StudyPlan({
     }
 
     if (type === "google") {
-      // 目前先顯示還在測試中的訊息
+      // Currently showing a message that it's still under testing
       window.alert(
         "Google Calendar sync is currently under testing. Please use the ICS export for now."
       );
@@ -708,12 +708,12 @@ export function StudyPlan({
     }
   };
 
-  // --- Regenerate Plan handler：回 Skill Report ---
+  // --- Regenerate Plan handler: navigate back to Skill Report ---
   const handleRegeneratePlan = () => {
     onNavigate?.("skill-report");
   };
 
-  // 勾選完成（改成用 studyPlan.id，跟 user_id 無關）
+  // Mark as complete (changed to use studyPlan.id, independent of user_id)
   const handleTaskComplete = async (taskIndex: number, completed: boolean) => {
     if (!studyPlan) return;
     if (studyPlan.planData.tasks[taskIndex]?.isRestDay) return;
@@ -818,7 +818,7 @@ export function StudyPlan({
   // --------------------------- main UI ---------------------------
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* 頁面 header */}
+      {/* Page header */}
       <div className="bg-white border-b border-slate-200">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-4">

@@ -91,7 +91,7 @@ export interface ProfileProps {
   onNavigate?: (page: string) => void;
 }
 
-// 預設 Study Preferences
+// Default Study Preferences
 const DEFAULT_DAYS: string[] = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const DEFAULT_MODES: string[] = [
   "Video Tutorials",
@@ -102,7 +102,7 @@ const DEFAULT_MODES: string[] = [
 const supabase = createClient();
 
 export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
-  // 先用 user 做一個預設 profile，這樣畫面一開始就有東西，不會卡在 Loading
+  // First create a default profile from user, so the page has content initially and doesn't get stuck on Loading
   const [profile, setProfile] = useState<ProfileState | null>(() => {
     if (!user) return null;
     return {
@@ -136,10 +136,10 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
   });
 
   const [authEmail, setAuthEmail] = useState<string>(user?.email ?? "");
-  const [loading, setLoading] = useState(false); // 只用來控制內部狀態，不再控制整頁 Loading 畫面
+  const [loading, setLoading] = useState(false); // Only used to control internal state, no longer controls the entire page Loading screen
   const [saving, setSaving] = useState(false);
 
-  // 更新 profile 單一欄位
+  // Update a single profile field
   const updateProfile = <K extends keyof ProfileState>(
     key: K,
     value: ProfileState[K]
@@ -147,7 +147,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
     setProfile((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
-  // toggle 可用日
+  // toggle available days
   const toggleDay = (day: string) => {
     setProfile((prev) => {
       if (!prev) return prev;
@@ -165,7 +165,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
     });
   };
 
-  // toggle 學習風格
+  // toggle learning styles
   const toggleMode = (mode: string) => {
     setProfile((prev) => {
       if (!prev) return prev;
@@ -224,7 +224,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
               : DEFAULT_MODES,
         };
 
-        // 有 DB row
+        // Has DB row
         if (row) {
           const uiProfile: ProfileState = {
             id: row.id,
@@ -254,7 +254,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
 
           setProfile(uiProfile);
         } else {
-          // 沒有 DB row，就保留 initial 預設（上面 useState 的那個）
+          // No DB row, keep the initial default (the one from useState above)
           setProfile((prev) => {
             if (prev) return prev;
             return {
@@ -294,7 +294,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
       }
     };
 
-    // 這裡只依賴 user，不再依賴 supabase（上面已經做成單一實例）
+    // Only depend on user here, no longer depend on supabase (already made a single instance above)
     loadProfile();
 
     return () => {
@@ -308,7 +308,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
 
     const { error } = await supabase
       .from("profiles")
-      .upsert(profile as any); // 直接 upsert 整個 profile
+      .upsert(profile as any); // Directly upsert the entire profile
 
     if (error) {
       console.error("Error saving profile:", error);
@@ -317,7 +317,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
     setSaving(false);
   };
 
-  // 如果真的連 user 都沒有（理論上你 app 不會在登入前 render 這頁）
+  // If there's no user at all (theoretically your app won't render this page before login)
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
@@ -329,7 +329,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
   }
 
   if (!profile) {
-    // 非預期錯誤情況，給一個提示
+    // Unexpected error case, show a message
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
         <div className="text-slate-600 text-lg">

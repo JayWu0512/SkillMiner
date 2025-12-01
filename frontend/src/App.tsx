@@ -32,7 +32,7 @@ type AuthUser = {
 
 const USE_REAL_AUTH = true as const;
 
-// 單一 supabase client
+// Single supabase client
 const supabase = createClient();
 
 type AppState =
@@ -70,14 +70,14 @@ export default function App() {
   const [activeStudyPlan, setActiveStudyPlan] =
     useState<Nullable<StudyPlanData>>(null);
 
-  // ---------- 把最後停留頁面記在 localStorage ----------
+  // ---------- Save the last visited page to localStorage ----------
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (appState === "login" || appState === "upload") return;
     window.localStorage.setItem("lastAppState", appState);
   }, [appState]);
 
-  // ---------- 同步 currentPlanId 到 localStorage ----------
+  // ---------- Sync currentPlanId to localStorage ----------
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (currentPlanId) {
@@ -91,7 +91,7 @@ export default function App() {
     setActiveStudyPlan(plan);
   }, []);
 
-  // ---------- 從 chatbot 更新 study plan ----------
+  // ---------- Update study plan from chatbot ----------
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleStudyPlanUpdate = (event: Event) => {
@@ -130,7 +130,7 @@ export default function App() {
     }
   };
 
-  // ---------- 背景抓「最新 study_plan」，不改 appState ----------
+  // ---------- Fetch latest study_plan in background, don't change appState ----------
   async function routeByHistory(uid: string, tokenOverride?: string) {
     try {
       console.log("[routeByHistory] uid =", uid);
@@ -168,7 +168,7 @@ export default function App() {
         );
       }
 
-      // skill_analyses 目前只是資訊用途
+      // skill_analyses is currently only for informational purposes
       const skillRes = await supabase
         .from("skill_analyses")
         .select("id")
@@ -186,7 +186,7 @@ export default function App() {
     }
   }
 
-  // ---------- 初始化 & auth 監聽 ----------
+  // ---------- Initialize & auth listener ----------
   useEffect(() => {
     if (!USE_REAL_AUTH) {
       setAppState("login");
@@ -208,7 +208,7 @@ export default function App() {
 
           console.log("[auth] user.id =", session.user.id);
 
-          // 1️⃣ 有 session，先看 lastAppState
+          // 1️⃣ Has session, first check lastAppState
           let initial: AppState = "dashboard";
           if (typeof window !== "undefined") {
             const saved = window.localStorage.getItem(
@@ -225,7 +225,7 @@ export default function App() {
           }
           setAppState(initial);
 
-          // 2️⃣ 背景抓最新 study_plan，填進 state
+          // 2️⃣ Fetch latest study_plan in background, fill into state
           void routeByHistory(session.user.id, session.access_token);
         } else {
           setAuthUser(null);
@@ -243,7 +243,7 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      // 只處理 SIGNED_IN / SIGNED_OUT 的資料更新，不改 appState
+      // Only handle data updates for SIGNED_IN / SIGNED_OUT, don't change appState
       if (event === "SIGNED_IN" && session?.access_token && session.user) {
         console.log("[auth] onAuth SIGNED_IN", session.user.id);
         setAccessToken(session.access_token);
@@ -263,7 +263,7 @@ export default function App() {
           window.localStorage.removeItem("currentStudyPlanId");
         }
       } else {
-        // TOKEN_REFRESHED / INITIAL_SESSION 等就完全不動畫面
+        // TOKEN_REFRESHED / INITIAL_SESSION etc. don't change the screen at all
         return;
       }
     });
@@ -275,7 +275,7 @@ export default function App() {
 
   // ---------- Handlers ----------
   const handleLoginSuccess = (token: string) => {
-    // LoginPage 登入成功後，主動帶你進 dashboard
+    // After LoginPage login success, automatically navigate to dashboard
     setAccessToken(token);
     setAppState("dashboard");
   };

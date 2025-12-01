@@ -1,4 +1,4 @@
-# src/main.py  或 app.py
+# src/main.py or app.py
 
 import os
 import traceback
@@ -17,13 +17,13 @@ logger = logging.getLogger("uvicorn.error")
 app = FastAPI(title="SkillMiner API")
 
 # -----------------------------
-# CORS 設定
+# CORS Configuration
 # -----------------------------
-# 這裡先把「本機開發」和「正式前端」的 domain 都列進來
+# List both local development and production frontend domains here
 ALLOWED_ORIGINS = [
-    # 正式前端（Vercel）
+    # Production frontend (Vercel)
     "https://skillminer.vercel.app",
-    # 本機開發
+    # Local development
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5173",
@@ -32,8 +32,8 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:8080",
 ]
 
-# 如果之後想在 Railway 上動態加其他 origin，可以設環境變數 CORS_EXTRA_ORIGINS
-# 例如：CORS_EXTRA_ORIGINS="https://another-frontend.com,https://foo.bar"
+# If you want to dynamically add other origins on Railway later, you can set the CORS_EXTRA_ORIGINS environment variable
+# Example: CORS_EXTRA_ORIGINS="https://another-frontend.com,https://foo.bar"
 extra_origins = os.getenv("CORS_EXTRA_ORIGINS")
 if extra_origins:
     ALLOWED_ORIGINS.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
@@ -44,30 +44,30 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],  # 只要是標準 REST 動作就都放行
+    allow_methods=["*"],  # Allow all standard REST actions
     allow_headers=["*"],
     expose_headers=["*"],
 )
 
 # -----------------------------
-# 基本健康檢查 & root
+# Basic health check & root
 # -----------------------------
 
 
 @app.get("/", tags=["meta"])
 async def root():
-    """簡單回報後端有在跑，方便在瀏覽器 /health 之外再測一個 endpoint。"""
+    """Simple endpoint to report that the backend is running, convenient for testing another endpoint besides /health in the browser."""
     return {"status": "ok", "service": "skillminer-backend"}
 
 
 # -----------------------------
-# 全域錯誤處理
+# Global error handling
 # -----------------------------
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """pydantic 驗證錯誤（422）統一格式"""
+    """Unified format for pydantic validation errors (422)"""
     logger.warning(f"[ValidationError] path={request.url.path} errors={exc.errors()}")
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -77,9 +77,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """未預期錯誤（500）統一處理 & log"""
+    """Unified handling & logging for unexpected errors (500)"""
     if isinstance(exc, HTTPException):
-        # 讓 FastAPI 原本的 HTTPException handler 處理（例如 raise HTTPException(404)）
+        # Let FastAPI's default HTTPException handler process it (e.g., raise HTTPException(404))
         raise exc
 
     logger.error(f"[Global] Unhandled exception at {request.url.path}: {exc}")
@@ -92,7 +92,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 
 # -----------------------------
-# 路由註冊
+# Route registration
 # -----------------------------
 
 app.include_router(health.router)  # /health

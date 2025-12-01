@@ -438,7 +438,7 @@ export function MainDashboard({ onNavigate, accessToken }: MainDashboardProps) {
                 </Card>
               )}
 
-            {/* 如果完全沒有 study plan，可以引導去生成 */}
+            {/* If there's no study plan at all, can guide to generate one */}
             {!isLoadingPlan && !studyPlan && planError && (
               <Card className="p-6 mt-6 bg-red-50 border border-red-200">
                 <h3 className="text-red-700 mb-2">

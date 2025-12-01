@@ -29,7 +29,7 @@ import { generateStudyPlan } from "../../services/studyPlan";
 import { createClient } from "../../utils/supabase/client";
 import { API_BASE } from '../../services/api'; 
 
-// ===== 跟 analysis 一樣：直接寫死 API base URL =====
+// ===== Same as analysis: hardcode API base URL =====
 // const API_BASE = "http://localhost:8000";
 
 // === helpers for mapping weekly_hours <-> hoursPerDay options ===
@@ -64,7 +64,7 @@ interface SkillReportProps {
   useBackend?: boolean;
 }
 
-// 從 /analysis/{id}/resources 回來的單一 resource 可能的欄位
+// Possible fields for a single resource returned from /analysis/{id}/resources
 type Resource = {
   title?: string;
   name?: string;
@@ -110,7 +110,7 @@ export function SkillReport({
   const [missingTechnical, setMissingTechnical] = useState<string[]>([]);
   const [missingSoft, setMissingSoft] = useState<string[]>([]);
 
-  // resources 狀態
+  // resources state
   const [techResources, setTechResources] = useState<ResourceMap>({});
   const [softResources, setSoftResources] = useState<ResourceMap>({});
   const [loadingResources, setLoadingResources] = useState(false);
@@ -260,7 +260,7 @@ export function SkillReport({
     loadAnalysisDetails();
   }, [analysisId, useBackend]);
 
-  // ===== 4) 有 analysisId 之後，去打 /analysis/{id}/resources 抓學習資源 =====
+  // ===== 4) After having analysisId, call /analysis/{id}/resources to fetch learning resources =====
   useEffect(() => {
     if (!useBackend || !analysisId) return;
 
@@ -318,7 +318,7 @@ export function SkillReport({
 
   const readiness = getReadinessMessage(readinessScore);
 
-  // 小 helper：從 resource 物件抓 label / url
+  // Small helper: extract label / url from resource object
   const getResourceLabel = (r: Resource): string =>
     r.title ||
     r.name ||
@@ -327,13 +327,13 @@ export function SkillReport({
     "View resource";
 
   const getResourceUrl = (r: Resource): string | undefined => {
-    // 先嘗試常見欄位
+    // First try common fields
     if (typeof r.url === "string") return r.url;
     if (typeof r.link === "string") return r.link;
     if (typeof r.html_url === "string") return r.html_url;
     if (typeof r.repo_url === "string") return r.repo_url;
 
-    // fallback：從所有欄位中找第一個 http 開頭的字串
+    // fallback: find the first string starting with http from all fields
     for (const v of Object.values(r)) {
       if (typeof v === "string" && v.startsWith("http")) {
         return v;
