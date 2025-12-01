@@ -1,19 +1,10 @@
-$schema = "https://railway.com/railway.schema.json"
-
 [build]
-# Use default Railpack (equivalent to the railpack-plan you see now)
-builder = "RAILPACK"
-# File patterns that trigger deploy on changes (adjustable)
+builder = "NIXPACKS"
 watchPatterns = ["src/**", "requirements.txt", "railway.toml"]
 
 [deploy]
-# Start FastAPI / Uvicorn
 startCommand = "uvicorn src.main:app --host 0.0.0.0 --port $PORT"
-
-# Health check path (you have /health router)
 healthcheckPath = "/health"
 healthcheckTimeout = 300
-
-# Restart policy when service crashes
 restartPolicyType = "ALWAYS"
 restartPolicyMaxRetries = 5
