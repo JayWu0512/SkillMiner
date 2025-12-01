@@ -1,8 +1,8 @@
 [![Python Template for SkillMiner/database](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml/badge.svg)](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml)
 
-# LinkedIn Jobs & Skills Analysis
+# SkillMiner Database
 
-This project focuses on analyzing job postings for Data Analyst (DA), Data Scientist (DS), Data Engineer (DE), and Software Engineer (SWE) roles.
+This directory focuses on analyzing job postings for Data Analyst (DA), Data Scientist (DS), Data Engineer (DE), and Software Engineer (SWE) roles.
 The main objective is to identify the key skills required both overall and role-specific, and to explore the top hiring locations.
 
 By combining a structured data pipeline (Polars) with exploratory analysis and visualization (Pandas), this study provides insights into what skills are most in demand and where opportunities are concentrated.
@@ -162,12 +162,7 @@ make install
 ```
 This installs all dependencies from `requirements.txt`.
 
-### 2. Devcontainer (VSCode)
-- Open the `IDS706/` folder in VSCode.  
-- Reopen in **Dev Container** (uses `.devcontainer/devcontainer.json`).  
-- Dependencies will be auto-installed.  
-
-### 3. Docker (alternative)
+### 2. Docker (alternative)
 Build and run inside Docker:
 
 ```bash
@@ -189,10 +184,9 @@ make test
 ```
 
 ### In CI/CD
-This project includes a GitHub Actions workflow (`.github/workflows/ids706-ci.yml`).  
-Every push or pull request to `IDS706/` will:
+This project includes a GitHub Actions workflow (`.github/workflows/database-ci.yml`).  
+Every push or pull request to `SkillMiner/` will:
 - Install dependencies  
-- (Optionally) lint code  
 - Run unit and integration tests with coverage reporting  
 
 ---
