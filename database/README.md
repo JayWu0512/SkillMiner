@@ -1,4 +1,5 @@
-[![Python Template for IDS706/LinkedIn_Jobs_&_Skills_Analysis](https://github.com/JayWu0512/duke-mids-courses/actions/workflows/LinkedIn_Jobs_&_Skills_Analysis-ci.yml/badge.svg)](https://github.com/JayWu0512/duke-mids-courses/actions/workflows/LinkedIn_Jobs_&_Skills_Analysis-ci.yml)
+[![Python Template for SkillMiner/database](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml/badge.svg)](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml)
+
 # LinkedIn Jobs & Skills Analysis
 
 This project focuses on analyzing job postings for Data Analyst (DA), Data Scientist (DS), Data Engineer (DE), and Software Engineer (SWE) roles.
