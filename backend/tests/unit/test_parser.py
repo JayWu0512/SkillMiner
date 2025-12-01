@@ -50,11 +50,12 @@ def test_parse_resume_with_parsing_error():
     """Test that parser handles errors gracefully."""
     mock_file = Mock()
     mock_file.file = None
-    
+
     with patch('src.rag.parser.PdfReader', side_effect=Exception("PDF parsing error")):
         result = parse_resume(mock_file)
         assert isinstance(result, str)
-        assert "could not parse PDF" in result.lower()
+        assert "could not parse" in result.lower()
+        assert "pdf parsing error" in result.lower()
 
 
 def test_parse_resume_with_empty_pages():
