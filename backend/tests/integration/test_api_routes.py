@@ -135,7 +135,7 @@ def test_chat_route_with_rag_error(mock_retrieve, mock_get_client):
     mock_completion.choices[0].message.content = "Response despite RAG error"
     mock_client.chat.completions.create.return_value = mock_completion
     mock_get_client.return_value = mock_client
-    
+
     # Mock RAG retrieval to fail
     mock_retrieve.side_effect = Exception("RAG retrieval error")
 

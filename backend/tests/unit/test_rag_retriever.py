@@ -64,7 +64,7 @@ def test_retrieve_with_mocked_chroma():
         "documents": [["Python, SQL, and data engineering skills are important"]],
         "metadatas": [[{"title_lc": "Data Engineer"}]],
     }
-    
+
     with patch('src.rag.retriever._get_collection', return_value=mock_collection):
         with patch('src.rag.retriever.ensure_seeded_roles', return_value=10):
             result = retrieve(resume_text, user_message, top_k=1)
