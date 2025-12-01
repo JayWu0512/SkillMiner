@@ -1,0 +1,47 @@
+name: Python Template for SkillMiner/backend
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Lint with flake8
+        run: make lint
+        continue-on-error: true
+
+      - name: Run tests
+        run: make test-ci
+        env:
+          # These are optional for tests that mock external services
+          # Only needed if tests actually call OpenAI/Supabase APIs
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+      - name: Clean
+        if: always()
+        run: make clean
+
