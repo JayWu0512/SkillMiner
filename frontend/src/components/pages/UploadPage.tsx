@@ -98,7 +98,7 @@ export function UploadPage({ accessToken, onAnalysisComplete, onLogout }: Upload
       const result: { analysis_id: string; user_id: string; match_score: number } = await response.json();
       onAnalysisComplete(result.analysis_id);
 
-      navigate('/SkillReportMockup');
+      navigate('/SkillReport');
     } catch (err: any) {
       console.error('Analysis error:', err);
       setError(err.message || 'Failed to analyze. Please try again.');
