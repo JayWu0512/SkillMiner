@@ -6,13 +6,13 @@ It analyzes your resume, extracts skills, identifies gaps, retrieves learning re
 
 ---
 
-## 📌 System Architecture
+## System Architecture
 
 ![SkillMiner Architecture](docs/skillminer-architecture.png)
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 .
@@ -27,7 +27,7 @@ It analyzes your resume, extracts skills, identifies gaps, retrieves learning re
 
 ---
 
-# 🚀 Getting Started (Local Development)
+# Getting Started (Local Development)
 
 SkillMiner consists of:
 
@@ -38,7 +38,7 @@ SkillMiner consists of:
 
 ---
 
-# 1️⃣ Backend Setup (FastAPI)
+# Backend Setup (FastAPI)
 
 ### Step 1 — enter backend
 
@@ -72,7 +72,7 @@ http://localhost:8000/docs
 
 ---
 
-# 2️⃣ Database Setup
+# Database Setup
 
 ### Step 1 — enter database
 
