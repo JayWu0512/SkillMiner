@@ -32,7 +32,7 @@ type AuthUser = {
 
 const USE_REAL_AUTH = true as const;
 
-// ⭐ 單一 supabase client，避免到處 new
+// 單一 supabase client
 const supabase = createClient();
 
 type AppState =
@@ -61,14 +61,23 @@ export default function App() {
   const [accessToken, setAccessToken] = useState<string>("");
   const [analysisId, setAnalysisId] = useState<string>("");
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return window.localStorage.getItem("currentStudyPlanId");
   });
+
   const [activeStudyPlan, setActiveStudyPlan] =
     useState<Nullable<StudyPlanData>>(null);
 
-  // ---- localStorage 同步 ----
+  // ---------- 把最後停留頁面記在 localStorage ----------
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (appState === "login" || appState === "upload") return;
+    window.localStorage.setItem("lastAppState", appState);
+  }, [appState]);
+
+  // ---------- 同步 currentPlanId 到 localStorage ----------
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (currentPlanId) {
@@ -82,7 +91,7 @@ export default function App() {
     setActiveStudyPlan(plan);
   }, []);
 
-  // ---- 從 chatbot 更新 study plan ----
+  // ---------- 從 chatbot 更新 study plan ----------
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleStudyPlanUpdate = (event: Event) => {
@@ -121,13 +130,11 @@ export default function App() {
     }
   };
 
-  // ---- 根據歷史決定要去 plan / upload / dashboard ----
+  // ---------- 背景抓「最新 study_plan」，不改 appState ----------
   async function routeByHistory(uid: string, tokenOverride?: string) {
     try {
-      const { data: userRes } = await supabase.auth.getUser();
-      console.log("[auth] user.id =", userRes?.user?.id);
+      console.log("[routeByHistory] uid =", uid);
 
-      // 1) 先看有沒有最新的 study_plan
       const { data: latestPlanRowsRaw, error: latestPlanError } = await supabase
         .from("study_plans")
         .select("id")
@@ -139,68 +146,52 @@ export default function App() {
         (latestPlanRowsRaw as Array<{ id: string }> | null) ?? null;
 
       if (!latestPlanError && latestPlanRows && latestPlanRows.length > 0) {
-        const latestPlanId = latestPlanRows?.[0]?.id;
+        const latestPlanId = latestPlanRows[0].id;
         if (latestPlanId) {
           setCurrentPlanId(latestPlanId);
           try {
             await fetchAndStorePlan(latestPlanId, tokenOverride);
           } catch (planError) {
             console.warn(
-              "[routeByHistory] Latest study plan retrieval failed:",
+              "[routeByHistory] latest study plan retrieval failed:",
               planError
             );
           }
-          setAppState("plan");
           return;
         }
-      } else if (latestPlanError) {
+      }
+
+      if (latestPlanError) {
         console.warn(
           "[routeByHistory] failed to fetch latest study plan:",
           latestPlanError
         );
-        if (currentPlanId) {
-          try {
-            await fetchAndStorePlan(currentPlanId, tokenOverride);
-            setAppState("plan");
-            return;
-          } catch (planError) {
-            console.warn(
-              "[routeByHistory] Stored study plan retrieval failed:",
-              planError
-            );
-          }
-        }
       }
 
-      // 2) 沒有 plan，就看有沒有任何 skill_analyses
-      const q1 = await supabase
+      // skill_analyses 目前只是資訊用途
+      const skillRes = await supabase
         .from("skill_analyses")
-        .select("id, user_id, resume_text")
+        .select("id")
         .eq("user_id", uid)
         .limit(1);
 
-      if (q1.error) {
-        setCurrentPlanId(null);
-        handlePlanUpdate(null);
-        setAppState("upload");
-        return;
+      if (skillRes.error) {
+        console.warn(
+          "[routeByHistory] skill_analyses query error:",
+          skillRes.error
+        );
       }
-
-      // 有 analysis 但沒 plan，就回 dashboard
-      setCurrentPlanId(null);
-      handlePlanUpdate(null);
-      setAppState("dashboard");
     } catch (err) {
       console.error("[routeByHistory] unexpected error:", err);
-      setCurrentPlanId(null);
-      handlePlanUpdate(null);
-      setAppState("dashboard");
     }
   }
 
-  // ---- 初始化 & auth 監聽 ----
+  // ---------- 初始化 & auth 監聽 ----------
   useEffect(() => {
-    if (!USE_REAL_AUTH) return;
+    if (!USE_REAL_AUTH) {
+      setAppState("login");
+      return;
+    }
 
     const init = async () => {
       try {
@@ -215,10 +206,26 @@ export default function App() {
             email: session.user.email ?? null,
           });
 
-          // 先給一個穩定畫面，不要被 DB call 卡住
-          setAppState("dashboard");
+          console.log("[auth] user.id =", session.user.id);
 
-          // 背景決定要不要跳到 plan / upload
+          // 1️⃣ 有 session，先看 lastAppState
+          let initial: AppState = "dashboard";
+          if (typeof window !== "undefined") {
+            const saved = window.localStorage.getItem(
+              "lastAppState"
+            ) as AppState | null;
+            if (
+              saved &&
+              saved !== "login" &&
+              saved !== "upload" &&
+              saved !== "chat"
+            ) {
+              initial = saved;
+            }
+          }
+          setAppState(initial);
+
+          // 2️⃣ 背景抓最新 study_plan，填進 state
           void routeByHistory(session.user.id, session.access_token);
         } else {
           setAuthUser(null);
@@ -235,21 +242,28 @@ export default function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // 只處理 SIGNED_IN / SIGNED_OUT 的資料更新，不改 appState
       if (event === "SIGNED_IN" && session?.access_token && session.user) {
+        console.log("[auth] onAuth SIGNED_IN", session.user.id);
         setAccessToken(session.access_token);
         setAuthUser({
           id: session.user.id,
           email: session.user.email ?? null,
         });
-        // 只在真正 SIGNED_IN 時重新 route
-        setAppState("dashboard");
         void routeByHistory(session.user.id, session.access_token);
       } else if (event === "SIGNED_OUT") {
+        console.log("[auth] onAuth SIGNED_OUT");
         setAuthUser(null);
+        setCurrentPlanId(null);
+        handlePlanUpdate(null);
         setAppState("login");
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem("lastAppState");
+          window.localStorage.removeItem("currentStudyPlanId");
+        }
       } else {
-        // TOKEN_REFRESHED 等其他事件就不要亂動目前頁面
+        // TOKEN_REFRESHED / INITIAL_SESSION 等就完全不動畫面
         return;
       }
     });
@@ -257,11 +271,13 @@ export default function App() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []); // ⭐ 不依賴 routeByHistory，避免每次 render 重跑
+  }, []);
 
-  // ---- Handlers ----
+  // ---------- Handlers ----------
   const handleLoginSuccess = (token: string) => {
+    // LoginPage 登入成功後，主動帶你進 dashboard
     setAccessToken(token);
+    setAppState("dashboard");
   };
 
   const handleAnalysisComplete = (id: string) => {
@@ -276,6 +292,11 @@ export default function App() {
     setAuthUser(null);
     handlePlanUpdate(null);
     setAppState("login");
+
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("lastAppState");
+      window.localStorage.removeItem("currentStudyPlanId");
+    }
 
     if (USE_REAL_AUTH) {
       supabase.auth.signOut().catch((e) => {
@@ -377,7 +398,6 @@ export default function App() {
               setAppState("dashboard");
             }
             if (p === "skill-report" || p === "report") {
-              // 從 Study Plan 回到 Skill Report page
               setAppState("report");
             }
           }}
