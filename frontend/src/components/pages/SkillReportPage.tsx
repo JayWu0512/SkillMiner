@@ -27,9 +27,10 @@ import {
 // import { Header } from "../Header";
 import { generateStudyPlan } from "../../services/studyPlan";
 import { createClient } from "../../utils/supabase/client";
+import { API_BASE } from '../../services/api'; 
 
 // ===== 跟 analysis 一樣：直接寫死 API base URL =====
-const API_BASE_URL = "http://localhost:8000";
+// const API_BASE = "http://localhost:8000";
 
 // === helpers for mapping weekly_hours <-> hoursPerDay options ===
 type HoursPerDayOption = "1-2" | "2-3" | "3-4" | "4+";
@@ -267,7 +268,7 @@ export function SkillReport({
       try {
         setLoadingResources(true);
         const res = await fetch(
-          `${API_BASE_URL}/analysis/${analysisId}/resources`
+          `${API_BASE}/analysis/${analysisId}/resources`
         );
         if (!res.ok) {
           console.warn(

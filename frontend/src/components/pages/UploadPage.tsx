@@ -5,6 +5,7 @@ import { Textarea } from '../ui/textarea';
 import { Card } from '../ui/card';
 import { Brain, Upload, FileText, Sparkles, LogOut } from 'lucide-react';
 import { createClient } from '../../utils/supabase/client'; 
+import { API_BASE } from '../../services/api'; 
 import { projectId, publicAnonKey, edgeFunctionName } from '../../utils/supabase/info';
 
 interface UploadPageProps {
@@ -76,7 +77,7 @@ export function UploadPage({ accessToken, onAnalysisComplete, onLogout }: Upload
       formData.append('job_description', jobDescription);
       formData.append('user_id', userId);
 
-      const response = await fetch(`http://localhost:8000/analysis`, {
+      const response = await fetch(`${API_BASE}/analysis`, {
         method: 'POST',
         // headers: { Authorization: `Bearer ${accessToken}` }, // optional
         body: formData,

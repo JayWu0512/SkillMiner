@@ -1,9 +1,12 @@
+/// <reference types="vite/client" />
+
 /**
  * API Service for SkillMiner Backend
  * Handles all communication with the FastAPI backend
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+export const API_BASE =
+  import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // Types for API responses
 export interface UploadResponse {

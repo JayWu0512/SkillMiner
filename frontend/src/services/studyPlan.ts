@@ -4,6 +4,8 @@ import {
   publicAnonKey,
 } from '../utils/supabase/info';
 
+import { API_BASE } from "./api";
+
 export interface DailyTask {
   date: string;
   fullDate?: string;
@@ -212,7 +214,7 @@ export async function updateStudyPlan(
   accessToken: string | null,
   request: UpdateStudyPlanRequest
 ): Promise<UpdateStudyPlanResponse> {
-  const API_BASE = (import.meta as any).env?.VITE_API_BASE || "http://localhost:8000";
+  // const API_BASE = (import.meta as any).env?.VITE_API_BASE || "http://localhost:8000";
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
