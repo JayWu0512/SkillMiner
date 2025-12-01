@@ -19,4 +19,3 @@ def test_root_endpoint():
     data = response.json()
     assert data["status"] == "ok"
     assert data["service"] == "skillminer-backend"
-

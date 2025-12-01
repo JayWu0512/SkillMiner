@@ -1,7 +1,5 @@
 """Unit tests for PDF parser."""
-import io
 from unittest.mock import Mock, patch
-from PyPDF2 import PdfReader
 from src.rag.parser import parse_resume
 
 
@@ -12,10 +10,10 @@ def test_parse_resume_with_valid_pdf():
     mock_page = Mock()
     mock_page.extract_text.return_value = "John Doe\nSoftware Engineer\nPython, SQL"
     mock_pdf.pages = [mock_page]
-    
+
     mock_file = Mock()
     mock_file.file = mock_pdf
-    
+
     with patch('src.rag.parser.PdfReader', return_value=mock_pdf):
         result = parse_resume(mock_file)
         assert isinstance(result, str)
@@ -31,10 +29,10 @@ def test_parse_resume_with_multiple_pages():
     mock_page2 = Mock()
     mock_page2.extract_text.return_value = "Page 2 content"
     mock_pdf.pages = [mock_page1, mock_page2]
-    
+
     mock_file = Mock()
     mock_file.file = mock_pdf
-    
+
     with patch('src.rag.parser.PdfReader', return_value=mock_pdf):
         result = parse_resume(mock_file)
         assert "Page 1 content" in result
@@ -65,13 +63,12 @@ def test_parse_resume_with_empty_pages():
     mock_page = Mock()
     mock_page.extract_text.return_value = None
     mock_pdf.pages = [mock_page]
-    
+
     mock_file = Mock()
     mock_file.file = mock_pdf
-    
+
     with patch('src.rag.parser.PdfReader', return_value=mock_pdf):
         result = parse_resume(mock_file)
         assert isinstance(result, str)
         # Should handle None gracefully
         assert result.strip() == "" or result == ""
-

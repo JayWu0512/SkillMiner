@@ -1,5 +1,4 @@
 """Unit tests for configuration."""
-import os
 from pathlib import Path
 from src.core.config import (
     PROJECT_ROOT,
@@ -63,4 +62,3 @@ def test_validate_paths():
     # All should be boolean values
     for value in paths.values():
         assert isinstance(value, bool)
-

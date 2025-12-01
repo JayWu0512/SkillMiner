@@ -36,7 +36,6 @@ def test_chat_request_empty_message():
 
 def test_chat_request_whitespace_message():
     """Test ChatRequest with whitespace-only message is trimmed."""
-    request = ChatRequest(message="   ")
     # Should be trimmed to empty, which should raise error
     # Actually, validator should raise error for empty after strip
     with pytest.raises(ValidationError):
@@ -96,4 +95,3 @@ def test_analysis_response():
     assert response.analysis_id == "test-id-123"
     assert response.match_score == 85.5
     assert 0 <= response.match_score <= 100
-
