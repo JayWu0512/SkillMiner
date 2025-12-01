@@ -23,7 +23,6 @@ It analyzes your resume, extracts skills, identifies gaps, retrieves learning re
 ├─ frontend/             # Next.js (React) frontend client
 ├─ LICENSE
 ├─ README.md            
-├─ requirements.txt
 ```
 
 ---
@@ -41,7 +40,7 @@ SkillMiner consists of:
 
 # 1️⃣ Backend Setup (FastAPI)
 
-### Step 1 — Create virtual environment
+### Step 1 — enter backend
 
 ```bash
 cd backend
@@ -56,7 +55,7 @@ pip install -r ../requirements.txt
 
 ### Step 3 — Create backend .env
 
-```
+```bash
 cp .env.example .env
 ```
 
@@ -75,22 +74,28 @@ http://localhost:8000/docs
 
 # 2️⃣ Database Setup
 
-### Local ETL
+### Step 1 — enter database
+
+```bash
+cd database
+```
+
+### Step 2 — Local ETL
 
 ```bash
 python scripts/download_kaggle.py
 make install
 ```
 
-### Supabase
+### (Optional)Supabase
 https://supabase.com/docs/guides/getting-started
 
-### AWS
+### (Optional)AWS
 https://aws.amazon.com/tw/getting-started/
 
 ---
 
-# 3️⃣ Frontend Setup (Next.js)
+# Frontend Setup (Next.js)
 
 ```bash
 cd frontend
@@ -107,7 +112,7 @@ npm run dev
 
 ---
 
-# 4️⃣ Running Full Stack
+# Running Full Stack
 
 ```bash
 cd backend && uvicorn src.api.main:app --reload --port 8000
@@ -118,7 +123,7 @@ Open: http://localhost:3000
 
 ---
 
-# 5️⃣ CI/CD & Deployment
+# CI/CD & Deployment
 
 ## CI (GitHub Actions)
 
@@ -132,7 +137,7 @@ Located in:
 ## Frontend Deployment — Vercel
 
 ```
-NEXT_PUBLIC_API_BASE_URL=https://your-railway-url
+API_BASE=https://your-railway-url
 ```
 
 ## Backend Deployment — Railway
