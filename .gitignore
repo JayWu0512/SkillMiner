@@ -212,12 +212,12 @@ __marimo__/
 .venv/
 
 # Ignore Chroma vector database
-chroma/
+# chroma/
 
 
 # Local vector DB & logs
-chroma/
-chroma.sqlite3
+# chroma/
+# chroma.sqlite3
 chat_logs.json
 
 # Node.js
