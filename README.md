@@ -4,6 +4,8 @@
 SkillMiner is an AI-powered career & study copilot.  
 It analyzes your resume, extracts skills, identifies gaps, retrieves learning resources, and generates a personalized study plan powered by an LLM agent, RAG system, and a modern data engineering pipeline.
 
+Please watch our demo video! [Click here](https://youtu.be/5HNZr0QxKIk)
+
 ---
 
 ## System Architecture
