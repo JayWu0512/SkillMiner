@@ -1,0 +1,12 @@
+# Airflow extras
+apache-airflow[postgres]==2.8.1
+
+# Database
+psycopg2-binary==2.9.9
+
+# API clients
+requests==2.31.0
+google-api-python-client==2.108.0
+
+# Other
+python-dotenv==1.0.0
