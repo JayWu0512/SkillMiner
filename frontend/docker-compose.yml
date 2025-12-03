@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  frontend:
+    # Build using the Dockerfile inside ./frontend
+    build: .
+    container_name: skillminer-frontend
+    # Load environment variables (if frontend uses .env)
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"  # Map container's port 3000 to host
+    volumes:
+      - .:/app       # Enable live code updates during development
+    # Use Vite dev server (or adjust based on your framework)
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+    restart: unless-stopped
