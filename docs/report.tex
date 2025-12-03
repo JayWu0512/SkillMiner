@@ -67,11 +67,11 @@
 
 SkillMiner is an AI-powered career and study copilot designed to help job seekers navigate the competitive technology job market. The system analyzes resumes, extracts skills, identifies gaps between candidate qualifications and job requirements, retrieves relevant learning resources, and generates personalized study plans using a combination of Large Language Models (LLMs), Retrieval-Augmented Generation (RAG), and a modern data engineering pipeline.
 
-The project addresses a critical challenge in the job market: the disconnect between job seeker skills and employer requirements. By leveraging real-world job posting data from LinkedIn, SkillMiner provides data-driven insights into in-demand skills across four key technology roles: Data Analyst (DA), Data Scientist (DS), Data Engineer (DE), and Software Engineer (SWE).
+The project addresses a critical challenge in the job market: the disconnect between job seeker skills and employer requirements. By leveraging real-world job posting data from LinkedIn, SkillMiner provides data-driven insights into in-demand skills across four key technology roles: Data Analyst (DA), Data Scientist (DS), Data Engineer (DE), and Software Engineer (SWE). Beyond static job market analysis, the system maintains a continuously updated repository of learning resources through automated weekly collection from GitHub and YouTube APIs, orchestrated by Apache Airflow running on AWS EC2.
 
 The system architecture integrates multiple data sources, employs sophisticated data transformation pipelines, and delivers intelligent recommendations through a web-based interface. The backend utilizes FastAPI for RESTful API services, ChromaDB for vector storage and semantic search, and OpenAI's GPT models for natural language understanding and generation. The frontend is built with React and TypeScript, providing an intuitive user experience for resume upload, skill analysis, and study plan generation.
 
-The data engineering component processes millions of job postings through a multi-layer pipeline (raw → bronze → silver → gold) using Polars for efficient data transformation. The processed data is stored in multiple formats including Parquet files, SQLite databases, and cloud storage (AWS S3 and RDS), enabling both analytical queries and real-time application access.
+The data engineering component processes millions of job postings through a multi-layer pipeline (raw → bronze → silver → gold) using Polars for efficient data transformation. The processed data is stored in multiple formats including Parquet files, SQLite databases, and cloud storage (AWS S3 and RDS), enabling both analytical queries and real-time application access. AWS infrastructure provides production-grade reliability with RDS PostgreSQL hosting the normalized skill taxonomy and curated learning resources, S3 serving as a data lake for raw API responses and audit trails, and EC2 running containerized Airflow for automated data collection workflows.
 
 Key features of SkillMiner include:
 \begin{itemize}
@@ -96,6 +96,7 @@ The architecture consists of three primary layers:
     \item \textbf{Data Layer}: Handles data ingestion from Kaggle, transformation using Polars, and storage in multiple formats (Parquet, SQLite, AWS S3/RDS, Supabase PostgreSQL)
     \item \textbf{Application Layer}: FastAPI backend providing RESTful APIs for resume analysis, skill matching, RAG-powered chat, and study plan generation
     \item \textbf{Presentation Layer}: React-based frontend deployed on Vercel, providing user interface for all interactions
+    \item \textbf{Infrastructure Layer}: AWS cloud services providing compute (EC2), storage (S3), and database (RDS) resources, with Apache Airflow orchestrating automated weekly data collection pipelines for learning resource curation.
 \end{enumerate}
 
 \subsection{Data Pipeline Architecture}
@@ -145,7 +146,7 @@ The backend follows a modular design with clear separation of concerns:
         \item \texttt{parser.py}: PDF resume parsing and text extraction
     \end{itemize}
     
-    \item \textbf{Database Clients} (\texttt{src/db/}): Interfaces to Supabase (PostgreSQL) for user data and AWS RDS for job market data
+    \item \textbf{Database Clients} (\texttt{src/db/}): Interfaces to Supabase (PostgreSQL) for user data and AWS RDS for job market data and skill resources.
     
     \item \textbf{LLM Integration} (\texttt{src/llm/}): OpenAI client wrapper for GPT model interactions
 \end{itemize}
@@ -169,10 +170,29 @@ SkillMiner employs a multi-storage strategy optimized for different use cases:
         \item Long-term memory for personalized recommendations
     \end{itemize}
     
-    \item \textbf{AWS Services}:
+\item \textbf{AWS Services}: Distributed cloud infrastructure deployed in \texttt{us-east-1}:
+\begin{itemize}
+    \item \textbf{EC2 (t2.medium)}: Containerized compute instance running Apache Airflow 2.8.1 with Docker Compose orchestration. Hosts three core services: scheduler, webserver, and metadata database (PostgreSQL 13). Executes automated weekly DAGs for data collection from GitHub (Sundays 2:00 AM UTC) and YouTube (Sundays 3:00 AM UTC). Configured with IAM role-based authentication for secure, keyless access to AWS resources.
+    
+    \item \textbf{S3}: Object storage bucket (\texttt{skillminer-buckets3}) serving as a data lake for:
     \begin{itemize}
-        \item S3: Object storage for raw data and intermediate artifacts
-        \item RDS: Relational database for production job market data queries
+        \item Raw API responses archived by platform (\texttt{github\_responses/}, \texttt{youtube\_responses/})
+        \item Complete audit trail of data sources with timestamps for compliance and debugging
+        \item Intermediate processing artifacts and pipeline checkpoints
+        \item Enables data replay and reprocessing without re-querying rate-limited APIs
+        \item Lifecycle policies automatically archive objects older than 90 days to Glacier for cost optimization
+    \end{itemize}
+    
+    \item \textbf{RDS (PostgreSQL)}: Production relational database (\texttt{skillminer.cnwm886wwadv.us-east-1.rds.amazonaws.com}) with normalized schema:
+    \begin{itemize}
+        \item \texttt{skills}: Taxonomy of technical and soft skills with frequency counts and fetch priority rankings
+        \item \texttt{learning\_resources}: Curated educational content with metadata (title, description, platform, popularity scores, engagement metrics)
+        \item \texttt{resource\_skills}: Many-to-many junction table linking resources to skills with calculated relevance scores (0-100) and learning quality scores (0-100)
+        \item Automated weekly updates via Airflow with ON CONFLICT clauses for idempotent upserts
+        \item SSL/TLS encryption enforced for all connections (\texttt{sslmode='require'})
+    \end{itemize}
+    
+    \item \textbf{IAM}: Security architecture using EC2 instance roles (\texttt{skillminer-ec2-s3-role}) with principle of least privilege, eliminating hardcoded credentials in favor of temporary security tokens automatically rotated by AWS STS.
     \end{itemize}
     
     \item \textbf{ChromaDB}: Vector database for semantic search, stored locally in \texttt{backend/chroma/} directory
@@ -205,6 +225,15 @@ SkillMiner ingests real-world job posting data from Kaggle, specifically the Lin
 \end{itemize}
 
 The dataset contains millions of job postings with fields including job titles, company names, locations, work types, seniority levels, job descriptions, and associated skills. This multi-source data (job postings, summaries, and skill mappings) provides a comprehensive view of the technology job market.
+
+In addition to the static Kaggle dataset, SkillMiner implements a dynamic learning resource ingestion system deployed on AWS EC2. Apache Airflow orchestrates two weekly DAGs that fetch educational content from external APIs:
+
+\begin{itemize}
+    \item \textbf{GitHub Repository Collection} (Sundays 2:00 AM UTC): Searches GitHub API for educational repositories matching technical skills, filtering for tutorials, "awesome" lists, and learning-focused content
+    \item \textbf{YouTube Video Collection} (Sundays 3:00 AM UTC): Queries YouTube Data API v3 for instructional videos targeting soft skills development
+\end{itemize}
+
+Raw API responses are archived to S3 (\texttt{github\_responses/}, \texttt{youtube\_responses/}) as JSON files with timestamps, providing a complete audit trail and enabling data replay without re-querying rate-limited APIs. Processed resources are scored for educational value (0-100) and relevance (0-100) before insertion into RDS PostgreSQL, where they are linked to skills through a normalized many-to-many schema.
 
 \subsection{Data Transformation Pipeline}
 
@@ -241,6 +270,29 @@ The transformation pipeline is built using Polars, a high-performance DataFrame 
 \end{itemize}
 
 The pipeline uses Polars' lazy evaluation framework, which allows for query optimization and efficient memory usage. Transformations are chained together, and execution is deferred until data is written to disk.
+\subsubsection{Learning Resource Pipeline}
+
+The AWS-hosted Airflow deployment runs parallel transformation pipelines for external learning resources:
+
+\begin{itemize}
+    \item \textbf{GitHub Transformer}: 
+    \begin{itemize}
+        \item Filters non-English repositories using character set analysis
+        \item Calculates learning scores based on educational keywords ("tutorial", "awesome", "examples")
+        \item Applies star count normalization (capped at +20 points) to avoid bias toward popular but non-educational repos
+        \item Computes relevance scores via keyword matching in repository names, descriptions, and topics
+    \end{itemize}
+    
+    \item \textbf{YouTube Transformer}:
+    \begin{itemize}
+        \item Decodes HTML entities in titles and descriptions
+        \item Calculates engagement rates (likes + comments / views)
+        \item Scores learning value based on view count, engagement, and educational keyword presence
+        \item Filters for medium-duration videos (4-20 minutes) to prioritize focused tutorials
+    \end{itemize}
+\end{itemize}
+
+Both pipelines implement idempotent upsert logic using PostgreSQL's \texttt{ON CONFLICT} clauses, allowing safe re-execution without data duplication.
 
 \subsection{Data Storage and Querying}
 
@@ -272,7 +324,8 @@ The system uses multiple storage backends optimized for different access pattern
         \item Long-term memory for personalized recommendations (\texttt{ltm\_memory} table)
     \end{itemize}
     
-    \item \textbf{AWS RDS}: Production database for job market data, enabling scalable queries for the backend API.
+    \item \textbf{RDS (PostgreSQL)}: Production relational database (\texttt{skillminer.cnwm886wwadv.us-east-1.rds.amazonaws.com}) originally seeded from Polars pipeline outputs.
+
 \end{itemize}
 
 \subsubsection{Querying Capabilities}
@@ -331,6 +384,7 @@ The FastAPI backend provides the following endpoints:
     \item \texttt{POST /analysis}: Skill gap analysis comparing resume to job description
     \item \texttt{POST /study-plan}: Generate personalized study plan
     \item \texttt{GET /study-plan/\{plan\_id\}}: Retrieve saved study plan
+    \item \texttt{GET /resources/\{skill\_name\}}: Retrieve top-ranked learning resources for a specific skill from RDS, ordered by composite score (learning\_score * relevance\_score)
 \end{itemize}
 
 \subsubsection{RAG System}
@@ -444,10 +498,24 @@ The data pipeline execution follows a sequential workflow orchestrated by the \t
     \begin{itemize}
         \item Top skills across all roles → \texttt{data/gold/top\_skills.parquet}
         \item Role-specific skill aggregations → \texttt{data/gold/role\_skills\_by\_title.parquet}
+    The pipeline uses Polars' lazy evaluation, meaning transformations are not executed until \texttt{collect()} or \texttt{save\_lazy()} is called. This allows Polars to optimize the query plan and minimize memory usage.
     \end{itemize}
+    \item \textbf{RDS Database Population}: After gold layer aggregation, processed data is uploaded to AWS RDS PostgreSQL:
+    \begin{itemize}
+        \item The \texttt{skills} table is populated from \texttt{top\_skills.parquet} and \texttt{role\_skills\_by\_title.parquet}, with each unique skill receiving a frequency count and type classification (technical/soft)
+        \item Initial skill taxonomy serves as the foundation for learning resource linkage
+        \item Upload uses batch inserts with \texttt{ON CONFLICT DO NOTHING} to handle idempotent execution
+        \item Connection parameters include SSL/TLS enforcement (\texttt{sslmode='require'}) for secure data transfer
+    \end{itemize}
+    
+    This initial data seeding establishes the skill taxonomy that Airflow DAGs subsequently enrich with learning resources.
+    \item \textbf{Airflow Orchestration}: The AWS EC2 deployment runs two independent DAG schedules:
 \end{enumerate}
-
-The pipeline uses Polars' lazy evaluation, meaning transformations are not executed until \texttt{collect()} or \texttt{save\_lazy()} is called. This allows Polars to optimize the query plan and minimize memory usage.
+    \begin{itemize}
+        \item \textbf{GitHub DAG}: Iterates through all technical skills in the \texttt{skills} table, executes 3 search queries per skill with 2.5-second rate limiting between requests to comply with GitHub's 30 requests/minute limit, and processes ~10 repositories per skill
+        \item \textbf{YouTube DAG}: Processes soft skills with 3 search variations per skill, respecting YouTube's 10,000 daily quota units (100 units per search), and collects ~10 videos per skill
+    \end{itemize}
+    Both DAGs update the \texttt{skills.last\_fetched} timestamp upon completion, enabling monitoring of data freshness.
 
 \subsection{Data Quality and Schema Management}
 
@@ -467,7 +535,14 @@ The pipeline implements robust schema handling to accommodate variations in sour
         \item Pre-aggregated strings from link tables
     \end{itemize}
     All are normalized to Polars list types for consistent processing.
+    \item \textbf{API Response Validation}: The Airflow DAGs implement defensive parsing:
+    \begin{itemize}
+        \item GitHub: Validates presence of required fields (\texttt{html\_url}, \texttt{stargazers\_count}, \texttt{full\_name}) before processing
+        \item YouTube: Handles missing statistics gracefully (defaulting to 0 for view/like/comment counts)
+        \item Both: Log malformed responses to CloudWatch for debugging without halting the DAG
+    \end{itemize}
 \end{itemize}
+
 
 \subsection{Vector Store Implementation}
 
@@ -581,6 +656,19 @@ The project includes a test data generation script that:
     \item Static assets are deployed to CDN
     \item Environment variables configure API endpoints
 \end{enumerate}
+\subsubsection{AWS Infrastructure (Data Collection)}
+
+\begin{enumerate}
+    \item EC2 instance is provisioned with t2.medium (2 vCPU, 4GB RAM) running Amazon Linux 2023
+    \item Docker and Docker Compose are installed for containerized Airflow deployment
+    \item Airflow services are initialized with \texttt{docker-compose up airflow-init}
+    \item Three containers start: PostgreSQL 13 (metadata), Airflow scheduler, and Airflow webserver (port 8080)
+    \item IAM role (\texttt{skillminer-ec2-s3-role}) is attached to EC2, granting S3 write permissions without hardcoded credentials
+    \item Security groups allow SSH (port 22), Airflow UI (port 8080), and RDS access (port 5432)
+    \item DAGs auto-trigger on cron schedules; manual triggers available via Airflow UI or CLI
+\end{enumerate}
+
+The deployment uses environment variables for all secrets (database credentials, API keys) and implements SSL/TLS for RDS connections (\texttt{sslmode='require'}).
 
 \subsubsection{Database Migrations}
 
@@ -602,6 +690,9 @@ Several optimizations ensure efficient data processing:
     \item \textbf{Batch Processing}: Vector store upserts and database inserts use batching to reduce I/O overhead
     \item \textbf{Caching}: ChromaDB collection is reused across requests, avoiding re-initialization
     \item \textbf{Connection Pooling}: Database clients use connection pools for efficient resource management
+    \item \textbf{API Rate Limiting}: Built-in sleep intervals (2.5s for GitHub, 1s for YouTube) prevent 429 rate limit errors and ensure pipeline reliability
+    \item \textbf{S3 Lifecycle Policies}: Automatic transition to Glacier storage after 90 days reduces long-term storage costs by 80\%
+    \item \textbf{RDS Connection Pooling}: psycopg2 connection context managers ensure proper resource cleanup and prevent connection leaks
 \end{itemize}
 
 \subsection{Security Implementation}
@@ -615,6 +706,9 @@ Security measures are implemented at multiple layers:
     \item \textbf{Input Validation}: Pydantic schemas validate all API inputs, preventing injection attacks
     \item \textbf{File Upload Limits}: Resume uploads are restricted to PDF format and reasonable size limits
     \item \textbf{Error Handling}: Detailed error messages are logged server-side but sanitized for client responses
+    \item \textbf{IAM Role-Based Access}: EC2 uses instance roles with AWS STS temporary credentials, eliminating static access keys and enabling automatic credential rotation
+    \item \textbf{RDS Encryption}: Database connections enforce SSL/TLS; data at rest is encrypted with AWS-managed keys
+    \item \textbf{S3 Bucket Policies}: Block all public access; only the EC2 instance role has write permissions to specific prefixes (\texttt{github\_responses/*}, \texttt{youtube\_responses/*})
 \end{itemize}
 
 \subsection{Observability and Monitoring}
