@@ -6,9 +6,10 @@ from datetime import datetime, timedelta
 import sys
 import os
 
+
 # Add src to Python path
 sys.path.insert(0, '/opt/airflow') 
-
+from src.utils.s3_utils import upload_raw_github_response
 from src.utils.db_utils import get_skills_by_type, insert_learning_resource, update_skill_last_fetched
 from src.utils.github_utils import (
     search_github_repos,
@@ -51,6 +52,11 @@ def fetch_github_resources_for_all_skills(**context):
                 print(f"  No repos found for {skill_name}")
                 continue
             
+            try:
+                upload_raw_github_response(skill_name, repos)
+            except Exception as e:
+                print(f"  Warning: Failed to upload to S3: {e}")
+                
             skill_resources = 0
             
             # Insert each repo
