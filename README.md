@@ -20,7 +20,7 @@ https://skillminer.vercel.app/
 ```
 .
 ├─ .github/                   # GitHub Actions (CI/CD pipelines)
-├─ airflow/                   # Airflow DAGs, scheduler, ETL pipeline
+├─ airflow/                   # Airflow DAGs, scheduler, ETL pipeline (AWS EC2 in production)
 ├─ backend/                   # FastAPI backend, RAG, Agent services (Dockerified)
 ├─ database/                  # Data scripts, ETL, test data generator
 ├─ docs/                      # Architecture diagrams, documentation
@@ -112,6 +112,32 @@ docker compose up --build
 Airflow UI:  
 http://localhost:8080  
 
+## AWS Airflow (Production)
+
+Production Airflow runs on AWS EC2 with automated learning resource collection:
+```bash
+# Deploy to EC2
+cd airflow
+docker-compose up airflow-init
+docker-compose up -d
+```
+
+**Services:**
+- EC2 (t2.medium) — Airflow scheduler + webserver
+- S3 — Raw API responses (`github_responses/`, `youtube_responses/`)
+- RDS PostgreSQL — Skills taxonomy + learning resources
+
+**DAGs:**
+- `fetch_github_resources_weekly` — Sundays 2:00 AM UTC
+- `fetch_youtube_resources_weekly` — Sundays 3:00 AM UTC
+
+Environment setup in `airflow/.env`:
+```bash
+DB_HOST=your-rds-endpoint.rds.amazonaws.com
+S3_BUCKET_NAME=your-bucket-name
+GITHUB_TOKEN=your_token
+YOUTUBE_API_KEY=your_key
+```
 
 # Backend Setup (Without Docker)
 
@@ -123,17 +149,16 @@ uvicorn src.api.main:app --reload --port 8000
 ```
 
 # Database Setup
-
 ```bash
 cd database
 make install
 python scripts/download_kaggle.py
 ```
 
-Optional:
-
-- Supabase → https://supabase.com/docs/guides/getting-started  
-- AWS → https://aws.amazon.com/getting-started/
+**Production databases:**
+- Supabase → User auth, chat history
+- AWS RDS → Skills, learning resources (auto-populated by Airflow)
+- AWS S3 → API response archive
 
 # Frontend Setup (Without Docker)
 
