@@ -1,0 +1,17 @@
+# backend/docker-compose.yml
+version: "3.9"
+
+services:
+  backend:
+    build: .
+    container_name: skillminer-backend
+    # Load environment variables from local .env
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"   # host:container
+    volumes:
+      - .:/app        # optional: live code edit in dev
+      - ./chroma:/app/chroma  # keep local chroma index (if you use it)
+    command: uvicorn src.api.main:app  --port 8000 --reload
+    # In production, remove "--reload"

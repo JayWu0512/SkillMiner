@@ -1,0 +1,29 @@
+# backend/Dockerfile
+
+# 1. Use a small Python image
+FROM python:3.11-slim
+
+# 2. Set work directory inside container
+WORKDIR /app
+
+# 3. Install system deps (optional, add more if you need)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# 4. Install Python dependencies
+#    Copy only requirements first so Docker can cache this layer
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 5. Copy the rest of the backend code
+COPY . /app
+
+# 6. Default environment variables
+ENV PORT=8000
+
+# 7. Expose port (for documentation only)
+EXPOSE 8000
+
+# 8. Start FastAPI with Uvicorn
+CMD ["uvicorn", "src.api.main:app", "--port", "8000"]

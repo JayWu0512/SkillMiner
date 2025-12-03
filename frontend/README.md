@@ -2,8 +2,6 @@
 
 This directory contains the **SkillMiner** web client, built with **React**, **TypeScript**, and **Vite**.
 
----
-
 ## Tech Stack
 
 - **React + TypeScript**
@@ -12,8 +10,6 @@ This directory contains the **SkillMiner** web client, built with **React**, **T
 - **REST API Services**
 - **Reusable UI Components**
 - **Lucide Icons**
-
----
 
 ## Project Structure
 
@@ -58,10 +54,10 @@ frontend/
 ├─ .env.example                  # Sample env config
 ├─ index.html
 ├─ package.json
-└─ vite.config.ts
+├─ vite.config.ts
+├─ Dockerfile                      # Docker support for frontend
+└─ docker-compose.yml              # Run frontend using Docker Compose
 ```
-
----
 
 ## Setup
 
@@ -87,7 +83,51 @@ npm run dev
 npm run build
 ```
 
----
+# Running Frontend with Docker
+
+The frontend can run independently using Docker + Docker Compose.
+
+## 1. Build the Docker image
+
+```bash
+docker build -t skillminer-frontend .
+```
+
+## 2. Run the container
+
+```bash
+docker run -p 3000:3000 skillminer-frontend
+```
+
+Frontend will be available at:
+
+http://localhost:3000
+
+# Running via Docker Compose (Recommended)
+
+The `frontend/docker-compose.yml` allows you to run the frontend with a single command.
+
+### 1. Start container
+
+```bash
+docker compose up --build
+```
+
+### 2. After initial build
+
+```bash
+docker compose up
+```
+
+### 3. Stop the container
+
+```bash
+docker compose down
+```
+
+Frontend will be available at:
+
+http://localhost:3000
 
 ## Pages Overview
 
@@ -98,7 +138,6 @@ npm run build
 - SkillReportPage – skill analysis results
 - Dashboard / Profile / Resume / Practice Pages, etc.
 
----
 
 ## Supabase
 
@@ -110,5 +149,4 @@ src/utils/supabase/client.tsx
 
 You can import and use it across pages or service functions.
 
----
 
