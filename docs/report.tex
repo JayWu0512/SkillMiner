@@ -1,0 +1,731 @@
+\documentclass[twoside,11pt]{article}
+
+% Any additional packages needed should be included after jmlr2e.
+% Note that jmlr2e.sty includes epsfig, amssymb, natbib and graphicx,
+% and defines many common macros, such as 'proof' and 'example'.
+%
+% It also sets the bibliographystyle to plainnat; for more information on
+% natbib citation styles, see the natbib documentation, a copy of which
+% is archived at http://www.jmlr.org/format/natbib.pdf
+
+\usepackage{jmlr2e}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Add packages here
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[margin=1in]{geometry}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs} 
+\renewcommand{\arraystretch}{1.5} % for better spacing
+
+% Configure listings for terminal output
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    backgroundcolor=\color{gray!10}
+}
+
+% Definitions of handy macros can go here
+
+\newcommand{\dataset}{{\cal D}}
+\newcommand{\fracpartial}[2]{\frac{\partial #1}{\partial  #2}}
+
+
+\firstpageno{1}
+
+\begin{document}
+
+% project title
+\title{SkillMiner: An AI-Powered Career \& Study Copilot}
+
+% student name and email
+\author{\name He Jiang \email hj193@duke.edu
+       \AND
+       \name Sung-Tse Wu (Jay) \email sw693@duke.edu
+       \AND
+       \name Yiyun Yao \email yy508@duke.edu
+       \AND
+       \name Isaac Vergara \email isaac.vergara@duke.edu
+       \AND
+       \name Qingyu Yang \email qy59@duke.edu
+       }
+\maketitle
+
+\centering{\textbf{Final Project Report}}
+
+% content starts here
+\raggedright
+
+\section{Introduction}
+
+SkillMiner is an AI-powered career and study copilot designed to help job seekers navigate the competitive technology job market. The system analyzes resumes, extracts skills, identifies gaps between candidate qualifications and job requirements, retrieves relevant learning resources, and generates personalized study plans using a combination of Large Language Models (LLMs), Retrieval-Augmented Generation (RAG), and a modern data engineering pipeline.
+
+The project addresses a critical challenge in the job market: the disconnect between job seeker skills and employer requirements. By leveraging real-world job posting data from LinkedIn, SkillMiner provides data-driven insights into in-demand skills across four key technology roles: Data Analyst (DA), Data Scientist (DS), Data Engineer (DE), and Software Engineer (SWE). Beyond static job market analysis, the system maintains a continuously updated repository of learning resources through automated weekly collection from GitHub and YouTube APIs, orchestrated by Apache Airflow running on AWS EC2.
+
+The system architecture integrates multiple data sources, employs sophisticated data transformation pipelines, and delivers intelligent recommendations through a web-based interface. The backend utilizes FastAPI for RESTful API services, ChromaDB for vector storage and semantic search, and OpenAI's GPT models for natural language understanding and generation. The frontend is built with React and TypeScript, providing an intuitive user experience for resume upload, skill analysis, and study plan generation.
+
+The data engineering component processes millions of job postings through a multi-layer pipeline (raw → bronze → silver → gold) using Polars for efficient data transformation. The processed data is stored in multiple formats including Parquet files, SQLite databases, and cloud storage (AWS S3 and RDS), enabling both analytical queries and real-time application access. AWS infrastructure provides production-grade reliability with RDS PostgreSQL hosting the normalized skill taxonomy and curated learning resources, S3 serving as a data lake for raw API responses and audit trails, and EC2 running containerized Airflow for automated data collection workflows.
+
+Key features of SkillMiner include:
+\begin{itemize}
+    \item \textbf{Resume Analysis}: Automated PDF parsing and skill extraction from resumes
+    \item \textbf{Skill Gap Identification}: Comparison of candidate skills against job requirements
+    \item \textbf{RAG-Powered Chat}: Context-aware career advice using semantic search over job market data
+    \item \textbf{Personalized Study Plans}: AI-generated learning roadmaps tailored to individual skill gaps
+    \item \textbf{Data-Driven Insights}: Statistical analysis of job market trends and skill demand patterns
+\end{itemize}
+
+The project demonstrates modern data engineering principles including modularity, scalability, observability, and security. It incorporates containerization with Docker, continuous integration through GitHub Actions, comprehensive testing strategies, and cloud deployment on Vercel (frontend) and Railway (backend). The complete source code and documentation are available in the project repository~\cite{skillminer2025repo}.
+
+\section{Architecture}
+
+SkillMiner follows a microservices architecture with clear separation between data ingestion, processing, storage, and application layers. The system is organized into four main components: the data pipeline, backend API, frontend application, and supporting infrastructure.
+
+\subsection{System Overview}
+
+The architecture consists of three primary layers:
+
+\begin{enumerate}
+    \item \textbf{Data Layer}: Handles data ingestion from Kaggle, transformation using Polars, and storage in multiple formats (Parquet, SQLite, AWS S3/RDS, Supabase PostgreSQL)
+    \item \textbf{Application Layer}: FastAPI backend providing RESTful APIs for resume analysis, skill matching, RAG-powered chat, and study plan generation
+    \item \textbf{Presentation Layer}: React-based frontend deployed on Vercel, providing user interface for all interactions
+    \item \textbf{Infrastructure Layer}: AWS cloud services providing compute (EC2), storage (S3), and database (RDS) resources, with Apache Airflow orchestrating automated weekly data collection pipelines for learning resource curation.
+\end{enumerate}
+
+\subsection{Data Pipeline Architecture}
+
+The data engineering pipeline implements a medallion architecture pattern with four distinct layers:
+
+\begin{description}
+    \item[\textbf{Raw Layer}] Contains original Kaggle datasets in Parquet format, including:
+    \begin{itemize}
+        \item \texttt{linkedin\_job\_postings.parquet}: Job posting metadata
+        \item \texttt{job\_summary.parquet}: Summarized job information
+        \item \texttt{job\_skills.parquet}: Skill-to-job mappings
+    \end{itemize}
+    
+    \item[\textbf{Bronze Layer}] Cleaned and normalized data with consistent schema. The \texttt{CleanJobTransformer} standardizes column names, handles multiple schema variations, normalizes data types, and performs basic data quality checks.
+    
+    \item[\textbf{Silver Layer}] Role-filtered and enriched data. This layer:
+    \begin{itemize}
+        \item Filters jobs matching target roles (DA, DS, DE, SWE) using regex pattern matching
+        \item Joins text fields (title, description, skills) for NLP processing
+        \item Derives missing work type (remote/hybrid/onsite) from text analysis
+        \item Infers seniority levels (intern/junior/mid/senior/lead) from job titles
+    \end{itemize}
+    
+    \item[\textbf{Gold Layer}] Aggregated analytical outputs:
+    \begin{itemize}
+        \item Top skills across all roles (ranked by frequency)
+        \item Role-specific skill aggregations
+        \item Normalized skill distributions for fair cross-role comparison
+    \end{itemize}
+\end{description}
+
+The pipeline is orchestrated through a Python-based \texttt{JobsPipeline} class that chains transformers and aggregators in sequence. While the README mentions Airflow for production orchestration, the current implementation uses a programmatic approach with Typer CLI for local execution.
+
+\subsection{Backend Architecture}
+
+The backend follows a modular design with clear separation of concerns:
+
+\begin{itemize}
+    \item \textbf{API Layer} (\texttt{src/api/}): FastAPI routers handling HTTP requests for health checks, file uploads, chat interactions, skill analysis, and study plan generation
+    
+    \item \textbf{Service Layer} (\texttt{src/services/}): Business logic including skill matching algorithms that compare resumes against job descriptions
+    
+    \item \textbf{RAG System} (\texttt{src/rag/}): 
+    \begin{itemize}
+        \item \texttt{retriever.py}: ChromaDB-based semantic search over job role and skill embeddings
+        \item \texttt{parser.py}: PDF resume parsing and text extraction
+    \end{itemize}
+    
+    \item \textbf{Database Clients} (\texttt{src/db/}): Interfaces to Supabase (PostgreSQL) for user data and AWS RDS for job market data and skill resources.
+    
+    \item \textbf{LLM Integration} (\texttt{src/llm/}): OpenAI client wrapper for GPT model interactions
+\end{itemize}
+
+The backend uses ChromaDB as a persistent vector store, seeded from the gold layer Parquet files. When a user queries the chat system, the retriever performs semantic search over role-skill embeddings, retrieves relevant context, and augments LLM prompts with this information.
+
+\subsection{Storage Architecture}
+
+SkillMiner employs a multi-storage strategy optimized for different use cases:
+
+\begin{itemize}
+    \item \textbf{Parquet Files}: Efficient columnar storage for analytical workloads, organized in bronze/silver/gold directories
+    
+    \item \textbf{SQLite}: Local relational database for querying processed job data, exported from Parquet via \texttt{SQLiteMaterializer}
+    
+    \item \textbf{Supabase PostgreSQL}: Cloud-hosted database for:
+    \begin{itemize}
+        \item User authentication and profiles
+        \item Chat message history
+        \item Generated study plans
+        \item Long-term memory for personalized recommendations
+    \end{itemize}
+    
+\item \textbf{AWS Services}: Distributed cloud infrastructure deployed in \texttt{us-east-1}:
+\begin{itemize}
+    \item \textbf{EC2 (t2.medium)}: Containerized compute instance running Apache Airflow 2.8.1 with Docker Compose orchestration. Hosts three core services: scheduler, webserver, and metadata database (PostgreSQL 13). Executes automated weekly DAGs for data collection from GitHub (Sundays 2:00 AM UTC) and YouTube (Sundays 3:00 AM UTC). Configured with IAM role-based authentication for secure, keyless access to AWS resources.
+    
+    \item \textbf{S3}: Object storage bucket (\texttt{skillminer-buckets3}) serving as a data lake for:
+    \begin{itemize}
+        \item Raw API responses archived by platform (\texttt{github\_responses/}, \texttt{youtube\_responses/})
+        \item Complete audit trail of data sources with timestamps for compliance and debugging
+        \item Intermediate processing artifacts and pipeline checkpoints
+        \item Enables data replay and reprocessing without re-querying rate-limited APIs
+        \item Lifecycle policies automatically archive objects older than 90 days to Glacier for cost optimization
+    \end{itemize}
+    
+    \item \textbf{RDS (PostgreSQL)}: Production relational database (\texttt{skillminer.cnwm886wwadv.us-east-1.rds.amazonaws.com}) with normalized schema:
+    \begin{itemize}
+        \item \texttt{skills}: Taxonomy of technical and soft skills with frequency counts and fetch priority rankings
+        \item \texttt{learning\_resources}: Curated educational content with metadata (title, description, platform, popularity scores, engagement metrics)
+        \item \texttt{resource\_skills}: Many-to-many junction table linking resources to skills with calculated relevance scores (0-100) and learning quality scores (0-100)
+        \item Automated weekly updates via Airflow with ON CONFLICT clauses for idempotent upserts
+        \item SSL/TLS encryption enforced for all connections (\texttt{sslmode='require'})
+    \end{itemize}
+    
+    \item \textbf{IAM}: Security architecture using EC2 instance roles (\texttt{skillminer-ec2-s3-role}) with principle of least privilege, eliminating hardcoded credentials in favor of temporary security tokens automatically rotated by AWS STS.
+    \end{itemize}
+    
+    \item \textbf{ChromaDB}: Vector database for semantic search, stored locally in \texttt{backend/chroma/} directory
+\end{itemize}
+
+\subsection{Deployment Architecture}
+
+The system is deployed across multiple cloud platforms:
+
+\begin{itemize}
+    \item \textbf{Frontend}: Vercel (serverless React application)
+    \item \textbf{Backend API}: Railway (containerized FastAPI service)
+    \item \textbf{Databases}: Supabase (managed PostgreSQL) and AWS RDS
+    \item \textbf{Data Processing}: AWS EC2 for ETL pipeline execution (mentioned in README)
+\end{itemize}
+
+All components communicate via REST APIs, with CORS middleware configured to allow cross-origin requests between frontend and backend domains.
+
+\section{Key Components}
+
+\subsection{Data Ingestion}
+
+SkillMiner ingests real-world job posting data from Kaggle, specifically the LinkedIn Job Postings dataset. The ingestion process is handled by \texttt{scripts/download\_kaggle.py}, which:
+
+\begin{itemize}
+    \item Authenticates with Kaggle API using credentials
+    \item Downloads dataset files in their original format
+    \item Converts data to Parquet format for efficient storage and processing
+    \item Validates data integrity and schema consistency
+\end{itemize}
+
+The dataset contains millions of job postings with fields including job titles, company names, locations, work types, seniority levels, job descriptions, and associated skills. This multi-source data (job postings, summaries, and skill mappings) provides a comprehensive view of the technology job market.
+
+In addition to the static Kaggle dataset, SkillMiner implements a dynamic learning resource ingestion system deployed on AWS EC2. Apache Airflow orchestrates two weekly DAGs that fetch educational content from external APIs:
+
+\begin{itemize}
+    \item \textbf{GitHub Repository Collection} (Sundays 2:00 AM UTC): Searches GitHub API for educational repositories matching technical skills, filtering for tutorials, "awesome" lists, and learning-focused content
+    \item \textbf{YouTube Video Collection} (Sundays 3:00 AM UTC): Queries YouTube Data API v3 for instructional videos targeting soft skills development
+\end{itemize}
+
+Raw API responses are archived to S3 (\texttt{github\_responses/}, \texttt{youtube\_responses/}) as JSON files with timestamps, providing a complete audit trail and enabling data replay without re-querying rate-limited APIs. Processed resources are scored for educational value (0-100) and relevance (0-100) before insertion into RDS PostgreSQL, where they are linked to skills through a normalized many-to-many schema.
+
+\subsection{Data Transformation Pipeline}
+
+The transformation pipeline is built using Polars, a high-performance DataFrame library written in Rust. The pipeline consists of several key components:
+
+\subsubsection{Transformers}
+
+\begin{itemize}
+    \item \textbf{CleanJobTransformer}: Normalizes raw data by:
+    \begin{itemize}
+        \item Mapping variant column names to standard schema (e.g., \texttt{job\_title}, \texttt{title}, \texttt{position} → \texttt{title})
+        \item Converting data types (strings to datetime, normalizing text)
+        \item Parsing and cleaning skill lists (handling JSON arrays, comma-separated strings)
+        \item Filtering out invalid records (missing title or company)
+    \end{itemize}
+    
+    \item \textbf{RoleFilterTransformer}: Filters jobs matching target roles using regex patterns. For example, the pattern \texttt{\textbackslash b(data scientist|scientist)\textbackslash b} matches job titles containing "data scientist" or "scientist" as whole words.
+    
+    \item \textbf{TextJoinTransformer}: Concatenates title, description, and skills into a single text field for NLP processing, enabling semantic search and text analysis.
+    
+    \item \textbf{DeriveWorkTypeTransformer}: Infers work type (remote/hybrid/onsite) from job descriptions using keyword matching when the field is missing.
+    
+    \item \textbf{DeriveSeniorityTransformer}: Extracts seniority levels from job titles using pattern matching (e.g., "senior", "jr.", "lead", "principal").
+\end{itemize}
+
+\subsubsection{Aggregators}
+
+\begin{itemize}
+    \item \textbf{TopSkillsAggregator}: Counts skill frequencies across all jobs, ranks them, and returns the top N skills (default: 40).
+    
+    \item \textbf{RoleSkillsAggregator}: Groups skills by job role, creating unique sorted lists of skills required for each role (DA, DS, DE, SWE).
+    
+    \item \textbf{RoleSkillCountsAggregator}: Produces long-format data with skill counts per role, enabling statistical analysis and visualization.
+\end{itemize}
+
+The pipeline uses Polars' lazy evaluation framework, which allows for query optimization and efficient memory usage. Transformations are chained together, and execution is deferred until data is written to disk.
+\subsubsection{Learning Resource Pipeline}
+
+The AWS-hosted Airflow deployment runs parallel transformation pipelines for external learning resources:
+
+\begin{itemize}
+    \item \textbf{GitHub Transformer}: 
+    \begin{itemize}
+        \item Filters non-English repositories using character set analysis
+        \item Calculates learning scores based on educational keywords ("tutorial", "awesome", "examples")
+        \item Applies star count normalization (capped at +20 points) to avoid bias toward popular but non-educational repos
+        \item Computes relevance scores via keyword matching in repository names, descriptions, and topics
+    \end{itemize}
+    
+    \item \textbf{YouTube Transformer}:
+    \begin{itemize}
+        \item Decodes HTML entities in titles and descriptions
+        \item Calculates engagement rates (likes + comments / views)
+        \item Scores learning value based on view count, engagement, and educational keyword presence
+        \item Filters for medium-duration videos (4-20 minutes) to prioritize focused tutorials
+    \end{itemize}
+\end{itemize}
+
+Both pipelines implement idempotent upsert logic using PostgreSQL's \texttt{ON CONFLICT} clauses, allowing safe re-execution without data duplication.
+
+\subsection{Data Storage and Querying}
+
+\subsubsection{Storage Systems}
+
+The system uses multiple storage backends optimized for different access patterns:
+
+\begin{itemize}
+    \item \textbf{Parquet Files}: Primary storage format for processed data, providing:
+    \begin{itemize}
+        \item Columnar compression for efficient storage
+        \item Schema evolution support
+        \item Fast analytical queries with Polars
+    \end{itemize}
+    
+    \item \textbf{SQLite Database}: Exported from Parquet for SQL-based querying. The \texttt{SQLiteMaterializer} handles:
+    \begin{itemize}
+        \item Type conversion (Polars types → SQLite types)
+        \item List/array serialization to JSON strings
+        \item Datetime formatting to ISO-8601 strings
+        \item Automatic index creation on common query columns
+    \end{itemize}
+    
+    \item \textbf{Supabase PostgreSQL}: Stores:
+    \begin{itemize}
+        \item User accounts and authentication data
+        \item Chat conversation history (\texttt{chat\_messages} table)
+        \item Generated study plans with metadata
+        \item Long-term memory for personalized recommendations (\texttt{ltm\_memory} table)
+    \end{itemize}
+    
+    \item \textbf{RDS (PostgreSQL)}: Production relational database (\texttt{skillminer.cnwm886wwadv.us-east-1.rds.amazonaws.com}) originally seeded from Polars pipeline outputs.
+
+\end{itemize}
+
+\subsubsection{Querying Capabilities}
+
+SQL queries are used extensively for data analysis. The \texttt{notebooks/insights.sql} file contains complex analytical queries including:
+
+\begin{itemize}
+    \item Role distribution calculations with percentage breakdowns
+    \item Top skills aggregation with normalization across roles
+    \item Geographic distribution analysis (US states and countries)
+    \item Skill frequency analysis by role
+\end{itemize}
+
+These queries support the exploratory data analysis notebooks and provide insights visualized in the project's documentation.
+
+\subsection{Data Analysis and Insights}
+
+The analysis component performs statistical analysis using both Polars (for pipeline operations) and Pandas (for exploratory analysis in Jupyter notebooks). Key analyses include:
+
+\begin{itemize}
+    \item \textbf{Exploratory Data Analysis} (\texttt{01\_eda.ipynb}):
+    \begin{itemize}
+        \item Missing value analysis and data quality checks
+        \item Job distribution by work type (remote/hybrid/onsite)
+        \item Top hiring companies and locations
+        \item Monthly posting trends
+    \end{itemize}
+    
+    \item \textbf{Skill Insights} (\texttt{02\_insights.ipynb}):
+    \begin{itemize}
+        \item Overall top 20 skills across all roles
+        \item Normalized skill distributions (accounting for role size differences)
+        \item Role-specific top 10 skills for DA, DS, DE, and SWE
+        \item Geographic distribution of opportunities by role
+    \end{itemize}
+\end{itemize}
+
+Key findings from the analysis:
+\begin{itemize}
+    \item Python and SQL are the two most critical skills across all technology roles
+    \item Software engineering positions significantly outnumber DA, DS, and DE roles combined
+    \item Each role has distinct skill requirements, making personalized learning paths essential
+    \item Geographic concentration varies by role, with certain regions showing higher demand
+\end{itemize}
+
+\subsection{Backend API Services}
+
+\subsubsection{REST API Endpoints}
+
+The FastAPI backend provides the following endpoints:
+
+\begin{itemize}
+    \item \texttt{GET /health}: Health check endpoint for monitoring
+    \item \texttt{POST /upload}: Resume PDF upload and parsing
+    \item \texttt{POST /chat}: RAG-powered chat interface for career advice
+    \item \texttt{POST /analysis}: Skill gap analysis comparing resume to job description
+    \item \texttt{POST /study-plan}: Generate personalized study plan
+    \item \texttt{GET /study-plan/\{plan\_id\}}: Retrieve saved study plan
+    \item \texttt{GET /resources/\{skill\_name\}}: Retrieve top-ranked learning resources for a specific skill from RDS, ordered by composite score (learning\_score * relevance\_score)
+\end{itemize}
+
+\subsubsection{RAG System}
+
+The Retrieval-Augmented Generation system enhances LLM responses with relevant context from the job market data:
+
+\begin{enumerate}
+    \item \textbf{Vector Store Initialization}: ChromaDB is seeded from the gold layer Parquet file (\texttt{role\_skills\_by\_title.parquet}), creating embeddings for each role-skill combination using OpenAI's \texttt{text-embedding-3-large} model.
+    
+    \item \textbf{Query Processing}: When a user submits a chat message:
+    \begin{itemize}
+        \item The system combines resume text (if available) with the user's message
+        \item Performs semantic search over the vector store
+        \item Retrieves top K most relevant role-skill contexts
+        \item Builds a context block with retrieved information
+    \end{itemize}
+    
+    \item \textbf{Response Generation}: The context, resume, and user message are sent to OpenAI GPT models, which generate contextually relevant career advice.
+\end{enumerate}
+
+\subsubsection{Skill Matching Service}
+
+The \texttt{SkillMatcher} service provides intelligent skill gap analysis:
+
+\begin{enumerate}
+    \item Extracts skills from both resume and job description using LLM
+    \item Validates extracted skills against the database
+    \item Categorizes skills as technical or soft skills
+    \item Identifies matched and missing skills
+    \item Calculates a match score (0-100) using LLM-based evaluation
+\end{enumerate}
+
+The service uses RAG to retrieve relevant role context, improving the accuracy of skill matching by understanding industry standards.
+
+\subsection{Frontend Application}
+
+The frontend is built with React, TypeScript, and Vite, providing a modern single-page application experience. Key pages include:
+
+\begin{itemize}
+    \item \textbf{Login Page}: Supabase authentication integration
+    \item \textbf{Upload Page}: Resume PDF upload with drag-and-drop interface
+    \item \textbf{Chatbot Page}: Interactive chat interface with persistent conversation history
+    \item \textbf{Study Plan Page}: Display and management of generated study plans
+    \item \textbf{Skill Report Page}: Visualization of skill analysis results
+    \item \textbf{Dashboard}: Overview of user progress and recommendations
+\end{itemize}
+
+The frontend communicates with the backend via REST APIs and manages state using React hooks. Supabase client is used for authentication and real-time data synchronization.
+
+\subsection{Containerization and CI/CD}
+
+\subsubsection{Docker}
+
+The project includes Docker configurations for reproducible environments:
+
+\begin{itemize}
+    \item \texttt{database/Dockerfile}: Containerizes the data pipeline with all dependencies
+    \item \texttt{database/docker-compose.yml}: Orchestrates build and test execution
+    \item Backend and frontend can be containerized for deployment (Railway uses containerization)
+\end{itemize}
+
+\subsubsection{Continuous Integration}
+
+GitHub Actions workflows provide automated testing and quality checks:
+
+\begin{itemize}
+    \item \texttt{database-ci.yml}: 
+    \begin{itemize}
+        \item Runs on pushes/PRs affecting \texttt{database/} directory
+        \item Installs Python 3.11 and dependencies
+        \item Executes flake8 linting
+        \item Runs unit and integration tests with coverage
+    \end{itemize}
+    
+    \item \texttt{backend-ci.yml}:
+    \begin{itemize}
+        \item Similar structure for backend code
+        \item Includes optional environment variables for API keys (for integration tests)
+        \item Tests API endpoints and RAG functionality
+    \end{itemize}
+\end{itemize}
+
+Both workflows ensure code quality and prevent regressions before merging to main branch.
+
+\section{Implementation}
+
+\subsection{Pipeline Execution Flow}
+
+The data pipeline execution follows a sequential workflow orchestrated by the \texttt{JobsPipeline} class:
+
+\begin{enumerate}
+    \item \textbf{Data Loading}: The pipeline scans the \texttt{data/raw/} directory for Parquet files, excluding the skills link table which is handled separately.
+    
+    \item \textbf{Skills Attachment}: Before cleaning, skills are attached to job records. The system handles two schema variations:
+    \begin{itemize}
+        \item Link table format: \texttt{(job\_id, skill\_name)} rows are aggregated per job
+        \item Pre-aggregated format: \texttt{(job\_link, job\_skills)} strings are joined directly
+    \end{itemize}
+    
+    \item \textbf{Bronze Layer Processing}: The \texttt{CleanJobTransformer} normalizes the schema, handles missing values, parses dates, and standardizes skill lists. Output is written to \texttt{data/bronze/jobs.parquet}.
+    
+    \item \textbf{Silver Layer Processing}: Multiple transformations are applied:
+    \begin{itemize}
+        \item Role filtering to keep only DA/DS/DE/SWE jobs
+        \item Text joining for NLP-ready content
+        \item Work type and seniority derivation from text patterns
+    \end{itemize}
+    Output is written to \texttt{data/silver/jobs\_text.parquet}.
+    
+    \item \textbf{Gold Layer Processing}: Two aggregations are performed:
+    \begin{itemize}
+        \item Top skills across all roles → \texttt{data/gold/top\_skills.parquet}
+        \item Role-specific skill aggregations → \texttt{data/gold/role\_skills\_by\_title.parquet}
+    The pipeline uses Polars' lazy evaluation, meaning transformations are not executed until \texttt{collect()} or \texttt{save\_lazy()} is called. This allows Polars to optimize the query plan and minimize memory usage.
+    \end{itemize}
+    \item \textbf{RDS Database Population}: After gold layer aggregation, processed data is uploaded to AWS RDS PostgreSQL:
+    \begin{itemize}
+        \item The \texttt{skills} table is populated from \texttt{top\_skills.parquet} and \texttt{role\_skills\_by\_title.parquet}, with each unique skill receiving a frequency count and type classification (technical/soft)
+        \item Initial skill taxonomy serves as the foundation for learning resource linkage
+        \item Upload uses batch inserts with \texttt{ON CONFLICT DO NOTHING} to handle idempotent execution
+        \item Connection parameters include SSL/TLS enforcement (\texttt{sslmode='require'}) for secure data transfer
+    \end{itemize}
+    
+    This initial data seeding establishes the skill taxonomy that Airflow DAGs subsequently enrich with learning resources.
+    \item \textbf{Airflow Orchestration}: The AWS EC2 deployment runs two independent DAG schedules:
+\end{enumerate}
+    \begin{itemize}
+        \item \textbf{GitHub DAG}: Iterates through all technical skills in the \texttt{skills} table, executes 3 search queries per skill with 2.5-second rate limiting between requests to comply with GitHub's 30 requests/minute limit, and processes ~10 repositories per skill
+        \item \textbf{YouTube DAG}: Processes soft skills with 3 search variations per skill, respecting YouTube's 10,000 daily quota units (100 units per search), and collects ~10 videos per skill
+    \end{itemize}
+    Both DAGs update the \texttt{skills.last\_fetched} timestamp upon completion, enabling monitoring of data freshness.
+
+\subsection{Data Quality and Schema Management}
+
+The pipeline implements robust schema handling to accommodate variations in source data:
+
+\begin{itemize}
+    \item \textbf{Column Name Normalization}: The \texttt{CleanJobTransformer} uses a candidate-based approach, checking multiple possible column names (e.g., \texttt{job\_title}, \texttt{title}, \texttt{position}) and mapping to a standard schema.
+    
+    \item \textbf{Type Coercion}: Data types are explicitly cast (e.g., strings to datetime, categorical to UTF-8) to ensure consistency.
+    
+    \item \textbf{Missing Value Handling}: The pipeline filters out records missing critical fields (title, company) and uses default values or derived values for optional fields (work type, seniority).
+    
+    \item \textbf{Skill List Parsing}: Handles multiple skill formats:
+    \begin{itemize}
+        \item JSON arrays: \texttt{["Python", "SQL"]}
+        \item Comma-separated strings: \texttt{"Python, SQL"}
+        \item Pre-aggregated strings from link tables
+    \end{itemize}
+    All are normalized to Polars list types for consistent processing.
+    \item \textbf{API Response Validation}: The Airflow DAGs implement defensive parsing:
+    \begin{itemize}
+        \item GitHub: Validates presence of required fields (\texttt{html\_url}, \texttt{stargazers\_count}, \texttt{full\_name}) before processing
+        \item YouTube: Handles missing statistics gracefully (defaulting to 0 for view/like/comment counts)
+        \item Both: Log malformed responses to CloudWatch for debugging without halting the DAG
+    \end{itemize}
+\end{itemize}
+
+
+\subsection{Vector Store Implementation}
+
+The RAG system's vector store is implemented using ChromaDB with the following architecture:
+
+\begin{itemize}
+    \item \textbf{Collection Structure}: A single collection named \texttt{"roles\_skills"} stores embeddings of role-skill combinations.
+    
+    \item \textbf{Embedding Model}: OpenAI's \texttt{text-embedding-3-large} generates 3072-dimensional vectors for each document.
+    
+    \item \textbf{Document Format}: Each document combines:
+    \begin{itemize}
+        \item Role title (lowercase): e.g., "data scientist"
+        \item Skills list: comma-separated skills for that role
+    \end{itemize}
+    Example: \texttt{"data scientist | python, sql, machine learning, statistics"}
+    
+    \item \textbf{Seeding Process}: The \texttt{\_seed\_roles\_from\_parquet()} function:
+    \begin{enumerate}
+        \item Reads the gold layer Parquet file
+        \item Constructs text fields from \texttt{title\_lc} and \texttt{skills\_for\_role} columns
+        \item Truncates text to 30,000 characters (conservative limit for embedding model)
+        \item Converts metadata (lists/arrays) to ChromaDB-compatible strings
+        \item Upserts documents in batches of 500 to avoid payload limits
+    \end{enumerate}
+    
+    \item \textbf{Retrieval Process}: When querying:
+    \begin{enumerate}
+        \item User message and resume text are combined into a query string
+        \item ChromaDB performs cosine similarity search
+        \item Top K results (default: 5) are retrieved with metadata
+        \item Results are formatted into context blocks for LLM prompts
+    \end{enumerate}
+\end{itemize}
+
+The vector store is persistent, stored in \texttt{backend/chroma/}, and automatically seeded on first use if empty.
+
+\subsection{API Request Processing}
+
+The backend processes requests through the following flow:
+
+\begin{enumerate}
+    \item \textbf{Request Reception}: FastAPI receives HTTP request and validates input using Pydantic schemas.
+    
+    \item \textbf{Authentication} (where applicable): Supabase client verifies user session tokens.
+    
+    \item \textbf{Business Logic Execution}:
+    \begin{itemize}
+        \item For \texttt{/chat}: RAG retrieval → context building → LLM generation
+        \item For \texttt{/analysis}: PDF parsing → skill extraction → database lookup → matching algorithm
+        \item For \texttt{/study-plan}: Analysis retrieval → LLM plan generation → database storage
+    \end{itemize}
+    
+    \item \textbf{Response Formatting}: Results are serialized to JSON using Pydantic models, ensuring type safety and API contract compliance.
+    
+    \item \textbf{Error Handling}: Global exception handlers catch and log errors, returning user-friendly error messages while preserving detailed logs for debugging.
+\end{enumerate}
+
+\subsection{Testing Strategy}
+
+The project implements comprehensive testing at multiple levels:
+
+\subsubsection{Unit Tests}
+
+\begin{itemize}
+    \item \textbf{Database Module}: Tests for schema validation, data type conversions, and transformer logic
+    \item \textbf{Backend Module}: Tests for API schemas, configuration loading, and utility functions
+    \item \textbf{RAG Module}: Tests for retrieval logic, context building, and embedding handling
+\end{itemize}
+
+Unit tests use mocking to avoid external API calls and database dependencies, ensuring fast execution and reliability.
+
+\subsubsection{Integration Tests}
+
+\begin{itemize}
+    \item \textbf{Pipeline Smoke Tests}: End-to-end pipeline execution with test data, verifying all transformation stages
+    \item \textbf{API Integration Tests}: Full request/response cycles for critical endpoints, using test fixtures
+\end{itemize}
+
+Integration tests use small test datasets generated by \texttt{scripts/make\_test\_data.py}, which creates stratified samples preserving data distribution characteristics.
+
+\subsubsection{Test Data Management}
+
+The project includes a test data generation script that:
+\begin{itemize}
+    \item Reads full datasets
+    \item Stratifies by role to maintain representation
+    \item Generates tiny Parquet files (\texttt{data/test/tiny\_*.parquet})
+    \item Preserves schema consistency for realistic testing
+\end{itemize}
+
+\subsection{Deployment Process}
+
+\subsubsection{Backend Deployment (Railway)}
+
+\begin{enumerate}
+    \item Code is pushed to GitHub main branch
+    \item Railway detects changes and triggers build
+    \item Docker container is built with backend dependencies
+    \item Environment variables are injected (API keys, database URLs)
+    \item Application starts with \texttt{uvicorn src.api.main:app --host 0.0.0.0 --port \$PORT}
+    \item Health checks verify service availability
+\end{enumerate}
+
+\subsubsection{Frontend Deployment (Vercel)}
+
+\begin{enumerate}
+    \item Code push triggers Vercel build
+    \item Dependencies are installed via \texttt{npm install}
+    \item Production build is created with \texttt{npm run build}
+    \item Static assets are deployed to CDN
+    \item Environment variables configure API endpoints
+\end{enumerate}
+\subsubsection{AWS Infrastructure (Data Collection)}
+
+\begin{enumerate}
+    \item EC2 instance is provisioned with t2.medium (2 vCPU, 4GB RAM) running Amazon Linux 2023
+    \item Docker and Docker Compose are installed for containerized Airflow deployment
+    \item Airflow services are initialized with \texttt{docker-compose up airflow-init}
+    \item Three containers start: PostgreSQL 13 (metadata), Airflow scheduler, and Airflow webserver (port 8080)
+    \item IAM role (\texttt{skillminer-ec2-s3-role}) is attached to EC2, granting S3 write permissions without hardcoded credentials
+    \item Security groups allow SSH (port 22), Airflow UI (port 8080), and RDS access (port 5432)
+    \item DAGs auto-trigger on cron schedules; manual triggers available via Airflow UI or CLI
+\end{enumerate}
+
+The deployment uses environment variables for all secrets (database credentials, API keys) and implements SSL/TLS for RDS connections (\texttt{sslmode='require'}).
+
+\subsubsection{Database Migrations}
+
+Supabase migrations are managed through SQL files in \texttt{backend/supabase/migrations/}:
+\begin{itemize}
+    \item \texttt{create\_ltm\_memory\_table.sql}: Creates long-term memory table for personalized recommendations
+    \item \texttt{create\_chat\_messages\_table.sql}: Creates chat history table
+\end{itemize}
+
+Migrations are applied manually or through Supabase CLI, ensuring schema consistency across environments.
+
+\subsection{Performance Optimizations}
+
+Several optimizations ensure efficient data processing:
+
+\begin{itemize}
+    \item \textbf{Lazy Evaluation}: Polars defers computation until necessary, allowing query optimization
+    \item \textbf{Columnar Storage}: Parquet format enables column pruning and efficient compression
+    \item \textbf{Batch Processing}: Vector store upserts and database inserts use batching to reduce I/O overhead
+    \item \textbf{Caching}: ChromaDB collection is reused across requests, avoiding re-initialization
+    \item \textbf{Connection Pooling}: Database clients use connection pools for efficient resource management
+    \item \textbf{API Rate Limiting}: Built-in sleep intervals (2.5s for GitHub, 1s for YouTube) prevent 429 rate limit errors and ensure pipeline reliability
+    \item \textbf{S3 Lifecycle Policies}: Automatic transition to Glacier storage after 90 days reduces long-term storage costs by 80\%
+    \item \textbf{RDS Connection Pooling}: psycopg2 connection context managers ensure proper resource cleanup and prevent connection leaks
+\end{itemize}
+
+\subsection{Security Implementation}
+
+Security measures are implemented at multiple layers:
+
+\begin{itemize}
+    \item \textbf{Authentication}: Supabase handles user authentication with JWT tokens
+    \item \textbf{API Security}: CORS middleware restricts origins to known frontend domains
+    \item \textbf{Environment Variables}: Sensitive credentials (API keys, database URLs) are stored as environment variables, never committed to version control
+    \item \textbf{Input Validation}: Pydantic schemas validate all API inputs, preventing injection attacks
+    \item \textbf{File Upload Limits}: Resume uploads are restricted to PDF format and reasonable size limits
+    \item \textbf{Error Handling}: Detailed error messages are logged server-side but sanitized for client responses
+    \item \textbf{IAM Role-Based Access}: EC2 uses instance roles with AWS STS temporary credentials, eliminating static access keys and enabling automatic credential rotation
+    \item \textbf{RDS Encryption}: Database connections enforce SSL/TLS; data at rest is encrypted with AWS-managed keys
+    \item \textbf{S3 Bucket Policies}: Block all public access; only the EC2 instance role has write permissions to specific prefixes (\texttt{github\_responses/*}, \texttt{youtube\_responses/*})
+\end{itemize}
+
+\subsection{Observability and Monitoring}
+
+The system includes logging and monitoring capabilities:
+
+\begin{itemize}
+    \item \textbf{Structured Logging}: Python's logging module with configurable levels (INFO, WARNING, ERROR)
+    \item \textbf{Health Checks}: \texttt{/health} endpoint enables uptime monitoring
+    \item \textbf{Error Tracking}: Global exception handlers log stack traces for debugging
+    \item \textbf{CI/CD Badges}: GitHub Actions provide build status indicators in README files
+\end{itemize}
+
+\newpage
+
+\appendix
+
+\bibliography{sample}
+
+\end{document}
