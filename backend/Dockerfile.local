@@ -1,4 +1,5 @@
 # backend/Dockerfile
+# 'ONLY' For local Docker development
 
 # 1. Use a small Python image
 FROM python:3.11-slim
