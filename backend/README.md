@@ -9,6 +9,7 @@ FastAPI-based backend service for SkillMiner, providing career guidance, resume 
 - **RAG-powered Chat**: Intelligent career advice using Retrieval-Augmented Generation
 - **Resume Analysis**: PDF parsing and skill gap analysis
 - **Study Plan Generation**: Personalized learning roadmaps
+- **Docker Support**: Run backend standalone using Docker or Docker Compose  
 
 ## Project Structure
 
@@ -26,7 +27,9 @@ backend/
 │   ├── unit/             # Unit tests
 │   └── integration/      # Integration tests
 ├── supabase/             # Database migrations
-└── chroma/               # ChromaDB vector store
+├── chroma/               # ChromaDB vector store
+├── Dockerfile            # Backend Dockerfile
+└── docker-compose.yml    # Run backend using Docker Compose
 ```
 
 ## Setup
@@ -70,6 +73,74 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 The API will be available at `http://localhost:8000`. API documentation is available at:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
+
+# Running Backend with Docker
+
+The backend supports standalone Docker and Docker Compose execution.
+
+---
+
+## 1. Build the Docker Image
+
+From the `backend/` directory:
+
+```bash
+docker build -t skillminer-backend .
+```
+
+## 2. Run the Container
+
+```bash
+docker run -p 8000:8000 --env-file .env skillminer-backend
+```
+
+Backend will be available at:
+
+http://localhost:8000/docs
+
+---
+
+# Running via Docker Compose (Recommended)
+
+The `backend/docker-compose.yml` makes development easier with hot reload and mounted volumes.
+
+### docker-compose.yml (reference)
+
+```yaml
+version: "3.9"
+
+services:
+  backend:
+    build: .
+    container_name: skillminer-backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ./chroma:/app/chroma
+    command: uvicorn src.api.main:app --port 8000 --reload
+    restart: unless-stopped
+```
+
+### Start backend using Compose
+
+```bash
+docker compose up --build
+```
+
+After initial build:
+
+```bash
+docker compose up
+```
+
+Stop:
+
+```bash
+docker compose down
+```
 
 ## RAG (Retrieval-Augmented Generation)
 
