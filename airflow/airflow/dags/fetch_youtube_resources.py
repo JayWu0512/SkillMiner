@@ -8,7 +8,7 @@ import os
 
 # Add src to Python path
 sys.path.insert(0, '/opt/airflow')
-
+from src.utils.s3_utils import upload_raw_youtube_response
 from src.utils.db_utils import get_skills_by_type, insert_learning_resource, update_skill_last_fetched
 from src.utils.youtube_utils import search_youtube_videos, calculate_learning_score_youtube
 
@@ -46,7 +46,10 @@ def fetch_youtube_resources_for_all_skills(**context):
             if not videos:
                 print(f"  No videos found for {skill_name}")
                 continue
-            
+            try:
+                upload_raw_youtube_response(skill_name, videos)
+            except Exception as e:
+                print(f"  Warning: Failed to upload to S3: {e}")
             skill_resources = 0
             
             # Insert each video

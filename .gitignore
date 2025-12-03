@@ -222,3 +222,5 @@ chat_logs.json
 
 # Node.js
 node_modules/
+
+*.ppk
