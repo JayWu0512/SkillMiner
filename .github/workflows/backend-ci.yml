@@ -1,4 +1,4 @@
-name: Python Template for SkillMiner/backend
+name: SkillMiner Backend CI Check
 
 on:
   push:

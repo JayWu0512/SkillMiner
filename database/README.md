@@ -1,4 +1,4 @@
-[![Python Template for SkillMiner/database](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml/badge.svg)](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml)
+[![SkillMiner Database CI Check](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml/badge.svg)](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml)
 
 # SkillMiner Database
 

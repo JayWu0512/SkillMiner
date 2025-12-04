@@ -1,4 +1,4 @@
-[![Python Template for SkillMiner/backend](https://github.com/JayWu0512/SkillMiner/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/JayWu0512/SkillMiner/actions/workflows/backend-ci.yml)
+[![SkillMiner Backend CI Check](https://github.com/JayWu0512/SkillMiner/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/JayWu0512/SkillMiner/actions/workflows/backend-ci.yml)
 
 # SkillMiner Backend API
 

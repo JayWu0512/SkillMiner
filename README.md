@@ -1,4 +1,10 @@
+![Python Version](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)
 
+[![SkillMiner Backend CI Check](https://github.com/JayWu0512/SkillMiner/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/JayWu0512/SkillMiner/actions/workflows/backend-ci.yml)
+[![SkillMiner Database CI Check](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml/badge.svg)](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml)
+
+![Vercel Deploy](https://deploy-badge.vercel.app/vercel/skillminer?style=plastic&logo=Vercel&name=Vercel)
+![Railway Deploy](https://deploy-badge.vercel.app/?url=https%3A%2F%2Fskillminer-production.up.railway.app%2F&style=plastic&logo=Railway&name=Railway)
 # SkillMiner
 
 SkillMiner is an AI-powered career & study copilot.  

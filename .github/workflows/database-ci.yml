@@ -1,4 +1,4 @@
-name: Python Template for SkillMiner/database
+name: SkillMiner database CI Check
 
 on:
   push:
