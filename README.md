@@ -5,6 +5,7 @@
 
 ![Vercel Deploy](https://deploy-badge.vercel.app/vercel/skillminer?style=plastic&logo=Vercel&name=Vercel)
 ![Railway Deploy](https://deploy-badge.vercel.app/?url=https%3A%2F%2Fskillminer-production.up.railway.app%2F&style=plastic&logo=Railway&name=Railway)
+![Supabase Deploy](https://deploy-badge.vercel.app/?url=https%3A%2F%2Fstatus.supabase.com%2F&style=plastic&logo=Supabase&name=Supabase)
 # SkillMiner
 
 SkillMiner is an AI-powered career & study copilot.  
