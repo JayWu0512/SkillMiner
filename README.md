@@ -1,4 +1,8 @@
+![Node Version](https://img.shields.io/badge/Node-20.10%2B-blue?logo=node.js)
+![React](https://img.shields.io/badge/React-18.3-blue?logo=react)
 ![Python Version](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.6-blue?logo=postgresql)](https://www.postgresql.org/)
+
 
 [![SkillMiner Backend CI Check](https://github.com/JayWu0512/SkillMiner/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/JayWu0512/SkillMiner/actions/workflows/backend-ci.yml)
 [![SkillMiner Database CI Check](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml/badge.svg)](https://github.com/JayWu0512/SkillMiner/actions/workflows/database-ci.yml)
