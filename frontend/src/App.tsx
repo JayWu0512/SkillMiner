@@ -56,6 +56,30 @@ type HeaderNavKey =
   | "profile"
   | "settings";
 
+// 🔹 Determine new user: only check skill_analyses, whether there's any analysis record
+async function isNewUser(userId: string): Promise<boolean> {
+  try {
+    const { data: skillAnalyses, error: skillErr } = await supabase
+      .from("skill_analyses")
+      .select("id")
+      .eq("user_id", userId)
+      .limit(1);
+
+    if (skillErr) {
+      console.warn("[isNewUser] skill_analyses query error:", skillErr);
+    }
+
+    const hasSkillAnalysis = !!skillAnalyses && skillAnalyses.length > 0;
+
+    // No analysis at all → treat as new user
+    return !hasSkillAnalysis;
+  } catch (e) {
+    console.error("[isNewUser] unexpected error:", e);
+    // On error, treat as old user to avoid getting stuck in upload
+    return false;
+  }
+}
+
 export default function App() {
   const [appState, setAppState] = useState<AppState>("login");
   const [accessToken, setAccessToken] = useState<string>("");
@@ -71,6 +95,7 @@ export default function App() {
     useState<Nullable<StudyPlanData>>(null);
 
   // ---------- Save the last visited page to localStorage ----------
+  // (Not using it to determine initial page anymore, but keeping the record is fine)
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (appState === "login" || appState === "upload") return;
@@ -208,24 +233,15 @@ export default function App() {
 
           console.log("[auth] user.id =", session.user.id);
 
-          // 1️⃣ Has session, first check lastAppState
-          let initial: AppState = "dashboard";
-          if (typeof window !== "undefined") {
-            const saved = window.localStorage.getItem(
-              "lastAppState"
-            ) as AppState | null;
-            if (
-              saved &&
-              saved !== "login" &&
-              saved !== "upload" &&
-              saved !== "chat"
-            ) {
-              initial = saved;
-            }
-          }
+          // 🔹 Use skill_analyses to determine new/old user
+          const newUser = await isNewUser(session.user.id);
+
+          // 🔸 New user → upload; Old user → dashboard
+          const initial: AppState = newUser ? "upload" : "dashboard";
+
           setAppState(initial);
 
-          // 2️⃣ Fetch latest study_plan in background, fill into state
+          // Load latest study_plan in background (don't change screen)
           void routeByHistory(session.user.id, session.access_token);
         } else {
           setAuthUser(null);
@@ -243,7 +259,7 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      // Only handle data updates for SIGNED_IN / SIGNED_OUT, don't change appState
+      // Only update data / reset state on logout here, don't determine where to go after login
       if (event === "SIGNED_IN" && session?.access_token && session.user) {
         console.log("[auth] onAuth SIGNED_IN", session.user.id);
         setAccessToken(session.access_token);
@@ -271,13 +287,31 @@ export default function App() {
     return () => {
       subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ---------- Handlers ----------
-  const handleLoginSuccess = (token: string) => {
-    // After LoginPage login success, automatically navigate to dashboard
+  const handleLoginSuccess = async (token: string) => {
+    // After LoginPage successful login:
+    // New user → upload; Old user → dashboard
     setAccessToken(token);
-    setAppState("dashboard");
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user?.id) {
+        const newUser = await isNewUser(user.id);
+        setAuthUser({ id: user.id, email: user.email ?? null });
+        setAppState(newUser ? "upload" : "dashboard");
+      } else {
+        setAppState("dashboard");
+      }
+    } catch (e) {
+      console.error("[handleLoginSuccess] failed:", e);
+      setAppState("dashboard");
+    }
   };
 
   const handleAnalysisComplete = (id: string) => {
